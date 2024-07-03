@@ -8,9 +8,8 @@ import io
 import utils
 
 
-def parse_passport(passport):
-    image_data = io.BytesIO(passport)
-    image = Image.open(image_data)
+async def parse_passport(passport):
+    image = Image.open(passport)
     text = pytesseract.image_to_string(image)
 
     date_pattern = r'\b\d{2} \d{2} \d{4}\b'
@@ -63,7 +62,7 @@ def parse_passport(passport):
 
     if dates:
         for date in dates:
-            date_info = utils.validate_date(date)
+            date_info = await utils.validate_date(date)
             if date_info:
                 if date_info.year < datetime.date.today().year - 10:
                     birth_date = date_info

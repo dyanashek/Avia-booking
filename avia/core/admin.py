@@ -16,6 +16,7 @@ class TGTextAdmin(SortableAdminMixin, admin.ModelAdmin):
     list_filter = ('language',)
     search_fields = ('text', 'slug',)
     actions = ('add_language',)
+    readonly_fields = ('slug',)
 
     def add_language(self, request, queryset):
         selected_language = queryset.first().language
