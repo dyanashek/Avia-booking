@@ -20,8 +20,14 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.conf import settings
 from django.conf.urls.static import static
 
+from money_transfer import views as money_transfer_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('get_sender_addresses/', money_transfer_views.get_sender_addresses, name='sender_addresses'),
+    path('get_sender_receivers/', money_transfer_views.get_sender_receivers, name='sender_receivers'),
+    path('get_receiver_addresses/', money_transfer_views.get_receiver_addresses, name='receiver_addresses'),
+    path('stop_status/', money_transfer_views.stop_status, name='stop_status'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

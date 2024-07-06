@@ -102,12 +102,12 @@ async def callback_query(call: types.CallbackQuery):
 
     user = await sync_to_async(TGUser.objects.get)(user_id=user_id)
     user_language = await sync_to_async(lambda: user.language)()
-    curr_input = await sync_to_async(lambda: user.curr_input)()
+    curr_input = user.curr_input
 
     if username:
         user.username = username
         await sync_to_async(user.save)()
-
+    
     call_data = call.data.split('_')
     query = call_data[0]
 
@@ -319,20 +319,9 @@ async def callback_query(call: types.CallbackQuery):
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
                     pass
-                
-                user_name_bd = await sync_to_async(lambda: user.name)()
-                user_family_name_bd = await sync_to_async(lambda: user.family_name)()
-                user_sex_bd = await sync_to_async(lambda: user.sex)()
-                user_birth_date_bd = await sync_to_async(lambda: user.birth_date)()
-                user_start_date_bd = await sync_to_async(lambda: user.start_date)()
-                user_end_date_bd = await sync_to_async(lambda: user.end_date)()
-                user_passport_number_bd = await sync_to_async(lambda: user.passport_number)()
-                user_passport_photo_id_bd = await sync_to_async(lambda: user.passport_photo_id)()
-                user_phone_bd = await sync_to_async(lambda: user.phone)()
-                user_addresses_bd = await sync_to_async(lambda: user.addresses)()
 
-                if user_name_bd and user_family_name_bd and user_sex_bd and user_birth_date_bd and user_start_date_bd and\
-                user_end_date_bd and user_passport_number_bd and user_passport_photo_id_bd and user_phone_bd and user_addresses_bd:
+                if user.name and user.family_name and user.sex and user.birth_date and user.start_date and\
+                user.end_date and user.passport_number and user.passport_photo_id and user.phone and user.addresses:
                     reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
                     name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                     family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
@@ -346,19 +335,19 @@ async def callback_query(call: types.CallbackQuery):
 
                     reply_text = f'{reuse.text}\n'
                     
-                    reply_text += f'\n*{name.text}* {user_name_bd}'
-                    reply_text += f'\n*{family_name.text}* {user_family_name_bd}'
-                    reply_text += f'\n*{passport.text}* {user_passport_number_bd}'
-                    reply_text += f'\n*{sex.text}* {user_sex_bd}'
-                    reply_text += f'\n*{birth_date.text}* {user_birth_date_bd.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{start_date.text}* {user_start_date_bd.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{end_date.text}* {user_end_date_bd.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{phone.text}* {user_phone_bd}'
-                    reply_text += f'\n*{address.text}* {user_addresses_bd}'
+                    reply_text += f'\n*{name.text}* {user.name}'
+                    reply_text += f'\n*{family_name.text}* {user.family_name}'
+                    reply_text += f'\n*{passport.text}* {user.passport_number}'
+                    reply_text += f'\n*{sex.text}* {user.sex}'
+                    reply_text += f'\n*{birth_date.text}* {user.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {user.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {user.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {user.phone}'
+                    reply_text += f'\n*{address.text}* {user.addresses}'
 
                     await bot.send_photo(chat_id=user_id,
                             caption=reply_text,
-                            photo=user_passport_photo_id_bd,
+                            photo=user.passport_photo_id,
                             reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
                             parse_mode='Markdown',
                             disable_notification=False,
@@ -383,20 +372,9 @@ async def callback_query(call: types.CallbackQuery):
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
                 pass
-            
-            user_name_bd = await sync_to_async(lambda: user.name)()
-            user_family_name_bd = await sync_to_async(lambda: user.family_name)()
-            user_sex_bd = await sync_to_async(lambda: user.sex)()
-            user_birth_date_bd = await sync_to_async(lambda: user.birth_date)()
-            user_start_date_bd = await sync_to_async(lambda: user.start_date)()
-            user_end_date_bd = await sync_to_async(lambda: user.end_date)()
-            user_passport_number_bd = await sync_to_async(lambda: user.passport_number)()
-            user_passport_photo_id_bd = await sync_to_async(lambda: user.passport_photo_id)()
-            user_phone_bd = await sync_to_async(lambda: user.phone)()
-            user_addresses_bd = await sync_to_async(lambda: user.addresses)()
 
-            if user_name_bd and user_family_name_bd and user_sex_bd and user_birth_date_bd and user_start_date_bd and\
-                user_end_date_bd and user_passport_number_bd and user_passport_photo_id_bd and user_phone_bd and user_addresses_bd:
+            if user.name and user.family_name and user.sex and user.birth_date and user.start_date and\
+                user.end_date and user.passport_number and user.passport_photo_id and user.phone and user.addresses:
                 reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
                 name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                 family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
@@ -410,19 +388,19 @@ async def callback_query(call: types.CallbackQuery):
 
                 reply_text = f'{reuse.text}\n'
                 
-                reply_text += f'\n*{name.text}* {user_name_bd}'
-                reply_text += f'\n*{family_name.text}* {user_family_name_bd}'
-                reply_text += f'\n*{passport.text}* {user_passport_number_bd}'
-                reply_text += f'\n*{sex.text}* {user_sex_bd}'
-                reply_text += f'\n*{birth_date.text}* {user_birth_date_bd.strftime("%d.%m.%Y")}'
-                reply_text += f'\n*{start_date.text}* {user_start_date_bd.strftime("%d.%m.%Y")}'
-                reply_text += f'\n*{end_date.text}* {user_end_date_bd.strftime("%d.%m.%Y")}'
-                reply_text += f'\n*{phone.text}* {user_phone_bd}'
-                reply_text += f'\n*{address.text}* {user_addresses_bd}'
+                reply_text += f'\n*{name.text}* {user.name}'
+                reply_text += f'\n*{family_name.text}* {user.family_name}'
+                reply_text += f'\n*{passport.text}* {user.passport_number}'
+                reply_text += f'\n*{sex.text}* {user.sex}'
+                reply_text += f'\n*{birth_date.text}* {user.birth_date.strftime("%d.%m.%Y")}'
+                reply_text += f'\n*{start_date.text}* {user.start_date.strftime("%d.%m.%Y")}'
+                reply_text += f'\n*{end_date.text}* {user.end_date.strftime("%d.%m.%Y")}'
+                reply_text += f'\n*{phone.text}* {user.phone}'
+                reply_text += f'\n*{address.text}* {user.addresses}'
 
                 await bot.send_photo(chat_id=user_id,
                         caption=reply_text,
-                        photo=user_passport_photo_id_bd,
+                        photo=user.passport_photo_id,
                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
                         parse_mode='Markdown',
                         disable_notification=False,
@@ -548,9 +526,9 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 if flight:
-                    family_name = await sync_to_async(lambda: flight.family_name)()
+                    family_name = flight.family_name
                 elif parcel:
-                    family_name = await sync_to_async(lambda: parcel.family_name)()
+                    family_name = parcel.family_name
                 
                 if family_name:
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
@@ -585,9 +563,9 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 if flight:
-                    passport_num = await sync_to_async(lambda: flight.passport_number)()
+                    passport_num = flight.passport_number
                 elif parcel:
-                    passport_num = await sync_to_async(lambda: parcel.passport_number)()
+                    passport_num = parcel.passport_number
                 
                 if passport_num:
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='passport_correct_question', language=user_language)
@@ -622,9 +600,9 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 if flight:
-                    sex = await sync_to_async(lambda: flight.sex)()
+                    sex = flight.sex
                 elif parcel:
-                    sex = await sync_to_async(lambda: parcel.sex)()
+                    sex = parcel.sex
                 
                 if sex:
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='sex_correct_question', language=user_language)
@@ -660,9 +638,9 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 if flight:
-                    birth_date = await sync_to_async(lambda: flight.birth_date)()
+                    birth_date = flight.birth_date
                 elif parcel:
-                    birth_date = await sync_to_async(lambda: parcel.birth_date)()
+                    birth_date = parcel.birth_date
                 
                 if birth_date:
                     birth_date = birth_date.strftime('%d.%m.%Y')
@@ -699,9 +677,9 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 if flight:
-                    start_date = await sync_to_async(lambda: flight.start_date)()
+                    start_date = flight.start_date
                 elif parcel:
-                    start_date = await sync_to_async(lambda: parcel.start_date)()
+                    start_date = parcel.start_date
                 
                 if start_date:
                     start_date = start_date.strftime('%d.%m.%Y')
@@ -738,9 +716,9 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 if flight:
-                    end_date = await sync_to_async(lambda: flight.end_date)()
+                    end_date = flight.end_date
                 elif parcel:
-                    end_date = await sync_to_async(lambda: parcel.end_date)()
+                    end_date = parcel.end_date
                 
                 if end_date:
                     end_date = end_date.strftime('%d.%m.%Y')
@@ -793,34 +771,34 @@ async def callback_query(call: types.CallbackQuery):
 
                 if flight:
                     flight.complete = True 
-                    await sync_to_async(flight.save)()
-                    user.name = await sync_to_async(lambda: flight.name)()
-                    user.family_name = await sync_to_async(lambda: flight.family_name)()
-                    user.passport_number = await sync_to_async(lambda: flight.passport_number)()
-                    user.sex = await sync_to_async(lambda: flight.sex)()
-                    user.birth_date = await sync_to_async(lambda: flight.birth_date)()
-                    user.start_date = await sync_to_async(lambda: flight.start_date)()
-                    user.end_date = await sync_to_async(lambda: flight.end_date)()
+                    user.name = flight.name
+                    user.family_name = flight.family_name
+                    user.passport_number = flight.passport_number
+                    user.sex = flight.sex
+                    user.birth_date = flight.birth_date
+                    user.start_date = flight.start_date
+                    user.end_date = flight.end_date
                     user.passport_photo_user = await sync_to_async(lambda: flight.passport_photo_flight)()
-                    user.passport_photo_id = await sync_to_async(lambda: flight.passport_photo_id)()
-                    user.phone = await sync_to_async(lambda: flight.phone)()
-                    user.addresses = await sync_to_async(lambda: flight.address)()
+                    user.passport_photo_id = flight.passport_photo_id
+                    user.phone = flight.phone
+                    user.addresses = flight.address
+                    await sync_to_async(flight.save)()
 
                 elif parcel:
                     parcel.complete = True 
-                    await sync_to_async(parcel.save)()
-                    user.name = await sync_to_async(lambda: parcel.name)()
-                    user.family_name = await sync_to_async(lambda: parcel.family_name)()
-                    user.passport_number = await sync_to_async(lambda: parcel.passport_number)()
-                    user.sex = await sync_to_async(lambda: parcel.sex)()
-                    user.birth_date = await sync_to_async(lambda: parcel.birth_date)()
-                    user.start_date = await sync_to_async(lambda: parcel.start_date)()
-                    user.end_date = await sync_to_async(lambda: parcel.end_date)()
+                    user.name = parcel.name
+                    user.family_name = parcel.family_name
+                    user.passport_number = parcel.passport_number
+                    user.sex = parcel.sex
+                    user.birth_date = parcel.birth_date
+                    user.start_date = parcel.start_date
+                    user.end_date = parcel.end_date
                     user.passport_photo_user = await sync_to_async(lambda: parcel.passport_photo_parcel)()
-                    user.passport_photo_id = await sync_to_async(lambda: parcel.passport_photo_id)()
-                    user.phone = await sync_to_async(lambda: parcel.phone)()
-                    user.addresses = await sync_to_async(lambda: parcel.address)()
-                
+                    user.passport_photo_id =  parcel.passport_photo_id
+                    user.phone = parcel.phone
+                    user.addresses = parcel.address
+                    await sync_to_async(parcel.save)()
+
                 await sync_to_async(user.save)()
 
                 await bot.edit_message_reply_markup(chat_id=chat_id,
@@ -864,32 +842,19 @@ async def callback_query(call: types.CallbackQuery):
                 address = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
 
                 user.curr_input = 'confirmation'
-                await sync_to_async(user.save)()
 
                 if flight:
-                    flight_name_db = await sync_to_async(lambda: user.name)()
-                    flight_family_name_db = await sync_to_async(lambda: user.family_name)()
-                    flight_passport_number_db = await sync_to_async(lambda: user.passport_number)()
-                    flight_sex_db = await sync_to_async(lambda: user.sex)()
-                    flight_birth_date_db = await sync_to_async(lambda: user.birth_date)()
-                    flight_start_date_db = await sync_to_async(lambda: user.start_date)()
-                    flight_end_date_db = await sync_to_async(lambda: user.end_date)()
-                    flight_passport_photo_flight_db = await sync_to_async(lambda: user.passport_photo_user)()
-                    flight_passport_photo_id_db = await sync_to_async(lambda: user.passport_photo_id)()
-                    flight_phone_db = await sync_to_async(lambda: user.phone)()
-                    flight_address_db = await sync_to_async(lambda: user.addresses)()
-
-                    flight.name = flight_name_db
-                    flight.family_name = flight_family_name_db
-                    flight.passport_number = flight_passport_number_db
-                    flight.sex = flight_sex_db
-                    flight.birth_date = flight_birth_date_db
-                    flight.start_date = flight_start_date_db
-                    flight.end_date = flight_end_date_db
-                    flight.passport_photo_flight = flight_passport_photo_flight_db
-                    flight.passport_photo_id = flight_passport_photo_id_db
-                    flight.phone = flight_phone_db
-                    flight.address = flight_address_db 
+                    flight.name = user.name
+                    flight.family_name = user.family_name
+                    flight.passport_number = user.passport_number
+                    flight.sex = user.sex
+                    flight.birth_date = user.birth_date
+                    flight.start_date = user.start_date
+                    flight.end_date = user.end_date
+                    flight.passport_photo_flight = await sync_to_async(lambda: user.passport_photo_user)()
+                    flight.passport_photo_id = user.passport_photo_id
+                    flight.phone = user.phone
+                    flight.address = user.addresses
                     await sync_to_async(flight.save)()
 
                     route = await sync_to_async(TGText.objects.get)(slug='route', language=user_language)
@@ -897,10 +862,9 @@ async def callback_query(call: types.CallbackQuery):
                     departure_date = await sync_to_async(TGText.objects.get)(slug='departure', language=user_language)
                     arrival_date = await sync_to_async(TGText.objects.get)(slug='arrival', language=user_language)
 
-                    photo_id = flight_passport_photo_id_db
+                    photo_id = flight.passport_photo_id
 
-                    flight_type_db = await sync_to_async(lambda: flight_type)()
-                    if flight_type_db == 'oneway':
+                    if flight.type == 'oneway':
                         flight_type_text = await sync_to_async(TGText.objects.get)(slug='oneway_button', language=user_language)
                     else:
                         flight_type_text = await sync_to_async(TGText.objects.get)(slug='roundtrip_button', language=user_language)
@@ -908,51 +872,37 @@ async def callback_query(call: types.CallbackQuery):
                     reply_text = f'{confirm_application.text}\n'
 
                     flight_route_db = await sync_to_async(lambda: flight.route.route)()
-                    flight_departure_date_db = await sync_to_async(lambda: flight.departure_date)()
-                    flight_arrival_date_db = await sync_to_async(lambda: flight.arrival_date)()
 
                     reply_text += f'\n*{route.text}* {flight_route_db}'
                     reply_text += f'\n*{flight_type.text.lower()}* {flight_type_text}'
-                    reply_text += f'\n*{departure_date.text}* {flight_departure_date_db.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{departure_date.text}* {flight.departure_date.strftime("%d.%m.%Y")}'
                     if flight.arrival_date:
-                        reply_text += f'\n*{arrival_date.text}* {flight_arrival_date_db.strftime("%d.%m.%Y")}\n'
+                        reply_text += f'\n*{arrival_date.text}* {flight.arrival_date.strftime("%d.%m.%Y")}\n'
                     else:
                         reply_text += '\n'
                     
-                    reply_text += f'\n*{name.text}* {flight_name_db}'
-                    reply_text += f'\n*{family_name.text}* {flight_family_name_db}'
-                    reply_text += f'\n*{passport.text}* {flight_passport_number_db}'
-                    reply_text += f'\n*{sex.text}* {flight_sex_db}'
-                    reply_text += f'\n*{birth_date.text}* {flight_birth_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{start_date.text}* {flight_start_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{end_date.text}* {flight_end_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{phone.text}* {flight_phone_db}'
-                    reply_text += f'\n*{address.text}* {flight_address_db}'
+                    reply_text += f'\n*{name.text}* {flight.name}'
+                    reply_text += f'\n*{family_name.text}* {flight.family_name}'
+                    reply_text += f'\n*{passport.text}* {flight.passport_number}'
+                    reply_text += f'\n*{sex.text}* {flight.sex}'
+                    reply_text += f'\n*{birth_date.text}* {flight.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {flight.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {flight.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {flight.phone}'
+                    reply_text += f'\n*{address.text}* {flight.address}'
 
                 elif parcel:
-                    parcel_name_db = await sync_to_async(lambda: user.name)()
-                    parcel_family_name_db = await sync_to_async(lambda: user.family_name)()
-                    parcel_passport_number_db = await sync_to_async(lambda: user.passport_number)()
-                    parcel_sex_db = await sync_to_async(lambda: user.sex)()
-                    parcel_birth_date_db = await sync_to_async(lambda: user.birth_date)()
-                    parcel_start_date_db = await sync_to_async(lambda: user.start_date)()
-                    parcel_end_date_db = await sync_to_async(lambda: user.end_date)()
-                    parcel_passport_photo_parcel_db = await sync_to_async(lambda: user.passport_photo_user)()
-                    parcel_passport_photo_id_db = await sync_to_async(lambda: user.passport_photo_id)()
-                    parcel_phone_db = await sync_to_async(lambda: user.phone)()
-                    parcel_address_db = await sync_to_async(lambda: user.addresses)()
-
-                    parcel.name = parcel_name_db
-                    parcel.family_name = parcel_family_name_db
-                    parcel.passport_number = parcel_passport_number_db
-                    parcel.sex = parcel_sex_db 
-                    parcel.birth_date = parcel_birth_date_db
-                    parcel.start_date = parcel_start_date_db
-                    parcel.end_date = parcel_end_date_db
-                    parcel.passport_photo_parcel = parcel_passport_photo_parcel_db
-                    parcel.passport_photo_id = parcel_passport_photo_id_db
-                    parcel.phone = parcel_phone_db
-                    parcel.address = parcel_address_db
+                    parcel.name = user.name
+                    parcel.family_name = user.family_name
+                    parcel.passport_number = user.passport_number
+                    parcel.sex = user.sex
+                    parcel.birth_date = user.birth_date
+                    parcel.start_date = user.start_date
+                    parcel.end_date = user.end_date
+                    parcel.passport_photo_parcel = await sync_to_async(lambda: user.passport_photo_user)()
+                    parcel.passport_photo_id = user.passport_photo_id
+                    parcel.phone = user.phone
+                    parcel.address = user.addresses
                     await sync_to_async(parcel.save)()
 
                     parcel_type = await sync_to_async(TGText.objects.get)(slug='type_parcel', language=user_language)
@@ -960,29 +910,28 @@ async def callback_query(call: types.CallbackQuery):
                     fio_receiver = await sync_to_async(TGText.objects.get)(slug='fio_receiver', language=user_language)
                     phone_receiver = await sync_to_async(TGText.objects.get)(slug='receiver_phone', language=user_language)
 
-                    photo_id = parcel_passport_photo_id_db
+                    photo_id = parcel.passport_photo_id
 
                     reply_text = f'{confirm_application.text}\n'
 
                     parcel_variation_name_db = await sync_to_async(lambda: parcel.variation.name)()
-                    parcel_items_list_db = await sync_to_async(lambda: parcel.items_list)()
-                    parcel_fio_receiver_db = await sync_to_async(lambda: parcel.fio_receiver)()
-                    parcel_phone_receiver_db = await sync_to_async(lambda: parcel.phone_receiver)()
 
                     reply_text += f'\n*{parcel_type.text}* {parcel_variation_name_db}'
-                    reply_text += f'\n*{items_list.text}* {parcel_items_list_db}'
-                    reply_text += f'\n*{fio_receiver.text}* {parcel_fio_receiver_db}'
-                    reply_text += f'\n*{phone_receiver.text}* {parcel_phone_receiver_db}\n'
+                    reply_text += f'\n*{items_list.text}* {parcel.items_list}'
+                    reply_text += f'\n*{fio_receiver.text}* {parcel.fio_receiver}'
+                    reply_text += f'\n*{phone_receiver.text}* {parcel.phone_receiver}\n'
 
-                    reply_text += f'\n*{name.text}* {parcel_name_db}'
-                    reply_text += f'\n*{family_name.text}* {parcel_family_name_db}'
-                    reply_text += f'\n*{passport.text}* {parcel_passport_number_db}'
-                    reply_text += f'\n*{sex.text}* {parcel_sex_db}'
-                    reply_text += f'\n*{birth_date.text}* {parcel_birth_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{start_date.text}* {parcel_start_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{end_date.text}* {parcel_end_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{phone.text}* {parcel_phone_db}'
-                    reply_text += f'\n*{address.text}* {parcel_address_db}'
+                    reply_text += f'\n*{name.text}* {parcel.name}'
+                    reply_text += f'\n*{family_name.text}* {parcel.family_name}'
+                    reply_text += f'\n*{passport.text}* {parcel.passport_number}'
+                    reply_text += f'\n*{sex.text}* {parcel.sex}'
+                    reply_text += f'\n*{birth_date.text}* {parcel.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {parcel.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {parcel.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {parcel.phone}'
+                    reply_text += f'\n*{address.text}* {parcel.address}'
+
+                await sync_to_async(user.save)()
 
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1118,12 +1067,12 @@ async def callback_query(call: types.CallbackQuery):
 
             if flight:
                 flight.sex = sex
+                birth_date = flight.birth_date
                 await sync_to_async(flight.save)()
-                birth_date = await sync_to_async(lambda: flight.birth_date)()
             elif parcel:
                 parcel.sex = sex
+                birth_date = parcel.birth_date
                 await sync_to_async(parcel.save)()
-                birth_date = await sync_to_async(lambda: parcel.birth_date)()
             
             if birth_date:
                 birth_date = birth_date.strftime('%d.%m.%Y')
@@ -1186,7 +1135,7 @@ async def handle_photo(message: types.Message):
         await sync_to_async(user.save)()
 
     user_language = await sync_to_async(lambda: user.language)()
-    curr_input = await sync_to_async(lambda: user.curr_input)()
+    curr_input = user.curr_input
 
     if curr_input and curr_input == 'passport':
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
@@ -1224,10 +1173,10 @@ async def handle_photo(message: types.Message):
 
                 if flight:
                     slug = 'flight'
-                    pk = await sync_to_async(lambda: flight.pk)()
+                    pk = flight.pk
                 elif parcel:
                     slug = 'parcel'
-                    pk = await sync_to_async(lambda: parcel.pk)()
+                    pk = parcel.pk
 
                 try:
                     passport = Image(
@@ -1309,7 +1258,7 @@ async def handle_contact(message: types.Message):
         await sync_to_async(user.save)()
 
     user_language = await sync_to_async(lambda: user.language)()
-    curr_input = await sync_to_async(lambda: user.curr_input)()
+    curr_input = user.curr_input
 
     if curr_input and curr_input == 'phone':
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
@@ -1360,7 +1309,7 @@ async def handle_text(message):
         await sync_to_async(user.save)()
 
     user_language = await sync_to_async(lambda: user.language)()
-    curr_input = await sync_to_async(lambda:user.curr_input)()
+    curr_input = user.curr_input
     input_info = await utils.escape_markdown(message.text)
 
     if curr_input:
@@ -1382,12 +1331,12 @@ async def handle_text(message):
             if curr_input == 'name':
                 if flight:
                     flight.name = input_info
+                    family_name = flight.family_name
                     await sync_to_async(flight.save)()
-                    family_name = await sync_to_async(lambda: flight.family_name)()
                 elif parcel:
                     parcel.name = input_info
+                    family_name = parcel.family_name
                     await sync_to_async(parcel.save)()
-                    family_name = await sync_to_async(lambda: parcel.family_name)()
                 
                 user.curr_input = 'familyname'
                 await sync_to_async(user.save)()
@@ -1413,12 +1362,12 @@ async def handle_text(message):
             elif curr_input == 'familyname':
                 if flight:
                     flight.family_name = input_info
+                    passport_num = flight.passport_number
                     await sync_to_async(flight.save)()
-                    passport_num = await sync_to_async(lambda: flight.passport_number)()
                 elif parcel:
                     parcel.family_name = input_info
+                    passport_num = parcel.passport_number
                     await sync_to_async(parcel.save)()
-                    passport_num = await sync_to_async(lambda: parcel.passport_number)()
                 
                 user.curr_input = 'passportnum'
                 await sync_to_async(user.save)()
@@ -1447,11 +1396,11 @@ async def handle_text(message):
                     if flight:
                         flight.passport_number = passport_num
                         await sync_to_async(flight.save)()
-                        sex = await sync_to_async(lambda: flight.sex)()
+                        sex = flight.sex
                     elif parcel:
                         parcel.passport_number = passport_num
                         await sync_to_async(parcel.save)()
-                        sex = await sync_to_async(lambda: parcel.sex)()
+                        sex = parcel.sex
                     
                     user.curr_input = 'sex'
                     await sync_to_async(user.save)()
@@ -1491,11 +1440,11 @@ async def handle_text(message):
                     if flight:
                         flight.birth_date = birth_date
                         await sync_to_async(flight.save)()
-                        start_date = await sync_to_async(lambda: flight.start_date)()
+                        start_date = flight.start_date
                     elif parcel:
                         parcel.birth_date = birth_date
                         await sync_to_async(parcel.save)()
-                        start_date = await sync_to_async(lambda: parcel.start_date)()
+                        start_date = parcel.start_date
                     
                     user.curr_input = 'startdate'
                     await sync_to_async(user.save)()
@@ -1536,11 +1485,11 @@ async def handle_text(message):
                     if flight:
                         flight.start_date = start_date
                         await sync_to_async(flight.save)()
-                        end_date = await sync_to_async(lambda: flight.end_date)()
+                        end_date = flight.end_date
                     elif parcel:
                         parcel.start_date = start_date
                         await sync_to_async(parcel.save)()
-                        end_date = await sync_to_async(lambda: parcel.end_date)()
+                        end_date = parcel.end_date
                     
                     user.curr_input = 'enddate'
                     await sync_to_async(user.save)()
@@ -1648,30 +1597,7 @@ async def handle_text(message):
                 address = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
 
                 if flight:
-                    flight.address = input_info
-                    flight_name_db = await sync_to_async(lambda: flight.name)()
-                    flight_family_name_db = await sync_to_async(lambda: flight.family_name)()
-                    flight_passport_number_db = await sync_to_async(lambda: flight.passport_number)()
-                    flight_sex_db = await sync_to_async(lambda: flight.sex)()
-                    flight_birth_date_db = await sync_to_async(lambda: flight.birth_date)()
-                    flight_start_date_db = await sync_to_async(lambda: flight.start_date)()
-                    flight_end_date_db = await sync_to_async(lambda: flight.end_date)()
-                    flight_passport_photo_flight_db = await sync_to_async(lambda: flight.passport_photo_flight)()
-                    flight_passport_photo_id_db = await sync_to_async(lambda: flight.passport_photo_id)()
-                    flight_phone_db = await sync_to_async(lambda: flight.phone)()
-                    flight_address_db = input_info
-
-                    flight.name = flight_name_db
-                    flight.family_name = flight_family_name_db
-                    flight.passport_number = flight_passport_number_db
-                    flight.sex = flight_sex_db
-                    flight.birth_date = flight_birth_date_db
-                    flight.start_date = flight_start_date_db
-                    flight.end_date = flight_end_date_db
-                    flight.passport_photo_flight = flight_passport_photo_flight_db
-                    flight.passport_photo_id = flight_passport_photo_id_db
-                    flight.phone = flight_phone_db
-                    flight.address = flight_address_db 
+                    flight.address = input_info 
                     await sync_to_async(flight.save)()
 
                     route = await sync_to_async(TGText.objects.get)(slug='route', language=user_language)
@@ -1679,10 +1605,9 @@ async def handle_text(message):
                     departure_date = await sync_to_async(TGText.objects.get)(slug='departure', language=user_language)
                     arrival_date = await sync_to_async(TGText.objects.get)(slug='arrival', language=user_language)
 
-                    photo_id = flight_passport_photo_id_db
+                    photo_id = flight.passport_photo_id
 
-                    flight_type_db = await sync_to_async(lambda: flight_type)()
-                    if flight_type_db == 'oneway':
+                    if flight.type == 'oneway':
                         flight_type_text = await sync_to_async(TGText.objects.get)(slug='oneway_button', language=user_language)
                     else:
                         flight_type_text = await sync_to_async(TGText.objects.get)(slug='roundtrip_button', language=user_language)
@@ -1690,52 +1615,27 @@ async def handle_text(message):
                     reply_text = f'{confirm_application.text}\n'
 
                     flight_route_db = await sync_to_async(lambda: flight.route.route)()
-                    flight_departure_date_db = await sync_to_async(lambda: flight.departure_date)()
-                    flight_arrival_date_db = await sync_to_async(lambda: flight.arrival_date)()
 
                     reply_text += f'\n*{route.text}* {flight_route_db}'
                     reply_text += f'\n*{flight_type.text.lower()}* {flight_type_text}'
-                    reply_text += f'\n*{departure_date.text}* {flight_departure_date_db.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{departure_date.text}* {flight.departure_date.strftime("%d.%m.%Y")}'
                     if flight.arrival_date:
-                        reply_text += f'\n*{arrival_date.text}* {flight_arrival_date_db.strftime("%d.%m.%Y")}\n'
+                        reply_text += f'\n*{arrival_date.text}* {flight.arrival_date.strftime("%d.%m.%Y")}\n'
                     else:
                         reply_text += '\n'
                     
-                    reply_text += f'\n*{name.text}* {flight_name_db}'
-                    reply_text += f'\n*{family_name.text}* {flight_family_name_db}'
-                    reply_text += f'\n*{passport.text}* {flight_passport_number_db}'
-                    reply_text += f'\n*{sex.text}* {flight_sex_db}'
-                    reply_text += f'\n*{birth_date.text}* {flight_birth_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{start_date.text}* {flight_start_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{end_date.text}* {flight_end_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{phone.text}* {flight_phone_db}'
-                    reply_text += f'\n*{address.text}* {flight_address_db}'
+                    reply_text += f'\n*{name.text}* {flight.name}'
+                    reply_text += f'\n*{family_name.text}* {flight.family_name}'
+                    reply_text += f'\n*{passport.text}* {flight.passport_number}'
+                    reply_text += f'\n*{sex.text}* {flight.sex}'
+                    reply_text += f'\n*{birth_date.text}* {flight.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {flight.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {flight.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {flight.phone}'
+                    reply_text += f'\n*{address.text}* {flight.address}'
 
                 elif parcel:
                     parcel.address = input_info
-                    parcel_name_db = await sync_to_async(lambda: parcel.name)()
-                    parcel_family_name_db = await sync_to_async(lambda: parcel.family_name)()
-                    parcel_passport_number_db = await sync_to_async(lambda: parcel.passport_number)()
-                    parcel_sex_db = await sync_to_async(lambda: parcel.sex)()
-                    parcel_birth_date_db = await sync_to_async(lambda: parcel.birth_date)()
-                    parcel_start_date_db = await sync_to_async(lambda: parcel.start_date)()
-                    parcel_end_date_db = await sync_to_async(lambda: parcel.end_date)()
-                    parcel_passport_photo_parcel_db = await sync_to_async(lambda: parcel.passport_photo_parcel)()
-                    parcel_passport_photo_id_db = await sync_to_async(lambda: parcel.passport_photo_id)()
-                    parcel_phone_db = await sync_to_async(lambda: parcel.phone)()
-                    parcel_address_db = input_info
-
-                    parcel.name = parcel_name_db
-                    parcel.family_name = parcel_family_name_db
-                    parcel.passport_number = parcel_passport_number_db
-                    parcel.sex = parcel_sex_db 
-                    parcel.birth_date = parcel_birth_date_db
-                    parcel.start_date = parcel_start_date_db
-                    parcel.end_date = parcel_end_date_db
-                    parcel.passport_photo_parcel = parcel_passport_photo_parcel_db
-                    parcel.passport_photo_id = parcel_passport_photo_id_db
-                    parcel.phone = parcel_phone_db
-                    parcel.address = parcel_address_db
                     await sync_to_async(parcel.save)()
 
                     parcel_type = await sync_to_async(TGText.objects.get)(slug='type_parcel', language=user_language)
@@ -1743,29 +1643,26 @@ async def handle_text(message):
                     fio_receiver = await sync_to_async(TGText.objects.get)(slug='fio_receiver', language=user_language)
                     phone_receiver = await sync_to_async(TGText.objects.get)(slug='receiver_phone', language=user_language)
 
-                    photo_id = parcel_passport_photo_id_db
+                    photo_id = parcel.passport_photo_id
 
                     reply_text = f'{confirm_application.text}\n'
 
                     parcel_variation_name_db = await sync_to_async(lambda: parcel.variation.name)()
-                    parcel_items_list_db = await sync_to_async(lambda: parcel.items_list)()
-                    parcel_fio_receiver_db = await sync_to_async(lambda: parcel.fio_receiver)()
-                    parcel_phone_receiver_db = await sync_to_async(lambda: parcel.phone_receiver)()
 
                     reply_text += f'\n*{parcel_type.text}* {parcel_variation_name_db}'
-                    reply_text += f'\n*{items_list.text}* {parcel_items_list_db}'
-                    reply_text += f'\n*{fio_receiver.text}* {parcel_fio_receiver_db}'
-                    reply_text += f'\n*{phone_receiver.text}* {parcel_phone_receiver_db}\n'
+                    reply_text += f'\n*{items_list.text}* {parcel.items_list}'
+                    reply_text += f'\n*{fio_receiver.text}* {parcel.fio_receiver}'
+                    reply_text += f'\n*{phone_receiver.text}* {parcel.phone_receiver}\n'
 
-                    reply_text += f'\n*{name.text}* {parcel_name_db}'
-                    reply_text += f'\n*{family_name.text}* {parcel_family_name_db}'
-                    reply_text += f'\n*{passport.text}* {parcel_passport_number_db}'
-                    reply_text += f'\n*{sex.text}* {parcel_sex_db}'
-                    reply_text += f'\n*{birth_date.text}* {parcel_birth_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{start_date.text}* {parcel_start_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{end_date.text}* {parcel_end_date_db.strftime("%d.%m.%Y")}'
-                    reply_text += f'\n*{phone.text}* {parcel_phone_db}'
-                    reply_text += f'\n*{address.text}* {parcel_address_db}'
+                    reply_text += f'\n*{name.text}* {parcel.name}'
+                    reply_text += f'\n*{family_name.text}* {parcel.family_name}'
+                    reply_text += f'\n*{passport.text}* {parcel.passport_number}'
+                    reply_text += f'\n*{sex.text}* {parcel.sex}'
+                    reply_text += f'\n*{birth_date.text}* {parcel.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {parcel.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {parcel.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {parcel.phone}'
+                    reply_text += f'\n*{address.text}* {parcel.address}'
 
                 user.curr_input = 'confirmation'
                 await sync_to_async(user.save)()
@@ -1813,19 +1710,8 @@ async def handle_text(message):
                     user.curr_input = 'passport'
                     await sync_to_async(user.save)()
 
-                    user_name_bd = await sync_to_async(lambda: user.name)()
-                    user_family_name_bd = await sync_to_async(lambda: user.family_name)()
-                    user_sex_bd = await sync_to_async(lambda: user.sex)()
-                    user_birth_date_bd = await sync_to_async(lambda: user.birth_date)()
-                    user_start_date_bd = await sync_to_async(lambda: user.start_date)()
-                    user_end_date_bd = await sync_to_async(lambda: user.end_date)()
-                    user_passport_number_bd = await sync_to_async(lambda: user.passport_number)()
-                    user_passport_photo_id_bd = await sync_to_async(lambda: user.passport_photo_id)()
-                    user_phone_bd = await sync_to_async(lambda: user.phone)()
-                    user_addresses_bd = await sync_to_async(lambda: user.addresses)()
-
-                    if user_name_bd and user_family_name_bd and user_sex_bd and user_birth_date_bd and user_start_date_bd and\
-                    user_end_date_bd and user_passport_number_bd and user_passport_photo_id_bd and user_phone_bd and user_addresses_bd:
+                    if user.name and user.family_name and user.sex and user.birth_date and user.start_date and\
+                    user.end_date and user.passport_number and user.passport_photo_id and user.phone and user.addresses:
                         reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
                         name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                         family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
@@ -1839,19 +1725,19 @@ async def handle_text(message):
 
                         reply_text = f'{reuse.text}\n'
                         
-                        reply_text += f'\n*{name.text}* {user_name_bd}'
-                        reply_text += f'\n*{family_name.text}* {user_family_name_bd}'
-                        reply_text += f'\n*{passport.text}* {user_passport_number_bd}'
-                        reply_text += f'\n*{sex.text}* {user_sex_bd}'
-                        reply_text += f'\n*{birth_date.text}* {user_birth_date_bd.strftime("%d.%m.%Y")}'
-                        reply_text += f'\n*{start_date.text}* {user_start_date_bd.strftime("%d.%m.%Y")}'
-                        reply_text += f'\n*{end_date.text}* {user_end_date_bd.strftime("%d.%m.%Y")}'
-                        reply_text += f'\n*{phone.text}* {user_phone_bd}'
-                        reply_text += f'\n*{address.text}* {user_addresses_bd}'
+                        reply_text += f'\n*{name.text}* {user.name}'
+                        reply_text += f'\n*{family_name.text}* {user.family_name}'
+                        reply_text += f'\n*{passport.text}* {user.passport_number}'
+                        reply_text += f'\n*{sex.text}* {user.sex}'
+                        reply_text += f'\n*{birth_date.text}* {user.birth_date.strftime("%d.%m.%Y")}'
+                        reply_text += f'\n*{start_date.text}* {user.start_date.strftime("%d.%m.%Y")}'
+                        reply_text += f'\n*{end_date.text}* {user.end_date.strftime("%d.%m.%Y")}'
+                        reply_text += f'\n*{phone.text}* {user.phone}'
+                        reply_text += f'\n*{address.text}* {user.addresses}'
 
                         await bot.send_photo(chat_id=user_id,
                                 caption=reply_text,
-                                photo=user_passport_photo_id_bd,
+                                photo=user.passport_photo_id,
                                 reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
                                 parse_mode='Markdown',
                                 disable_notification=False,

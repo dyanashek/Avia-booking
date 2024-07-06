@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
+import base64
 from pathlib import Path
 
 import pymysql 
@@ -41,6 +42,7 @@ ALLOWED_HOSTS = ['*',]
 
 INSTALLED_APPS = [
     'core.apps.CoreConfig',
+    'money_transfer.apps.MoneyTransferConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
     'easy_thumbnails',
     'filer',
     'adminsortable2',
+    'reversion',
 ]
 
 THUMBNAIL_PROCESSORS = (
@@ -160,3 +163,19 @@ THUMBNAIL_ALIASES = {
     },
 }
 
+# CIRCUIT
+CIRCUIT_TOKEN = os.getenv('CIRCUIT_TOKEN')
+CIRCUIT_TOKEN  = base64.b64encode(f'{CIRCUIT_TOKEN}:'.encode()).decode()
+CIRCUIT_PLAN = os.getenv('CIRCUIT_PLAN')
+CURCUIT_END_POINT = 'https://api.getcircuit.com/public/v0.2b'
+
+CURCUIT_HEADER = {
+        'Authorization': f'Basic {CIRCUIT_TOKEN }', 
+    }
+
+ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops'
+
+# Google sheets
+GSPREAD_CONFIG = 'service_account.json'
+SPREAD_NAME = 'Israel'
+MONEY_TRANSFER_LIST = 'money_transfer'
