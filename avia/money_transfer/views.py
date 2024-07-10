@@ -44,30 +44,31 @@ def get_receiver_addresses(request):
 @csrf_exempt
 def stop_status(request):
     stop_id = request.POST.get('id')
+    order_id = request.POST.get('order_id')
     driver_comment = request.POST.get('comment')
     try:
         status = request.POST.get('status')
     except:
         status = False
 
-    
-    delivery = Delivery.objects.filter(circuit_id=stop_id).first()
-    if delivery:
-        if status:
-            
-            try:
-                update_delivery_pickup_status(delivery.pk, driver_comment)
-            except:
-                pass
+    if order_id and order_id == '3':
+        delivery = Delivery.objects.filter(circuit_id=stop_id).first()
+        if delivery:
+            if status:
+                
+                try:
+                    update_delivery_pickup_status(delivery.pk, driver_comment)
+                except:
+                    pass
 
-            succeeded = Status.objects.get(slug='finished')
-            delivery.status = succeeded
-            delivery.status_message = 'Получено от отправителя'
-        else:
-            attempted = Status.objects.get(slug='attempted')
-            delivery.status = attempted
-            delivery.status_message = 'Не удалось забрать у отправителя'
-        
-        delivery.save()
+                succeeded = Status.objects.get(slug='finished')
+                delivery.status = succeeded
+                delivery.status_message = 'Получено от отправителя'
+            else:
+                attempted = Status.objects.get(slug='attempted')
+                delivery.status = attempted
+                delivery.status_message = 'Не удалось забрать у отправителя'
+            
+            delivery.save()
     
     return HttpResponse('POST request processed')

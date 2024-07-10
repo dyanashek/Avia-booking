@@ -147,3 +147,22 @@ async def parcel_types_keyboard(language):
         keyboard.row(types.InlineKeyboardButton(text=variation.name, callback_data = f'parceltype_{variation.pk}'))
 
     return keyboard.as_markup()
+
+
+async def confirm_application_keyboard(info_type, info_id):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f'price_{info_type}_{info_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Отклонить', callback_data=f'refuse_{info_type}_{info_id}'))
+
+    return keyboard.as_markup()
+
+
+async def confirm_price_keyboard(info_type, info_id, price):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f'complete_{info_type}_{info_id}_{price}'))
+    keyboard.row(types.InlineKeyboardButton(text='Ввести заново', callback_data=f'price_{info_type}_{info_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Отклонить заявку', callback_data=f'refuse_{info_type}_{info_id}'))
+
+    return keyboard.as_markup()

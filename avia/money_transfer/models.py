@@ -235,8 +235,8 @@ def update_delivery_valid(sender, instance, **kwargs):
                 instance.delivery.valid = True
                 instance.delivery.commission = round(commission, 2)
 
-                if 'Доставка передана в Circuit.' not in instance.delivery.status_message and\
-                'Ошибка передачи в Circuit (необходимо вручную).' not in instance.delivery.status_message:
+                if (instance.delivery.status_message is None) or ('Доставка передана в Circuit.' not in instance.delivery.status_message and\
+                'Ошибка передачи в Circuit (необходимо вручную).' not in instance.delivery.status_message):
                     instance.delivery.status = success_status
                     instance.delivery.status_message = 'Доставка сохранена.'
 

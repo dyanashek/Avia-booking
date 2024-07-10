@@ -29,6 +29,7 @@ def send_pickup_address(sender, delivery):
         },
         'orderInfo': {
             'products': items,
+            'sellerOrderId': '3',
         },
         'activity': 'pickup',
     }

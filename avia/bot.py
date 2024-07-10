@@ -19,6 +19,7 @@ from filer.models import Image, Folder
 from django.db.models import Q
 
 from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation
+from core.utils import send_pickup_address
 
 import config
 import keyboards
@@ -812,23 +813,98 @@ async def callback_query(call: types.CallbackQuery):
                         parse_mode='Markdown',
                         )
                 
+                
+
+
+                name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
+                family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
+                passport = await sync_to_async(TGText.objects.get)(slug='passport', language=user_language)
+                sex = await sync_to_async(TGText.objects.get)(slug='sex', language=user_language)
+                birth_date = await sync_to_async(TGText.objects.get)(slug='birth', language=user_language)
+                start_date = await sync_to_async(TGText.objects.get)(slug='start', language=user_language)
+                end_date = await sync_to_async(TGText.objects.get)(slug='end', language=user_language)
+                phone = await sync_to_async(TGText.objects.get)(slug='phone', language=user_language)
+                address = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+
+                reply_text = f'Заявка от пользователя:\n\n'
+
                 if flight:
-                    try:
-                        await bot.send_message(chat_id=config.MANAGER_ID,
-                                        text='Новая заявка *(перелет)*',
-                                        parse_mode='Markdown',
-                                        )
-                    except:
-                        pass
+                    route = await sync_to_async(TGText.objects.get)(slug='route', language=user_language)
+                    flight_type = await sync_to_async(TGText.objects.get)(slug='type_flight', language=user_language)
+                    departure_date = await sync_to_async(TGText.objects.get)(slug='departure', language=user_language)
+                    arrival_date = await sync_to_async(TGText.objects.get)(slug='arrival', language=user_language)
+
+                    photo_id = flight.passport_photo_id
+
+                    if flight.type == 'oneway':
+                        flight_type_text = await sync_to_async(TGText.objects.get)(slug='oneway_button', language=user_language)
+                    else:
+                        flight_type_text = await sync_to_async(TGText.objects.get)(slug='roundtrip_button', language=user_language)
+
+                    flight_route_db = await sync_to_async(lambda: flight.route.route)()
+
+                    reply_text += f'\n*{route.text}* {flight_route_db}'
+                    reply_text += f'\n*{flight_type.text.lower()}* {flight_type_text}'
+                    reply_text += f'\n*{departure_date.text}* {flight.departure_date.strftime("%d.%m.%Y")}'
+                    if flight.arrival_date:
+                        reply_text += f'\n*{arrival_date.text}* {flight.arrival_date.strftime("%d.%m.%Y")}\n'
+                    else:
+                        reply_text += '\n'
+                    
+                    reply_text += f'\n*{name.text}* {flight.name}'
+                    reply_text += f'\n*{family_name.text}* {flight.family_name}'
+                    reply_text += f'\n*{passport.text}* {flight.passport_number}'
+                    reply_text += f'\n*{sex.text}* {flight.sex}'
+                    reply_text += f'\n*{birth_date.text}* {flight.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {flight.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {flight.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {flight.phone}'
+                    reply_text += f'\n*{address.text}* {flight.address}'
+
                 elif parcel:
-                    try:
-                        await bot.send_message(chat_id=config.MANAGER_ID,
-                                        text='Новая заявка *(посылка)*',
-                                        parse_mode='Markdown',
-                                        )
-                    except:
-                        pass
-            
+                    parcel_type = await sync_to_async(TGText.objects.get)(slug='type_parcel', language=user_language)
+                    items_list = await sync_to_async(TGText.objects.get)(slug='contains', language=user_language)
+                    fio_receiver = await sync_to_async(TGText.objects.get)(slug='fio_receiver', language=user_language)
+                    phone_receiver = await sync_to_async(TGText.objects.get)(slug='receiver_phone', language=user_language)
+
+                    photo_id = parcel.passport_photo_id
+
+                    parcel_variation_name_db = await sync_to_async(lambda: parcel.variation.name)()
+
+                    reply_text += f'\n*{parcel_type.text}* {parcel_variation_name_db}'
+                    reply_text += f'\n*{items_list.text}* {parcel.items_list}'
+                    reply_text += f'\n*{fio_receiver.text}* {parcel.fio_receiver}'
+                    reply_text += f'\n*{phone_receiver.text}* {parcel.phone_receiver}\n'
+
+                    reply_text += f'\n*{name.text}* {parcel.name}'
+                    reply_text += f'\n*{family_name.text}* {parcel.family_name}'
+                    reply_text += f'\n*{passport.text}* {parcel.passport_number}'
+                    reply_text += f'\n*{sex.text}* {parcel.sex}'
+                    reply_text += f'\n*{birth_date.text}* {parcel.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {parcel.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {parcel.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {parcel.phone}'
+                    reply_text += f'\n*{address.text}* {parcel.address}'
+
+                try:
+                    if flight:
+                        info_type = 'flight'
+                        info_id = flight.pk
+                    elif parcel:
+                        info_type = 'parcel'
+                        info_id = parcel.pk
+                    
+                    await bot.send_photo(
+                               chat_id=config.MANAGER_ID,
+                               caption=reply_text,
+                               photo=photo_id,
+                               reply_markup=await keyboards.confirm_application_keyboard(info_type, info_id),
+                               parse_mode='Markdown',
+                               disable_notification=False,
+                               )
+                except:
+                    pass
+
             elif info == 'passport':
                 confirm_application = await sync_to_async(TGText.objects.get)(slug='confirm_application', language=user_language)
                 name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
@@ -1122,6 +1198,79 @@ async def callback_query(call: types.CallbackQuery):
                             parse_mode='Markdown',
                             )
 
+    elif query == 'price':
+        info_type = call_data[1]
+        info_id = int(call_data[2])
+
+        user.curr_input = f'{info_type}price_{info_id}'
+        await sync_to_async(user.save)()
+
+        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                            message_id=message_id,
+                                            reply_markup=InlineKeyboardBuilder().as_markup(),
+                                            )
+
+        await bot.send_message(chat_id=chat_id,
+                               text='Введите стоимость в шекелях',
+                               parse_mode='Markdown',
+                               )
+
+    elif query == 'refuse':
+        info_type = call_data[1]
+        info_id = int(call_data[2])
+        
+        if info_type == 'flight':
+            application = await sync_to_async(Flight.objects.filter(id=info_id).first)()
+        else:
+            application = await sync_to_async(Parcel.objects.filter(id=info_id).first)()
+
+        if application:
+            application.confirmed = False
+            await sync_to_async(application.save)()
+
+        user.curr_input = None
+        await sync_to_async(user.save)()
+
+        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                            message_id=message_id,
+                                            reply_markup=InlineKeyboardBuilder().as_markup(),
+                                            )
+
+        await bot.send_message(chat_id=chat_id,
+                               text='Заявка отклонена.',
+                               parse_mode='Markdown',
+                               )
+    
+    elif query == 'complete':
+        if user_id == config.MANAGER_ID:
+            info_type = call_data[1]
+            info_id = int(call_data[2])
+            info_price = float(call_data[3])
+
+            if info_type == 'flight':
+                application = await sync_to_async(Flight.objects.filter(id=info_id).first)()
+            else:
+                application = await sync_to_async(Parcel.objects.filter(id=info_id).first)()
+            
+            if application:
+                application.confirmed = True
+                application.price = info_price
+    
+                stop_id = await send_pickup_address(application, info_type)
+                if stop_id:
+                    application.circuit_id = stop_id
+                await sync_to_async(application.save)()
+
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+                
+                await bot.send_message(chat_id=chat_id,
+                               text=f'Заявка подтверждена. Стоимость *{info_price} ₪*.',
+                               parse_mode='Markdown',
+                               )
+
 
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
@@ -1186,7 +1335,6 @@ async def handle_photo(message: types.Message):
                     await sync_to_async(passport.file.save)(passport.original_filename, downloaded_file)
                     await sync_to_async(passport.save)()
                 except Exception as ex:
-                    print(ex)
                     passport = None
                     pass
 
@@ -1312,7 +1460,40 @@ async def handle_text(message):
     curr_input = user.curr_input
     input_info = await utils.escape_markdown(message.text)
 
-    if curr_input:
+    if curr_input and 'flightprice' in curr_input and user_id == config.MANAGER_ID:
+        data = curr_input.split('_')
+        flight_id = int(data[1])
+        price = round(await utils.validate_price(input_info), 2)
+
+        if price:
+            await bot.send_message(chat_id=user_id,
+                            text=f'Стоимость *{price} ₪*?',
+                            reply_markup=await keyboards.confirm_price_keyboard('flight', flight_id, price),
+                            parse_mode='Markdown',
+                            )
+        else:
+            await bot.send_message(chat_id=user_id,
+                            text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
+                            )
+
+    elif curr_input and 'parcelprice' in curr_input and user_id == config.MANAGER_ID:
+        data = curr_input.split('_')
+        parcel_id = int(data[1])
+        price = await utils.validate_price(input_info)
+
+        if price:
+            await bot.send_message(chat_id=user_id,
+                            text=f'Стоимость *{price} ₪*?',
+                            reply_markup=await keyboards.confirm_price_keyboard('parcel', parcel_id, price),
+                            parse_mode='Markdown',
+                            )
+
+        else:
+            await bot.send_message(chat_id=user_id,
+                            text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
+                            )
+
+    elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
         parcel = await sync_to_async(Parcel.objects.filter(user=user, complete__isnull=True).first)()
         if (flight and parcel) or (not flight and not parcel):

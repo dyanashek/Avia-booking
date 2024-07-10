@@ -65,13 +65,13 @@ class TGUserAdmin(admin.ModelAdmin):
 
 @admin.register(Parcel)
 class ParcelAdmin(admin.ModelAdmin):
-    list_display = ('family_name', 'variation', 'get_thumbnail', 'complete', 'finished')
-    list_filter = ('complete', 'finished')
-    readonly_fields = ('passport_photo_id',)
+    list_display = ('family_name', 'variation', 'get_thumbnail', 'complete', 'confirmed')
+    list_filter = ('complete', 'confirmed')
+    readonly_fields = ('passport_photo_id', 'confirmed', 'circuit_id')
 
 
 @admin.register(Flight)
 class FlightAdmin(admin.ModelAdmin):
-    list_display = ('family_name', 'route', 'departure_date', 'arrival_date', 'get_thumbnail', 'complete', 'finished')
-    list_filter = ('complete', 'finished', 'departure_date', 'arrival_date')
-    readonly_fields = ('passport_photo_id',)
+    list_display = ('family_name', 'route', 'departure_date', 'arrival_date', 'get_thumbnail', 'complete', 'confirmed')
+    list_filter = ('complete', 'confirmed', 'departure_date', 'arrival_date')
+    readonly_fields = ('passport_photo_id', 'confirmed', 'circuit_id')

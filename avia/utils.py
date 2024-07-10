@@ -24,6 +24,18 @@ async def validate_date(input_string):
     return date
 
 
+async def validate_price(input_string):
+    try:
+        price = float(input_string)
+    except:
+        return False
+    
+    if price > 0:
+        return price
+    
+    return False
+
+
 async def validate_passport(input_string):
     passport_pattern = r'\b[A-Z]{2}\d{7}\b'
     passports = re.findall(passport_pattern, input_string)

@@ -1,8 +1,11 @@
 from django.db import models
 from django.utils.html import format_html
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from easy_thumbnails.files import get_thumbnailer
 from filer.fields.image import FilerImageField
 
+from core.utils import send_pickup_address
 
 SEX_CHOICES = (
     ('M', 'Мужской',),
@@ -140,9 +143,12 @@ class Parcel(models.Model):
     passport_number = models.CharField(verbose_name='Номер паспорта', max_length=20, null=True, blank=True)
     passport_photo_parcel = FilerImageField(verbose_name='Фото паспорта', on_delete=models.SET_NULL, null=True, blank=True)
     passport_photo_id = models.CharField(verbose_name='TG id паспорта', max_length=200, null=True, blank=True)
-    complete = models.BooleanField(verbose_name='Заявка подтверждена', null=True, blank=True, default=None)
-    finished = models.BooleanField(verbose_name='Заявка обработана', null=True, blank=True, default=False)
+    complete = models.BooleanField(verbose_name='Заявка подтверждена пользователем', null=True, blank=True, default=None)
+    # finished = models.BooleanField(verbose_name='Заявка обработана', null=True, blank=True, default=False)
+    confirmed = models.BooleanField(verbose_name='Заявка подтверждена менеджером', null=True, blank=True, default=None)
+    price = models.FloatField(verbose_name='Стоимость', default=0)
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='parcels', null=True, blank=True)
+    circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
 
     class Meta:
         verbose_name = 'посылка'
@@ -150,7 +156,7 @@ class Parcel(models.Model):
     
     def __str__(self):
         return str(self.variation)
-    
+
     def get_thumbnail(self):
         image = '-'
         if self.passport_photo_parcel:
@@ -176,9 +182,12 @@ class Flight(models.Model):
     passport_number = models.CharField(verbose_name='Номер паспорта', max_length=20, null=True, blank=True)
     passport_photo_flight = FilerImageField(verbose_name='Фото паспорта', on_delete=models.SET_NULL, null=True, blank=True)
     passport_photo_id = models.CharField(verbose_name='TG id паспорта', max_length=200, null=True, blank=True)
-    complete = models.BooleanField(verbose_name='Заявка подтверждена', null=True, blank=True, default=None)
-    finished = models.BooleanField(verbose_name='Заявка обработана', null=True, blank=True, default=False)
+    complete = models.BooleanField(verbose_name='Заявка подтверждена пользователем', null=True, blank=True, default=None)
+    # finished = models.BooleanField(verbose_name='Заявка обработана', null=True, blank=True, default=False)
+    confirmed = models.BooleanField(verbose_name='Заявка подтверждена менеджером', null=True, blank=True, default=None)
+    price = models.FloatField(verbose_name='Стоимость', default=0)
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='flights', null=True, blank=True)
+    circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
 
     class Meta:
         verbose_name = 'перелет'
@@ -186,7 +195,7 @@ class Flight(models.Model):
     
     def __str__(self):
         return str(self.user.user_id)
-    
+
     def get_thumbnail(self):
         image = '-'
         if self.passport_photo_flight:
