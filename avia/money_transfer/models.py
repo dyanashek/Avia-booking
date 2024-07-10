@@ -83,6 +83,11 @@ class Transfer(models.Model):
         if self.address:
             self.receiver.addresses.add(self.address)
             self.receiver.save()
+        else:
+            if self.pick_up:
+                address = Address(address='Samarkand')
+                address.save()
+                self.address = address
         
         self.delivery.sender.receivers.add(self.receiver)
         self.delivery.sender.save()

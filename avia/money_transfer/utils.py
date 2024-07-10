@@ -17,6 +17,8 @@ def send_pickup_address(sender, delivery):
     if delivery.commission:
         items.append(f'комиссия: {delivery.commission}₪')
 
+    notes = ', '.join(items)
+    
     data = {
         'address': {
             'addressLineOne': delivery.sender_address.address,
@@ -32,6 +34,7 @@ def send_pickup_address(sender, delivery):
             'sellerOrderId': '3',
         },
         'activity': 'pickup',
+        'notes': notes,
     }
 
     try:
