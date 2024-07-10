@@ -20,7 +20,9 @@ class ManagerAdmin(VersionAdmin):
     list_display = ('telegram_id', 'updated_at')
     date_hierarchy = 'updated_at'
 
-
+    def has_module_permission(self, request):
+        return False
+        
 @admin.register(Address)
 class AddressAdmin(VersionAdmin):
     list_display = ('address',)

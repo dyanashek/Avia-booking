@@ -203,3 +203,50 @@ class Flight(models.Model):
         return image
     get_thumbnail.allow_tags = True
     get_thumbnail.short_description = u'Паспорт'
+
+
+class SimFare(models.Model):
+    title = models.CharField(verbose_name='Название тарифа', help_text='Отобразится на кнопке', max_length=100)
+    description = models.TextField(verbose_name='Описание тарифа')
+    price = models.FloatField(verbose_name='Ежемесячная стоимость')
+    my_order = models.PositiveIntegerField(default=0, blank=False, null=False)
+
+    class Meta:
+        verbose_name = 'вариант посылки'
+        verbose_name_plural = 'Варианты посылки'
+        ordering = ('my_order',)
+    
+    def __str__(self):
+        return self.title
+
+
+class UsersSim(models.Model):
+    user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='sim_cards', null=True, blank=True)
+    fare = models.ForeignKey(SimFare, verbose_name='Тариф', on_delete=models.CASCADE, related_name='sims', null=True, blank=True)
+    sim_phone = models.CharField(verbose_name='Номер телефона', max_length=25, unique=True)
+    created_at = models.DateField(verbose_name='Дата приобретения', auto_now_add=True)
+    next_payment = models.DateField(verbose_name='Дата следующего платежа')
+    pay_date = models.DateField(verbose_name='Планируемая дата оплаты', null=True, blank=True)
+    debt = models.FloatField(verbose_name='Задолженность', help_text='Отрицательная, при оплате наперед')
+    ready_to_pay = models.BooleanField(default=False)
+    circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
+
+    # алгоритм поиска тех, кому направлять уведомления: 
+    # -> смотрим у кого next_payment=today() и начисляем по тарифу dept
+    # -> dept больше определенного значения, ready_to_pay=False, pay_date=None
+    # -> после нахождения таких ставим им pay_date=today() 
+    # -> сразу после ищем тех, у кого pay_date=today и ready_to_pay=False
+    # -> отправляем им сообщения с вариантами "готов платить", "через неделю", "через месяц"
+    # -> если готов платить - меняем ready_to_pay на True и добавляем в circuit
+    # -> если нет, то переносим pay_date на нужное количество дней
+    # -> когда водитель забрал деньги - меняем pay_date на None, ready_to_pay на False
+    # и отправляем менеджеру вопрос, сколько денег забрал водитель
+    # -> вычитаем сумму из dept
+    
+    class Meta:
+        verbose_name = 'вариант посылки'
+        verbose_name_plural = 'Варианты посылки'
+        ordering = ('-created_at',)
+    
+    def __str__(self):
+        return self.sim_phone
