@@ -212,8 +212,8 @@ class SimFare(models.Model):
     my_order = models.PositiveIntegerField(default=0, blank=False, null=False)
 
     class Meta:
-        verbose_name = 'вариант посылки'
-        verbose_name_plural = 'Варианты посылки'
+        verbose_name = 'тариф симки'
+        verbose_name_plural = 'тарифы симок'
         ordering = ('my_order',)
     
     def __str__(self):
@@ -228,7 +228,7 @@ class UsersSim(models.Model):
     next_payment = models.DateField(verbose_name='Дата следующего платежа')
     pay_date = models.DateField(verbose_name='Планируемая дата оплаты', null=True, blank=True)
     debt = models.FloatField(verbose_name='Задолженность', help_text='Отрицательная, при оплате наперед')
-    ready_to_pay = models.BooleanField(default=False)
+    ready_to_pay = models.BooleanField(verbose_name='Готов оплачивать', default=False)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
 
     # алгоритм поиска тех, кому направлять уведомления: 
@@ -244,8 +244,8 @@ class UsersSim(models.Model):
     # -> вычитаем сумму из dept
     
     class Meta:
-        verbose_name = 'вариант посылки'
-        verbose_name_plural = 'Варианты посылки'
+        verbose_name = 'сим карта'
+        verbose_name_plural = 'сим карты'
         ordering = ('-created_at',)
     
     def __str__(self):

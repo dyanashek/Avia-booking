@@ -13,7 +13,7 @@ django.setup()
 
 from django.db.models import Q
 
-from core.models import TGText, Language, Route, ParcelVariation
+from core.models import TGText, Language, Route, ParcelVariation, SimFare
 
 
 async def choose_language_keyboard():
@@ -31,9 +31,11 @@ async def flight_or_parcel_keyboard(language):
 
     flight_button = await sync_to_async(TGText.objects.get)(slug='flight_button', language=language)
     parcel_button = await sync_to_async(TGText.objects.get)(slug='parcel_button', language=language)
+    sim_button = await sync_to_async(TGText.objects.get)(slug='sim_button', language=language)
 
     keyboard.add(types.InlineKeyboardButton(text=flight_button.text, callback_data = f'flight'))
     keyboard.add(types.InlineKeyboardButton(text=parcel_button.text, callback_data = f'parcel'))
+    keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'))
 
     return keyboard.as_markup()
 
@@ -98,7 +100,8 @@ async def choose_day_keyboard(days, language, direction='departure'):
             keyboard.row(*buttons)
             buttons = []
 
-    keyboard.row(types.InlineKeyboardButton(text='Назад', callback_data=f'curryear_{direction}'))
+    back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data=f'curryear_{direction}'))
 
     return keyboard.as_markup()
 
@@ -164,5 +167,62 @@ async def confirm_price_keyboard(info_type, info_id, price):
     keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f'complete_{info_type}_{info_id}_{price}'))
     keyboard.row(types.InlineKeyboardButton(text='Ввести заново', callback_data=f'price_{info_type}_{info_id}'))
     keyboard.row(types.InlineKeyboardButton(text='Отклонить заявку', callback_data=f'refuse_{info_type}_{info_id}'))
+
+    return keyboard.as_markup()
+
+
+async def sim_fares_keyboard():
+    keyboard = InlineKeyboardBuilder()
+
+    fares = await sync_to_async(SimFare.objects.all)()
+    async for fare in fares:
+        keyboard.row(types.InlineKeyboardButton(text=fare.title, callback_data = f'fare_{fare.pk}'))
+
+    return keyboard.as_markup()
+
+
+async def sim_confirm_or_hand_write_keyboard(input_info, language):
+    keyboard = InlineKeyboardBuilder()
+
+    confirm_button = await sync_to_async(TGText.objects.get)(slug='confirm_button', language=language)
+
+    keyboard.row(types.InlineKeyboardButton(text=confirm_button.text, callback_data=f's-confirm_{input_info}'))
+
+    handwrite_button = await sync_to_async(TGText.objects.get)(slug='hand_write_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=handwrite_button.text, callback_data=f's-hand_{input_info}'))
+
+    return keyboard.as_markup()
+
+
+async def sim_confirmation_keyboard(fare_id, language):
+    keyboard = InlineKeyboardBuilder()
+
+    confirm_button = await sync_to_async(TGText.objects.get)(slug='confirm_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=confirm_button.text, callback_data=f's-confirm_fare_{fare_id}'))
+    
+    cancel_button = await sync_to_async(TGText.objects.get)(slug='cancel_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=cancel_button.text, callback_data='s-cancel'))
+
+    back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data='back_fares'))
+
+    return keyboard.as_markup()
+
+
+async def sim_confirm_application_keyboard(user_id, fare_id):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f'm-sim_{user_id}_{fare_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Отклонить', callback_data=f's-refuse'))
+
+    return keyboard.as_markup()
+
+
+async def sim_confirm_phone_keyboard(user_id, fare_id):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f's-complete_{user_id}_{fare_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Ввести заново', callback_data=f's-retype_{user_id}_{fare_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Отклонить заявку', callback_data=f's-refuse'))
 
     return keyboard.as_markup()

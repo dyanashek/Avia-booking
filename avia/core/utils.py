@@ -51,3 +51,39 @@ async def send_pickup_address(application, application_type):
             stop_id = False
 
     return stop_id
+
+
+async def send_sim_delivery_address(phone, user, fare):
+    notes = f'Симка, {fare.title}, {phone}, за тариф(первый месяц) + подключение: {fare.price + 50} ₪'
+
+    data = {
+        'address': {
+            'addressLineOne': user.addresses,
+            'country': 'Israel',
+        },
+        'recipient': {
+            'name': f'{user.name} {user.family_name}',
+            'phone': phone,
+        },
+        'orderInfo': {
+            'products': [fare.title],
+            'sellerOrderId': '4',
+        },
+        'activity': 'delivery',
+        'notes': notes,
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            ssl_context = ssl.create_default_context()
+            ssl_context.load_verify_locations(certifi.where())
+            async with session.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data, ssl=ssl_context) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        stop_id = response_data.get('id')
+                    else:
+                        stop_id = False
+        except Exception as ex:
+            stop_id = False
+
+    return stop_id

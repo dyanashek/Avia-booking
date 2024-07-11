@@ -1,7 +1,8 @@
 from django.contrib import admin
+from django.db.models import Q
 from adminsortable2.admin import SortableAdminMixin
 
-from core.models import Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight
+from core.models import Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, UsersSim
 
 
 @admin.register(Language)
@@ -18,12 +19,18 @@ class TGTextAdmin(SortableAdminMixin, admin.ModelAdmin):
     actions = ('add_language',)
     readonly_fields = ('slug',)
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.slug:
+            return ('slug',)
+
+        return tuple()
+
     def add_language(self, request, queryset):
         selected_language = queryset.first().language
         added_language = Language.objects.last()
 
-        if not TGText.objects.filter(language=added_language).exists():
-            for text in TGText.objects.filter(language=selected_language).all()[::-1]:
+        for text in TGText.objects.filter(language=selected_language).all()[::-1]:
+            if not TGText.objects.filter(Q(slug=text.slug) & Q(language=added_language)).exists():
                 TGText(slug=text.slug, text=text.text, language=added_language).save()
         
     add_language.short_description = "Добавить другой язык"
@@ -39,8 +46,8 @@ class ParcelVariationAdmin(SortableAdminMixin, admin.ModelAdmin):
         selected_language = queryset.first().language
         added_language = Language.objects.last()
 
-        if not ParcelVariation.objects.filter(language=added_language).exists():
-            for variation in ParcelVariation.objects.filter(language=selected_language).all()[::-1]:
+        for variation in ParcelVariation.objects.filter(language=selected_language).all()[::-1]:
+            if not ParcelVariation.objects.filter(Q(name=variation.name) & Q(language=added_language)).exists():
                 ParcelVariation(name=variation.name, language=added_language).save()
         
     add_language.short_description = "Добавить другой язык"
@@ -75,3 +82,16 @@ class FlightAdmin(admin.ModelAdmin):
     list_display = ('family_name', 'route', 'departure_date', 'arrival_date', 'get_thumbnail', 'complete', 'confirmed')
     list_filter = ('complete', 'confirmed', 'departure_date', 'arrival_date')
     readonly_fields = ('passport_photo_id', 'confirmed', 'circuit_id')
+
+
+@admin.register(SimFare)
+class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
+    list_display = ('title', 'price', 'my_order')
+
+
+@admin.register(UsersSim)
+class UsersSimAdmin(admin.ModelAdmin):
+    list_display = ('user', 'fare', 'debt', 'ready_to_pay')
+    list_filter = ('ready_to_pay',)
+    fields = ('user', 'fare', 'debt', 'next_payment', 'pay_date', 'ready_to_pay')
+    readonly_fields = ('pay_date', 'ready_to_pay',)

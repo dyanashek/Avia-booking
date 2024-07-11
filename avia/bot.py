@@ -1,5 +1,6 @@
 import os
 import datetime
+import uuid
 
 import django
 
@@ -18,8 +19,8 @@ from django.core.files.base import ContentFile
 from filer.models import Image, Folder
 from django.db.models import Q
 
-from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation
-from core.utils import send_pickup_address
+from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, UsersSim
+from core.utils import send_pickup_address, send_sim_delivery_address
 
 import config
 import keyboards
@@ -813,9 +814,6 @@ async def callback_query(call: types.CallbackQuery):
                         parse_mode='Markdown',
                         )
                 
-                
-
-
                 name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                 family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
                 passport = await sync_to_async(TGText.objects.get)(slug='passport', language=user_language)
@@ -1271,6 +1269,373 @@ async def callback_query(call: types.CallbackQuery):
                                parse_mode='Markdown',
                                )
 
+    elif query == 'sim':
+        users_sim = await sync_to_async(user.sim_cards.first)()
+        if users_sim:
+            #TODO:
+            ...
+        else:
+            user.curr_input = 'user_passport'
+            await sync_to_async(user.save)()
+
+            if user.passport_photo_id and user.addresses:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
+                address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+                reply_text = f'{reuse.text}\n\n'
+                reply_text += f'{address_text.text} {user.addresses}'
+
+                await bot.send_photo(chat_id=user_id,
+                            caption=reply_text,
+                            photo=user.passport_photo_id,
+                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('s-confirmation', user_language),
+                            parse_mode='Markdown',
+                            disable_notification=False,
+                            )
+
+    elif query == 's-confirm':
+        info = call_data[1]
+ 
+        if curr_input and curr_input == 'user_passport':
+            if info == 's-confirmation':
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                user.curr_input = 'sim-fare'
+                await sync_to_async(user.save)()
+
+                choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+                await bot.send_message(chat_id=chat_id,
+                               text=choose_fare.text,
+                               reply_markup=await keyboards.sim_fares_keyboard(),
+                               parse_mode='Markdown',
+                               )
+            
+            else:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+
+        elif curr_input and curr_input == 'sim-confirmation':
+            try:
+                fare_id = int(call_data[2])
+            except:
+                fare_id = None
+            fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
+            if info == 'fare' and fare:
+                user.curr_input = None
+                await sync_to_async(user.save)()
+                
+                address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+                fare_description = await sync_to_async(TGText.objects.get)(slug='fare_description', language=user_language)
+                fare_price = await sync_to_async(TGText.objects.get)(slug='fare_price', language=user_language)
+                
+                reply_text = f'''
+                            *Заявка от пользователя на симку:*\
+                            \n\
+                            \n*{address_text.text}* {user.addresses}\
+                            \n\
+                            \n*{fare_description.text}*\
+                            \n{fare.description}\
+                            \n*{fare_price.text}* {fare.price}₪\
+                            \n\
+                            \nДля подтверждения необходимо будет внести номер выдаваемой симки\
+                            '''
+                if user.username:
+                    reply_text += f'\n\nПользователь: @{user.username}'
+                else:
+                    reply_text += f'\n\nПользователь без валидного никнейма.'
+
+                await bot.send_photo(chat_id=config.SIM_MANAGER_ID,
+                                caption=reply_text,
+                                photo=user.passport_photo_id,
+                                reply_markup=await keyboards.sim_confirm_application_keyboard(user.pk, fare.pk),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                ) 
+
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+                if user.username:
+                    reply_text = await sync_to_async(TGText.objects.get)(slug='contact_soon', language=user_language)
+                else:
+                    reply_text = await sync_to_async(TGText.objects.get)(slug='sim_application_accepted', language=user_language)
+
+                await bot.send_message(chat_id=chat_id,
+                        text=reply_text.text,
+                        parse_mode='Markdown',
+                        )
+                
+            else:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+
+        else:
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=error.text,
+                            parse_mode='Markdown',
+                            )
+
+    elif query == 's-hand':
+        info = call_data[1]
+
+        if curr_input and curr_input == 'user_passport':
+            if info == 's-confirmation':
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
+
+                await bot.send_message(chat_id=user_id,
+                        text=passport_request.text,
+                        parse_mode='Markdown',
+                        )
+        else:
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=error.text,
+                            parse_mode='Markdown',
+                            )
+
+    elif query == 'fare':
+        fare_id = int(call_data[1])
+        fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
+
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except:
+            pass
+
+        if curr_input and curr_input == 'sim-fare' and user.addresses and user.passport_photo_id and fare:
+            user.curr_input = 'sim-confirmation'
+            await sync_to_async(user.save)()
+
+            confirm_application = await sync_to_async(TGText.objects.get)(slug='confirm_application', language=user_language)
+            address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+            fare_description = await sync_to_async(TGText.objects.get)(slug='fare_description', language=user_language)
+            fare_price = await sync_to_async(TGText.objects.get)(slug='fare_price', language=user_language)
+
+            short_month = await sync_to_async(TGText.objects.get)(slug='short_month', language=user_language)
+            new_sim_tax = await sync_to_async(TGText.objects.get)(slug='new_sim_tax', language=user_language)
+
+            reply_text = f'''
+                        *{confirm_application.text}*\
+                        \n\
+                        \n*{address_text.text}* {user.addresses}\
+                        \n\
+                        \n*{fare_description.text}*\
+                        \n{fare.description}\
+                        \n*{fare_price.text}* {fare.price}₪/{short_month.text} {new_sim_tax.text}\
+                        '''
+
+            await bot.send_photo(chat_id=user_id,
+                               caption=reply_text,
+                               photo=user.passport_photo_id,
+                               reply_markup=await keyboards.sim_confirmation_keyboard(fare_id, user_language),
+                               parse_mode='Markdown',
+                               disable_notification=False,
+                               )
+
+        else: 
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=error.text,
+                            parse_mode='Markdown',
+                            )
+    
+    elif query == 's-cancel':
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except:
+            pass
+
+        if curr_input and curr_input == 'sim-confirmation':
+            user.curr_input = None
+            await sync_to_async(user.save)()
+
+            reply_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=user_language)
+
+            await bot.send_message(chat_id=chat_id,
+                                text=reply_text.text,
+                                reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+        else:
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=error.text,
+                            parse_mode='Markdown',
+                            )
+
+    elif query == 'back':
+        destination = call_data[1]
+
+        if destination == 'fares':
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            if curr_input and curr_input == 'sim-confirmation':
+                user.curr_input = 'sim-fare'
+                await sync_to_async(user.save)()
+
+                choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+                await bot.send_message(chat_id=chat_id,
+                               text=choose_fare.text,
+                               reply_markup=await keyboards.sim_fares_keyboard(),
+                               parse_mode='Markdown',
+                               )
+
+            else:
+                error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+
+    elif query == 's-refuse':
+        user.curr_input = None
+        await sync_to_async(user.save)()
+
+        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                            message_id=message_id,
+                                            reply_markup=InlineKeyboardBuilder().as_markup(),
+                                            )
+
+        await bot.send_message(chat_id=chat_id,
+                               text='Заявка отклонена.',
+                               parse_mode='Markdown',
+                               )
+    
+    elif query == 'm-sim':
+        if user_id == config.SIM_MANAGER_ID:
+            sim_user_id = int(call_data[1])
+            fare_id = int(call_data[2])
+
+            user.curr_input = f'manager-sim_{sim_user_id}_{fare_id}'
+            await sync_to_async(user.save)()
+
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                            message_id=message_id,
+                                            reply_markup=InlineKeyboardBuilder().as_markup(),
+                                            )
+
+            await bot.send_message(chat_id=chat_id,
+                                text='Введите номер выдаваемой симки',
+                                parse_mode='Markdown',
+                                )
+    
+    elif query == 's-retype':
+        if user_id == config.SIM_MANAGER_ID:
+            sim_user_id = int(call_data[1])
+            fare_id = int(call_data[2])
+
+            user.curr_input = f'manager-sim_{sim_user_id}_{fare_id}'
+            await sync_to_async(user.save)()
+
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            await bot.send_message(chat_id=chat_id,
+                                text='Введите номер выдаваемой симки',
+                                parse_mode='Markdown',
+                                )
+    
+    elif query == 's-complete':
+
+        if user_id == config.SIM_MANAGER_ID:
+            sim_user_id = int(call_data[1])
+            fare_id = int(call_data[2])
+
+            data = user.curr_input.split('_')
+            phone = data[1]
+
+            if curr_input and 'manager-sim' in curr_input and len(data) == 2:
+                user.curr_input = None
+                await sync_to_async(user.save)()
+
+                sim_user = await sync_to_async(TGUser.objects.filter(id=sim_user_id).first)()
+                fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
+
+                stop_id = await send_sim_delivery_address(phone, sim_user, fare)
+                if stop_id:
+                    users_sim = UsersSim(
+                        user=sim_user,
+                        fare=fare,
+                        sim_phone=phone,
+                        next_payment=(datetime.datetime.utcnow() + datetime.timedelta(days=31)).date(),
+                        debt=(50 + fare.price),
+                        circuit_id=stop_id
+                    )
+                    await sync_to_async(users_sim.save)()
+
+                    try:
+                        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                    except:
+                        pass
+                    
+                    await bot.send_message(chat_id=chat_id,
+                                text=f'Заявка подтверждена. Номер симки *{phone}*.',
+                                parse_mode='Markdown',
+                                )
+                else:
+                    await bot.send_message(chat_id=chat_id,
+                                text=f'Ошибка при отправке в circuit, попробуйте еще раз позднее.',
+                                parse_mode='Markdown',
+                                )
+
+            else:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+
+
 
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
@@ -1392,6 +1757,72 @@ async def handle_photo(message: types.Message):
                                 parse_mode='Markdown',
                                 )
 
+    elif curr_input and curr_input == 'user_passport':
+        counter = 0
+        try:
+            file_info = await bot.get_file(photo)
+            downloaded_file = await bot.download_file(file_info.file_path)
+            
+            photo_info = await functions.parse_passport(downloaded_file)
+        except Exception as ex:
+            counter = config.PARSE_COUNT
+            photo_info = [None, None, None, None, None, None, None]
+
+
+        for info in photo_info:
+            if info:
+                counter += 1
+
+        if counter >= config.PARSE_COUNT:
+            folder, _ = await sync_to_async(Folder.objects.get_or_create)(name="Паспорта")
+
+            try:
+                passport = Image(
+                    folder=folder,
+                    original_filename=f"{uuid.uuid4()}.{file_info.file_path.split('.')[-1]}",
+                )
+                await sync_to_async(passport.file.save)(passport.original_filename, downloaded_file)
+                await sync_to_async(passport.save)()
+            except Exception as ex:
+                passport = None
+                pass
+
+            name, family_name, passport_number, sex, birth_date, start_date, end_date = photo_info
+
+            user.passport_photo_user = passport
+            if name:
+                user.name = await utils.escape_markdown(name)
+            if family_name:
+                user.family_name = await utils.escape_markdown(family_name)
+            if passport_number:
+                user.passport_number = passport_number
+            if sex:
+                user.sex = sex
+            if birth_date:
+                user.birth_date = birth_date
+            if start_date:
+                user.start_date = start_date
+            if end_date:
+                user.end_date = end_date
+            user.passport_photo_id = photo
+            user.curr_input = 's-address'
+            await sync_to_async(user.save)()
+
+            question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            reply_markup=types.ReplyKeyboardRemove(),
+                            parse_mode='Markdown',
+                            disable_notification=True,
+                            )
+
+        else:
+            wrong_passport = await sync_to_async(TGText.objects.get)(slug='wrong_passport', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=wrong_passport.text,
+                            parse_mode='Markdown',
+                            )
+
 
 @dp.message(F.contact)
 async def handle_contact(message: types.Message):
@@ -1492,6 +1923,39 @@ async def handle_text(message):
             await bot.send_message(chat_id=user_id,
                             text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
                             )
+
+    elif curr_input and 'manager-sim' in curr_input and user_id == config.SIM_MANAGER_ID:
+        data = curr_input.split('_')
+        sim_user_id = int(data[1])
+        fare_id = int(data[2])
+        phone = await utils.validate_phone(input_info)
+        if phone:
+            user.curr_input = f'manager-sim_{phone}'
+            await sync_to_async(user.save)()
+
+            await bot.send_message(chat_id=user_id,
+                            text=f'Номер телефона выдаваемой симки: *{phone}*?',
+                            reply_markup=await keyboards.sim_confirm_phone_keyboard(sim_user_id, fare_id),
+                            parse_mode='Markdown',
+                            )
+        else:
+            await bot.send_message(chat_id=user_id,
+                            text='Не похоже на корректный номер телефона, введите еще раз.',
+                            )
+
+    elif curr_input and curr_input == 's-address':
+        user.addresses = input_info 
+        user.curr_input = 'sim-fare'
+        await sync_to_async(user.save)()
+
+        await sync_to_async(user.save)()
+
+        choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+        await bot.send_message(chat_id=chat_id,
+                        text=choose_fare.text,
+                        reply_markup=await keyboards.sim_fares_keyboard(),
+                        parse_mode='Markdown',
+                        )
 
     elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
