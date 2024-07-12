@@ -1318,6 +1318,19 @@ async def callback_query(call: types.CallbackQuery):
                             parse_mode='Markdown',
                             disable_notification=False,
                             )
+            
+            else:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
+
+                await bot.send_message(chat_id=user_id,
+                        text=passport_request.text,
+                        parse_mode='Markdown',
+                        )
 
     elif query == 's-confirm':
         info = call_data[1]
@@ -1772,7 +1785,7 @@ async def callback_query(call: types.CallbackQuery):
                             reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
                             parse_mode='Markdown',
                             )
-                            
+
         else:
             user.curr_input = 'sim_collect_money_address'
             await sync_to_async(user.save)()
