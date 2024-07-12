@@ -16,8 +16,18 @@ class Command(BaseCommand):
             ['sim_application_accepted', f'Ваша заявка принята, свяжитесь с менеджером @{SIM_MANAGER_USERNAME} для назначения доставки и обсуждения деталей'],
             ['short_month', 'мес.'],
             ['new_sim_tax', '+50₪ единоразово за подключение'],
+            ['sim_debt', 'Ваша задолженность по симкарте'],
+            ['sim_debt_future', 'Ваша задолженность по симкарте составит'],
+            ['fare', 'Тариф:'],
+            ['payment_needed', 'Ее необходимо погасить в ближайшее время. Выберите из вариантов ниже:'],
+            ['ready_pay_button', 'Готов оплатить'],
+            ['later_week_button', 'Оплачу через неделю'],
+            ['later_month_button', 'Оплачу через месяц'],
+            ['pay_date', 'Дата платежа:'],
+            ['address_correct_question', 'Это правильный адрес?'],
+            ['collect_sim_money', 'Наш водитель свяжется с вами для уточнения деталей по оплате.']
         ]
-
+        
         for item in texts:
             slug = item[0]
             text = item[1]

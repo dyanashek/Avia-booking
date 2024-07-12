@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
+from core.models import UsersSim
 from money_transfer.models import Sender, Receiver, Delivery, Status
 from money_transfer.utils import update_delivery_pickup_status
 
@@ -71,4 +72,12 @@ def stop_status(request):
             
             delivery.save()
     
-    return HttpResponse('POST request processed')
+    if order_id and order_id == '5':
+        users_sim = UsersSim.objects.filter(circuit_id=stop_id).first()
+        if users_sim:
+            users_sim.circuit_id_collect = None
+            users_sim.ready_to_pay = False
+            users_sim.pay_date = None
+            users_sim.save()
+    
+    return HttpResponse()

@@ -227,21 +227,23 @@ class UsersSim(models.Model):
     created_at = models.DateField(verbose_name='Дата приобретения', auto_now_add=True)
     next_payment = models.DateField(verbose_name='Дата следующего платежа')
     pay_date = models.DateField(verbose_name='Планируемая дата оплаты', null=True, blank=True)
-    debt = models.FloatField(verbose_name='Задолженность', help_text='Отрицательная, при оплате наперед')
+    debt = models.FloatField(verbose_name='Задолженность', help_text='Отрицательная, при оплате наперед. Изменить вручную после получения денег.')
     ready_to_pay = models.BooleanField(verbose_name='Готов оплачивать', default=False)
-    circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
+    notified = models.BooleanField(verbose_name='Уведомлен сегодня', default=False)
+    circuit_id = models.CharField(verbose_name='Circuit id (delivery_sim)', max_length=250, blank=True, null=True, unique=True)
+    circuit_id_collect = models.CharField(verbose_name='Circuit id (collect money)', help_text='После получения денег - удалить.', max_length=250, blank=True, null=True, unique=True)
 
     # алгоритм поиска тех, кому направлять уведомления: 
-    # -> смотрим у кого next_payment=today() и начисляем по тарифу dept
-    # -> dept больше определенного значения, ready_to_pay=False, pay_date=None
-    # -> после нахождения таких ставим им pay_date=today() 
-    # -> сразу после ищем тех, у кого pay_date=today и ready_to_pay=False
-    # -> отправляем им сообщения с вариантами "готов платить", "через неделю", "через месяц"
-    # -> если готов платить - меняем ready_to_pay на True и добавляем в circuit
-    # -> если нет, то переносим pay_date на нужное количество дней
-    # -> когда водитель забрал деньги - меняем pay_date на None, ready_to_pay на False
-    # и отправляем менеджеру вопрос, сколько денег забрал водитель
-    # -> вычитаем сумму из dept
+    # !-> смотрим у кого next_payment=today() и начисляем по тарифу dept
+    # !-> dept больше определенного значения, ready_to_pay=False, pay_date=None
+    # !-> после нахождения таких ставим им pay_date=today() и notified=False 
+    # !-> сразу после ищем тех, у кого pay_date=today и ready_to_pay=False и notified=False
+    # !-> отправляем им сообщения с вариантами "готов платить", "через неделю", "через месяц"
+    # !-> если готов платить - меняем ready_to_pay на True, notified на False, pay_date на today() и добавляем в circuit
+    # !-> если нет, то переносим pay_date на нужное количество дней, notified меняем на False
+    # !-> когда водитель забрал деньги - меняем pay_date на None, ready_to_pay на False, удаляем circuit_id
+    # ?-> отправляем менеджеру (водителю) вопрос, сколько денег забрал водитель
+    # ?-> вычитаем сумму из dept
     
     class Meta:
         verbose_name = 'сим карта'

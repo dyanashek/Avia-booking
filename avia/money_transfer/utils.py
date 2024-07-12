@@ -17,7 +17,8 @@ def send_pickup_address(sender, delivery):
     if delivery.commission:
         items.append(f'комиссия: {delivery.commission}₪')
 
-    notes = ', '.join(items)
+    notes = 'Отправка денег, '
+    notes += ', '.join(items)
     
     data = {
         'address': {

@@ -20,7 +20,7 @@ from filer.models import Image, Folder
 from django.db.models import Q
 
 from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, UsersSim
-from core.utils import send_pickup_address, send_sim_delivery_address
+from core.utils import send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address
 
 import config
 import keyboards
@@ -1272,8 +1272,30 @@ async def callback_query(call: types.CallbackQuery):
     elif query == 'sim':
         users_sim = await sync_to_async(user.sim_cards.first)()
         if users_sim:
-            #TODO:
-            ...
+            fare = await sync_to_async(lambda: users_sim.fare)()
+            fare_description = await sync_to_async(TGText.objects.get)(slug='fare_description', language=user_language)
+            fare_price = await sync_to_async(TGText.objects.get)(slug='fare_price', language=user_language)
+            short_month = await sync_to_async(TGText.objects.get)(slug='short_month', language=user_language)
+            sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt', language=user_language)
+
+            reply_text = f'''
+                          *{fare_description.text}*\
+                          \n{fare.description}\
+                          \n\
+                          \n{fare_price.text} {fare.price}₪/{short_month.text}\
+                          \n\
+                          \n*{sim_debt.text}: {users_sim.debt}₪*\
+                          '''
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+            
+            await bot.send_message(chat_id=chat_id,
+                                    text=reply_text,
+                                    parse_mode='Markdown',
+                                    )
+
         else:
             user.curr_input = 'user_passport'
             await sync_to_async(user.save)()
@@ -1393,6 +1415,41 @@ async def callback_query(call: types.CallbackQuery):
                                 parse_mode='Markdown',
                                 )
 
+        elif info == 'address':
+            sim_card = await sync_to_async(user.sim_cards.first)()
+
+            if sim_card and not sim_card.circuit_id_collect and sim_card.debt >= 200:
+                reply = await sync_to_async(TGText.objects.get)(slug='collect_sim_money', language=user_language)
+
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+
+                await bot.send_message(chat_id=chat_id,
+                                    text=reply.text,
+                                    parse_mode='Markdown',
+                                    )
+
+                stop_id = await send_sim_money_collect_address(sim_card.sim_phone, user, sim_card.debt)
+
+                if stop_id:
+                    sim_card.circuit_id_collect = stop_id
+                    sim_card.ready_to_pay = True
+                    await sync_to_async(sim_card.save)()
+
+            else:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1421,6 +1478,22 @@ async def callback_query(call: types.CallbackQuery):
                         text=passport_request.text,
                         parse_mode='Markdown',
                         )
+        
+        elif info == 'address':
+            user.curr_input = 'sim_collect_money_address'
+            await sync_to_async(user.save)()
+
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=address_question.text,
+                            parse_mode='Markdown',
+                            )
+
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1635,6 +1708,85 @@ async def callback_query(call: types.CallbackQuery):
                                 parse_mode='Markdown',
                                 )
 
+    elif query == 'later':
+        sim_card = await sync_to_async(user.sim_cards.first)()
+
+        if sim_card and not sim_card.ready_to_pay:
+            period = call_data[1]
+            if period == 'week':
+                days = 7
+                debt = sim_card.debt
+            elif period == 'month':
+                days = 31
+                fare_price = await sync_to_async(lambda: sim_card.fare.price)()
+                debt = sim_card.debt + fare_price
+
+            sim_card.pay_date = (datetime.datetime.utcnow() + datetime.timedelta(days=days)).date()
+            sim_card.notified = False
+            await sync_to_async(sim_card.save)()
+
+            pay_date_text = await sync_to_async(TGText.objects.get)(slug='pay_date', language=user_language)
+            sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt_future', language=user_language)
+            human_pay_date = sim_card.pay_date.strftime('%d.%m.%Y')
+            reply_text = f'''
+                    *{sim_card.sim_phone}*\
+                    \n{sim_debt.text}:\
+                    \n*{debt} ₪*\
+                    \n{pay_date_text.text} *{human_pay_date}*\
+                    '''
+
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+
+            await bot.send_message(chat_id=user_id,
+                            text=reply_text,
+                            parse_mode='Markdown',
+                            )
+
+        else:
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=error.text,
+                            parse_mode='Markdown',
+                            )
+
+    elif query == 'readypay':
+        if user.addresses:
+            address_question = await sync_to_async(TGText.objects.get)(slug='address_correct_question', language=user_language)
+            reply_text = f'{address_question.text}\n*{user.addresses}*'
+
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+
+            await bot.send_message(chat_id=chat_id,
+                            text=reply_text,
+                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
+                            parse_mode='Markdown',
+                            )
+                            
+        else:
+            user.curr_input = 'sim_collect_money_address'
+            await sync_to_async(user.save)()
+
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=address_question.text,
+                            parse_mode='Markdown',
+                            )
 
 
 @dp.message(F.photo)
@@ -1779,7 +1931,7 @@ async def handle_photo(message: types.Message):
             try:
                 passport = Image(
                     folder=folder,
-                    original_filename=f"{uuid.uuid4()}.{file_info.file_path.split('.')[-1]}",
+                    original_filename=f"{uuid.uuid4()}_{user.pk}.{file_info.file_path.split('.')[-1]}",
                 )
                 await sync_to_async(passport.file.save)(passport.original_filename, downloaded_file)
                 await sync_to_async(passport.save)()
@@ -1957,6 +2109,20 @@ async def handle_text(message):
                         parse_mode='Markdown',
                         )
 
+    elif curr_input and curr_input == 'sim_collect_money_address':
+        user.curr_input = None
+        user.addresses = input_info
+        await sync_to_async(user.save)()
+
+        address_question = await sync_to_async(TGText.objects.get)(slug='address_correct_question', language=user_language)
+        reply_text = f'{address_question.text}\n*{input_info}*'
+
+        await bot.send_message(chat_id=chat_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
+                                parse_mode='Markdown',
+                                )
+
     elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
         parcel = await sync_to_async(Parcel.objects.filter(user=user, complete__isnull=True).first)()
@@ -1972,6 +2138,7 @@ async def handle_text(message):
                             reply_markup=types.ReplyKeyboardRemove(),
                             parse_mode='Markdown',
                             )
+
         else:
             if curr_input == 'name':
                 if flight:
@@ -2242,7 +2409,7 @@ async def handle_text(message):
                 address = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
 
                 if flight:
-                    flight.address = input_info 
+                    flight.address = input_info
                     await sync_to_async(flight.save)()
 
                     route = await sync_to_async(TGText.objects.get)(slug='route', language=user_language)
