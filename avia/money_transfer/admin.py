@@ -55,7 +55,7 @@ class ReceiverAdmin(VersionAdmin):
 
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
-    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'commission')
+    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission')
     list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message')
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status')
@@ -73,7 +73,7 @@ class DeliveryAdmin(VersionAdmin):
         if obj and obj.valid:
             return [field.name for field in self.model._meta.fields]
 
-        return ('commission', 'valid', 'status_message', 'circuit_id')
+        return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd',)
 
 
 @admin.register(Rate)

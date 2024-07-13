@@ -3,9 +3,10 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+from django.db.models import Q
 
 from core.models import UsersSim
-from money_transfer.models import Sender, Receiver, Delivery, Status
+from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission
 from money_transfer.utils import update_delivery_pickup_status
 
 # Create your views here.
@@ -40,6 +41,38 @@ def get_receiver_addresses(request):
             address_options += f'<option value="{address.id}">{address.address}</option>'
 
         return JsonResponse({'addresses': address_options})
+
+
+@csrf_exempt
+def calculate_commission(request):
+    try:
+        usd_amount = int(request.GET.get('usd_amount'))
+    except:
+        usd_amount = 0
+    
+    try:
+        ils_amount = int(request.GET.get('ils_amount'))
+    except:
+        ils_amount = 0
+        
+    ils_rate = Rate.objects.get(slug='usd-ils').rate
+    usd_amount = round(usd_amount + ils_amount / ils_rate,2)
+
+    commission = Commission.objects.filter(Q(Q(low_value__lte=usd_amount) & Q(high_value__gte=usd_amount)) | 
+                                Q(Q(low_value__lte=usd_amount) & Q(high_value__isnull=True))).first()
+
+    if commission:
+        unit = commission.unit
+        value = commission.value
+
+        if unit == 1:
+            commission = round(usd_amount * ils_rate * (value / 100), 2)
+        else:
+            commission = value
+    else:
+        commission = 0
+
+    return JsonResponse({'total_usd': f'{usd_amount}$', 'commission': f'{commission}₪'})
 
 
 @csrf_exempt

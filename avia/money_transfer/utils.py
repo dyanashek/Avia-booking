@@ -91,7 +91,6 @@ def delivery_to_gspred(delivery):
                 pickup,
                 address,
                 transfer.usd_amount,
-                transfer.ils_amount,
             ]
         else:
             transfer_data = [
@@ -110,14 +109,13 @@ def delivery_to_gspred(delivery):
                 pickup,
                 address,
                 transfer.usd_amount,
-                transfer.ils_amount,
             ]
         
         delivery_data.append(transfer_data)
 
     first_row = get_first_empty_row()
     end_row = first_row + len(delivery_data) - 1
-    work_sheet.update(f"A{first_row}:P{end_row}", delivery_data)
+    work_sheet.update(f"A{first_row}:O{end_row}", delivery_data)
 
 
 def update_delivery_pickup_status(delivery_id, comment):

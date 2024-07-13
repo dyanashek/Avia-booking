@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+TELEGRAM_DRIVERS_TOKEN = os.getenv('TELEGRAM_DRIVERS_TOKEN')
 MANAGER_ID = os.getenv('MANAGER_ID')
 MANAGER_USERNAME = os.getenv('MANAGER_USERNAME')
 SIM_MANAGER_ID = os.getenv('SIM_MANAGER_ID')

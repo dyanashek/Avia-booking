@@ -88,6 +88,7 @@ def handle_sims():
     notify_users(users_sims)
 
 
+
 def run_scheduler():
     if not os.environ.get('scheduler_running'):
         os.environ['scheduler_running'] = 'true'

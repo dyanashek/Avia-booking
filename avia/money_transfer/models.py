@@ -69,7 +69,6 @@ class Transfer(models.Model):
     address = models.ForeignKey(Address, verbose_name='Адрес получателя', related_name='receivers_deliveries', blank=True, null=True, on_delete=models.SET_NULL)
     pick_up = models.BooleanField(verbose_name='Доставка до адреса', default=False)
     usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
-    ils_amount = models.FloatField(verbose_name='Сумма в шекелях', default=0)
 
     class Meta:
         verbose_name = 'получатель'
@@ -80,7 +79,7 @@ class Transfer(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         super().save()
-        if self.address:
+        if self.address and self.address.address != 'Samarkand':
             self.receiver.addresses.add(self.address)
             self.receiver.save()
         else:
@@ -91,6 +90,32 @@ class Transfer(models.Model):
         
         self.delivery.sender.receivers.add(self.receiver)
         self.delivery.sender.save()
+
+        super().save(*args, **kwargs)
+
+
+class Delivery(models.Model):
+    sender = models.ForeignKey(Sender, verbose_name='Отправитель', related_name='deliveries', on_delete=models.CASCADE)
+    sender_address = models.ForeignKey(Address, verbose_name='Адрес отправителя', related_name='senders_deliveries', null=True, on_delete=models.SET_NULL)
+    usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
+    ils_amount = models.FloatField(verbose_name='Сумма в шекелях', default=0)
+    total_usd = models.FloatField(verbose_name='Итого в долларах', help_text='Рассчитается автоматически', default=0)
+    valid = models.BooleanField(verbose_name='Валидный заказ', blank=True, null=True, default=None)
+    status_message = models.CharField(verbose_name='Статус заказа', blank=True, null=True, max_length=200)
+    status = models.ForeignKey('Status', verbose_name='Статус', null=True, default=None, on_delete=models.SET_NULL)
+    commission = models.FloatField(verbose_name='Комиссия (₪)', help_text='Рассчитается автоматически', default=0)
+    circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
+
+    class Meta:
+        verbose_name = 'доставка'
+        verbose_name_plural = 'доставки'
+
+    def __str__(self):
+        return f'{self.sender.name} - {self.sender.phone}'
+
+    def save(self, *args, **kwargs) -> None:
+        self.sender.addresses.add(self.sender_address)
+        self.sender.save()
 
         super().save(*args, **kwargs)
     
@@ -115,31 +140,6 @@ class Transfer(models.Model):
                 commission = value
         
         return commission
-
-
-class Delivery(models.Model):
-    sender = models.ForeignKey(Sender, verbose_name='Отправитель', related_name='deliveries', on_delete=models.CASCADE)
-    sender_address = models.ForeignKey(Address, verbose_name='Адрес отправителя', related_name='senders_deliveries', null=True, on_delete=models.SET_NULL)
-    usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
-    ils_amount = models.FloatField(verbose_name='Сумма в шекелях', default=0)
-    valid = models.BooleanField(verbose_name='Валидный заказ', blank=True, null=True, default=None)
-    status_message = models.CharField(verbose_name='Статус заказа', blank=True, null=True, max_length=200)
-    status = models.ForeignKey('Status', verbose_name='Статус', null=True, default=None, on_delete=models.SET_NULL)
-    commission = models.FloatField(verbose_name='Комиссия', help_text='Рассчитается автоматически', default=0)
-    circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
-
-    class Meta:
-        verbose_name = 'доставка'
-        verbose_name_plural = 'доставки'
-
-    def __str__(self):
-        return f'{self.sender.name} - {self.sender.phone}'
-
-    def save(self, *args, **kwargs) -> None:
-        self.sender.addresses.add(self.sender_address)
-        self.sender.save()
-
-        super().save(*args, **kwargs)
 
 
 class Rate(models.Model):
@@ -195,32 +195,21 @@ class Status(models.Model):
 @receiver(post_save, sender=Transfer)
 def update_delivery_valid(sender, instance, **kwargs):
     usd_amount = 0
-    ils_amount = 0
     commission = 0
 
     success_status = Status.objects.get(slug='saved')
     error_status = Status.objects.get(slug='save_error')
 
+    delivery_total_usd_amount = instance.delivery.calculate_total_usd_amount()
+    instance.delivery.total_usd = round(delivery_total_usd_amount, 2)
+
     for transfer in instance.delivery.transfers.all():
         usd_amount += transfer.usd_amount
-        ils_amount += transfer.ils_amount
 
-        full_amount = transfer.calculate_total_usd_amount()
-        commission_value = transfer.calculate_commission()
-
-        if full_amount < 1:
+        if usd_amount < 1:
             instance.delivery.valid = False
             instance.delivery.status = error_status
             instance.delivery.status_message = f'У получателя ({transfer.receiver}) слишком маленькая сумма к получению.'
-            instance.delivery.save()
-            break
-        
-        if commission_value:
-            commission += commission_value
-        else:
-            instance.delivery.valid = False
-            instance.delivery.status = error_status
-            instance.delivery.status_message = f'Ошибка при расчете комиссии получателя ({transfer.receiver}).'
             instance.delivery.save()
             break
         
@@ -235,40 +224,36 @@ def update_delivery_valid(sender, instance, **kwargs):
             break
 
     else:
-        if usd_amount == instance.delivery.usd_amount:
-            if ils_amount == instance.delivery.ils_amount:
-                instance.delivery.valid = True
-                instance.delivery.commission = round(commission, 2)
+        if usd_amount - 1 <= delivery_total_usd_amount and usd_amount + 1 >= delivery_total_usd_amount:
+            instance.delivery.valid = True
+            instance.delivery.commission = round(commission + instance.delivery.calculate_commission(), 2)
+            
+            if (instance.delivery.status_message is None) or ('Доставка передана в Circuit.' not in instance.delivery.status_message and\
+            'Ошибка передачи в Circuit (необходимо вручную).' not in instance.delivery.status_message):
+                instance.delivery.status = success_status
+                instance.delivery.status_message = 'Доставка сохранена.'
 
-                if (instance.delivery.status_message is None) or ('Доставка передана в Circuit.' not in instance.delivery.status_message and\
-                'Ошибка передачи в Circuit (необходимо вручную).' not in instance.delivery.status_message):
-                    instance.delivery.status = success_status
-                    instance.delivery.status_message = 'Доставка сохранена.'
+                try:
+                    delivery_to_gspred(instance.delivery)
+                    gspread = True
+                except Exception as ex:
+                    print(ex)
+                    gspread = False
 
-                    try:
-                        delivery_to_gspred(instance.delivery)
-                        gspread = True
-                    except:
-                        gspread = False
-
-                    stop_id = send_pickup_address(instance.delivery.sender, instance.delivery)
-                    if stop_id:
-                        api_status = Status.objects.get(slug='api')
-                        instance.delivery.circuit_id = stop_id
-                        instance.delivery.status = api_status
-                        instance.delivery.status_message = 'Доставка передана в Circuit.'
-                    else:
-                        api_error_status = Status.objects.get(slug='api_error')
-                        instance.delivery.status = api_error_status
-                        instance.delivery.status_message = 'Ошибка передачи в Circuit (необходимо вручную).'
-                    
-                    if not gspread:
-                        instance.delivery.status_message += ' Ошибка при записи в гугл таблицу.'
+                stop_id = send_pickup_address(instance.delivery.sender, instance.delivery)
+                if stop_id:
+                    api_status = Status.objects.get(slug='api')
+                    instance.delivery.circuit_id = stop_id
+                    instance.delivery.status = api_status
+                    instance.delivery.status_message = 'Доставка передана в Circuit.'
+                else:
+                    api_error_status = Status.objects.get(slug='api_error')
+                    instance.delivery.status = api_error_status
+                    instance.delivery.status_message = 'Ошибка передачи в Circuit (необходимо вручную).'
+                
+                if not gspread:
+                    instance.delivery.status_message += ' Ошибка при записи в гугл таблицу.'
                         
-            else:
-                instance.delivery.valid = False
-                instance.delivery.status = error_status
-                instance.delivery.status_message = f'Не сходится сумма шекелей к отправке.'
         else:
             instance.delivery.valid = False
             instance.delivery.status = error_status

@@ -185,7 +185,6 @@ async def sim_confirm_or_hand_write_keyboard(input_info, language):
     keyboard = InlineKeyboardBuilder()
 
     confirm_button = await sync_to_async(TGText.objects.get)(slug='confirm_button', language=language)
-
     keyboard.row(types.InlineKeyboardButton(text=confirm_button.text, callback_data=f's-confirm_{input_info}'))
 
     handwrite_button = await sync_to_async(TGText.objects.get)(slug='hand_write_button', language=language)
