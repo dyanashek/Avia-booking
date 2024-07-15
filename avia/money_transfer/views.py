@@ -8,6 +8,10 @@ from django.db.models import Q
 from core.models import UsersSim
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission
 from money_transfer.utils import update_delivery_pickup_status
+from core.utils import send_message_on_telegram
+from drivers.utils import construct_collect_sim_money_message, construct_delivery_sim_message
+
+from config import TELEGRAM_DRIVERS_TOKEN
 
 # Create your views here.
 def get_sender_addresses(request):
@@ -54,7 +58,7 @@ def calculate_commission(request):
         ils_amount = int(request.GET.get('ils_amount'))
     except:
         ils_amount = 0
-        
+
     ils_rate = Rate.objects.get(slug='usd-ils').rate
     usd_amount = round(usd_amount + ils_amount / ils_rate,2)
 
@@ -80,6 +84,7 @@ def stop_status(request):
     stop_id = request.POST.get('id')
     order_id = request.POST.get('order_id')
     driver_comment = request.POST.get('comment')
+    driver_id = request.POST.get('driver')
     try:
         status = request.POST.get('status')
     except:
@@ -104,13 +109,30 @@ def stop_status(request):
                 delivery.status_message = 'Не удалось забрать у отправителя'
             
             delivery.save()
-    
-    if order_id and order_id == '5':
+
+    elif order_id and order_id == '4' and status:
         users_sim = UsersSim.objects.filter(circuit_id=stop_id).first()
+        if users_sim:
+            params = construct_delivery_sim_message(users_sim, driver_id)
+            if params:
+                try:
+                    send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
+                except:
+                    pass
+
+    elif order_id and order_id == '5' and status:
+        users_sim = UsersSim.objects.filter(circuit_id_collect=stop_id).first()
         if users_sim:
             users_sim.circuit_id_collect = None
             users_sim.ready_to_pay = False
             users_sim.pay_date = None
             users_sim.save()
+
+            params = construct_collect_sim_money_message(users_sim, driver_id)
+            if params:
+                try:
+                    send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
+                except:
+                    pass
     
     return HttpResponse()

@@ -129,7 +129,6 @@ async def send_sim_money_collect_address(phone, user, debt):
 
 def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
     """Отправка сообщения в телеграм."""
-    endpoint = f'https://api.telegram.org/bot/{token}/sendMessage'
-    requests.post(endpoint, params=params)
-
+    endpoint = f'https://api.telegram.org/bot{token}/sendMessage'
+    response = requests.post(endpoint, params=params)
     return HttpResponse()

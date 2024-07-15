@@ -43,7 +43,7 @@ ALLOWED_HOSTS = ['*',]
 INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'money_transfer.apps.MoneyTransferConfig',
-    # 'drivers.apps.DriversConfig',
+    'drivers.apps.DriversConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

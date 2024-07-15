@@ -15,6 +15,9 @@ from django.db.models import Q
 
 from core.models import TGText, Language, Route, ParcelVariation, SimFare
 
+#* <------------------------------------------------->
+#! КЛАВИАТУРЫ ДЛЯ БОТА КЛИЕНТОВ (АВИА, ПОСЫЛКИ, СИМКИ)
+#* <------------------------------------------------->
 
 async def choose_language_keyboard():
     keyboard = InlineKeyboardBuilder()
@@ -223,5 +226,18 @@ async def sim_confirm_phone_keyboard(user_id, fare_id):
     keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f's-complete_{user_id}_{fare_id}'))
     keyboard.row(types.InlineKeyboardButton(text='Ввести заново', callback_data=f's-retype_{user_id}_{fare_id}'))
     keyboard.row(types.InlineKeyboardButton(text='Отклонить заявку', callback_data=f's-refuse'))
+
+    return keyboard.as_markup()
+
+
+#* <------------------------------------------------->
+#! КЛАВИАТУРЫ ДЛЯ ВОДИТЕЛЕЙ (СИМКИ)
+#* <------------------------------------------------->
+
+async def confirm_amount_keyboard(amount, sim_id):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Подтвердить', callback_data=f'confirm_sim_{amount}_{sim_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Ввести заново', callback_data=f'retype_{sim_id}'))
 
     return keyboard.as_markup()

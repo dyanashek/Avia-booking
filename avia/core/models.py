@@ -6,6 +6,7 @@ from easy_thumbnails.files import get_thumbnailer
 from filer.fields.image import FilerImageField
 
 from core.utils import send_pickup_address
+from drivers.models import Driver
 
 SEX_CHOICES = (
     ('M', 'Мужской',),
@@ -232,6 +233,7 @@ class UsersSim(models.Model):
     notified = models.BooleanField(verbose_name='Уведомлен сегодня', default=False)
     circuit_id = models.CharField(verbose_name='Circuit id (delivery_sim)', max_length=250, blank=True, null=True, unique=True)
     circuit_id_collect = models.CharField(verbose_name='Circuit id (collect money)', help_text='После получения денег - удалить.', max_length=250, blank=True, null=True, unique=True)
+    driver = models.ForeignKey(Driver, verbose_name='Водитель', help_text='Последний водитель, вносивший информацию через бота о переданных клиентом деньгах', on_delete=models.SET_NULL, related_name='sim_cards', null=True, blank=True)
 
     # алгоритм поиска тех, кому направлять уведомления: 
     # !-> смотрим у кого next_payment=today() и начисляем по тарифу dept
@@ -252,3 +254,4 @@ class UsersSim(models.Model):
     
     def __str__(self):
         return self.sim_phone
+
