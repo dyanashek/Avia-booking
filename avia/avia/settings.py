@@ -180,3 +180,7 @@ ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops'
 GSPREAD_CONFIG = 'service_account.json'
 SPREAD_NAME = 'Israel'
 MONEY_TRANSFER_LIST = 'money_transfer'
+
+#Celery
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'UTC'

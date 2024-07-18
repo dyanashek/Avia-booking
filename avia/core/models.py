@@ -1,11 +1,15 @@
+import datetime
+
 from django.db import models
 from django.utils.html import format_html
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from easy_thumbnails.files import get_thumbnailer
 from filer.fields.image import FilerImageField
 
-from core.utils import send_pickup_address
+from core.utils import send_message_on_telegram
 from drivers.models import Driver
 
 SEX_CHOICES = (
@@ -106,16 +110,19 @@ class TGUser(models.Model):
     passport_photo_user = FilerImageField(verbose_name='Фото паспорта', on_delete=models.SET_NULL, null=True, blank=True)
     passport_photo_id = models.CharField(verbose_name='TG id паспорта', max_length=200, null=True, blank=True)
     curr_input = models.CharField(verbose_name='Текущий ввод', max_length=100, null=True, blank=True, default=None)
-    
+    created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+
+
     class Meta:
         verbose_name = 'клиент'
         verbose_name_plural = 'Клиенты'
+        ordering = ('-created_at',)
     
     def __str__(self):
-        if self.name:
-            return self.name
-        elif self.username:
-            return self.username
+        if self.username:
+            return f'@{self.username} {self.user_id}'
+        elif self.name:
+            return f'{self.name} {self.user_id}'
         else:
             return self.user_id
     
@@ -150,6 +157,8 @@ class Parcel(models.Model):
     price = models.FloatField(verbose_name='Стоимость', default=0)
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='parcels', null=True, blank=True)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
+    created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+
 
     class Meta:
         verbose_name = 'посылка'
@@ -189,6 +198,8 @@ class Flight(models.Model):
     price = models.FloatField(verbose_name='Стоимость', default=0)
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='flights', null=True, blank=True)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
+    created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+
 
     class Meta:
         verbose_name = 'перелет'
@@ -234,7 +245,7 @@ class UsersSim(models.Model):
     circuit_id = models.CharField(verbose_name='Circuit id (delivery_sim)', max_length=250, blank=True, null=True, unique=True)
     circuit_id_collect = models.CharField(verbose_name='Circuit id (collect money)', help_text='После получения денег - удалить.', max_length=250, blank=True, null=True, unique=True)
     driver = models.ForeignKey(Driver, verbose_name='Водитель', help_text='Последний водитель, вносивший информацию через бота о переданных клиентом деньгах', on_delete=models.SET_NULL, related_name='sim_cards', null=True, blank=True)
-
+    
     # алгоритм поиска тех, кому направлять уведомления: 
     # !-> смотрим у кого next_payment=today() и начисляем по тарифу dept
     # !-> dept больше определенного значения, ready_to_pay=False, pay_date=None
@@ -255,3 +266,36 @@ class UsersSim(models.Model):
     def __str__(self):
         return self.sim_phone
 
+
+class Notification(models.Model):
+    user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
+    text = models.TextField(verbose_name='Текст уведомления')
+    notify_now = models.BooleanField(verbose_name='Уведомить сейчас', default=True)
+    notify_time = models.DateTimeField(verbose_name='Время уведомления', help_text='Указывается в UTC (-3 от МСК). Игнорируется, если активно поле "уведомить сейчас".', null=True, blank=True)
+    notified = models.BooleanField(verbose_name='Уведомлен', null=True, blank=True, default=None)
+
+    class Meta:
+        verbose_name = 'уведомление пользователя'
+        verbose_name_plural = 'уведомления пользователей'
+        ordering = ('-notify_time',)
+    
+    def __str__(self):
+        return str(self.user)
+
+
+@receiver(post_save, sender=Notification)
+def handle_notification(sender, instance, **kwargs):
+    if instance.notify_now and instance.notified is None:
+        params = {
+                'chat_id': instance.user.user_id,
+                'text': instance.text,
+            }
+
+        try:
+            send_message_on_telegram(params)
+            instance.notified = True
+        except:
+            instance.notified = False
+        
+        instance.notify_time = datetime.datetime.utcnow()
+        instance.save()

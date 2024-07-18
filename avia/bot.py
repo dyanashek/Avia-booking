@@ -1390,9 +1390,9 @@ async def callback_query(call: types.CallbackQuery):
                             \nДля подтверждения необходимо будет внести номер выдаваемой симки\
                             '''
                 if user.username:
-                    reply_text += f'\n\nПользователь: @{user.username}'
+                    reply_text += f'\n\nПользователь: @{user.username}. Telegram id: {user.user_id} (для связи через админку).'
                 else:
-                    reply_text += f'\n\nПользователь без валидного никнейма.'
+                    reply_text += f'\n\nПользователь без валидного никнейма. Telegram id: {user.user_id} (для связи через админку).'
 
                 await bot.send_photo(chat_id=config.SIM_MANAGER_ID,
                                 caption=reply_text,

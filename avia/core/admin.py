@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.db.models import Q
 from adminsortable2.admin import SortableAdminMixin
 
-from core.models import Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, UsersSim
+from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
+                         UsersSim, Notification)
 
 
 @admin.register(Language)
@@ -68,6 +69,7 @@ class RouteAdmin(SortableAdminMixin, admin.ModelAdmin):
 class TGUserAdmin(admin.ModelAdmin):
     list_display = ('username', 'name', 'family_name', 'get_thumbnail')
     readonly_fields = ('passport_photo_id',)
+    search_fields = ('user_id', 'username', 'name', 'family_name')
 
 
 @admin.register(Parcel)
@@ -95,3 +97,18 @@ class UsersSimAdmin(admin.ModelAdmin):
     list_filter = ('ready_to_pay',)
     fields = ('user', 'fare', 'debt', 'next_payment', 'pay_date', 'ready_to_pay', 'driver',)
     readonly_fields = ('driver',)
+    autocomplete_fields = ('user',)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'notify_time', 'notified')
+    list_filter = ('notified',)
+    fields = ('user', 'text', 'notify_now', 'notify_time', 'notified')
+    autocomplete_fields = ('user',)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.notified:
+            return ('user', 'text', 'notify_now', 'notify_time', 'notified')
+
+        return ('notified',)

@@ -1,11 +1,10 @@
 import datetime
 import json
-import os
 
 from django.db.models import Q
-from apscheduler.schedulers.background import BackgroundScheduler
+from celery import shared_task
 
-from core.models import UsersSim, TGText
+from core.models import UsersSim, TGText, Notification
 from core.utils import send_message_on_telegram
 
 
@@ -34,7 +33,7 @@ def search_users_to_notify():
         Q(pay_date=datetime.datetime.utcnow().date()) & 
         Q(ready_to_pay=False) &
         Q(notified=False)).select_related('user', 'fare').all()
-
+    
 
 def notify_users(users_sims):
     for users_sim in users_sims:
@@ -79,19 +78,37 @@ def notify_users(users_sims):
                 users_sim.save()
             except:
                 pass
-        
 
+
+def select_notifications():
+    notifications = Notification.objects.filter(Q(notify_time__lte=datetime.datetime.utcnow()) &
+                                                Q(notified__isnull=True) &
+                                                Q(notify_now=False))
+    
+    return notifications
+
+
+@shared_task
+def send_notifications():
+    notifications = select_notifications()
+    for notification in notifications:
+        params = {
+            'chat_id':  notification.user.user_id,
+            'text': notification.text,
+        }
+
+        try:
+            send_message_on_telegram(params)
+            notification.notified = True
+        except:
+            notification.notified = False
+        
+        notification.save()
+
+
+@shared_task
 def handle_sims():
     add_debt()
     add_pay_date()
     users_sims = search_users_to_notify()
     notify_users(users_sims)
-
-
-
-def run_scheduler():
-    if not os.environ.get('scheduler_running'):
-        os.environ['scheduler_running'] = 'true'
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(handle_sims, 'interval', days=1, next_run_time=datetime.datetime.now())
-        scheduler.start() 
