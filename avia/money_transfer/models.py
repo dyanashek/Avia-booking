@@ -1,9 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Q
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspred
+
+
+User = get_user_model()
 
 
 class Manager(models.Model):
@@ -105,6 +109,7 @@ class Delivery(models.Model):
     status = models.ForeignKey('Status', verbose_name='Статус', null=True, default=None, on_delete=models.SET_NULL)
     commission = models.FloatField(verbose_name='Комиссия (₪)', help_text='Рассчитается автоматически', default=0)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
+    created_by = models.ForeignKey(User, related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         verbose_name = 'доставка'

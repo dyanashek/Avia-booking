@@ -243,6 +243,7 @@ class UsersSim(models.Model):
     ready_to_pay = models.BooleanField(verbose_name='Готов оплачивать', default=False)
     notified = models.BooleanField(verbose_name='Уведомлен сегодня', default=False)
     circuit_id = models.CharField(verbose_name='Circuit id (delivery_sim)', max_length=250, blank=True, null=True, unique=True)
+    icount_id = models.IntegerField(null=True, blank=True, default=None)
     circuit_id_collect = models.CharField(verbose_name='Circuit id (collect money)', help_text='После получения денег - удалить.', max_length=250, blank=True, null=True, unique=True)
     driver = models.ForeignKey(Driver, verbose_name='Водитель', help_text='Последний водитель, вносивший информацию через бота о переданных клиентом деньгах', on_delete=models.SET_NULL, related_name='sim_cards', null=True, blank=True)
     

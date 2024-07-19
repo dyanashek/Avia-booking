@@ -20,7 +20,8 @@ from filer.models import Image, Folder
 from django.db.models import Q
 
 from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, UsersSim
-from core.utils import send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address
+from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address,
+                        create_icount_client)
 
 import config
 import keyboards
@@ -1276,15 +1277,17 @@ async def callback_query(call: types.CallbackQuery):
             fare_description = await sync_to_async(TGText.objects.get)(slug='fare_description', language=user_language)
             fare_price = await sync_to_async(TGText.objects.get)(slug='fare_price', language=user_language)
             short_month = await sync_to_async(TGText.objects.get)(slug='short_month', language=user_language)
-            sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt', language=user_language)
-
+            if users_sim.debt >= 0:
+                sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt', language=user_language)
+            else:
+                sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_balance', language=user_language)
             reply_text = f'''
                           *{fare_description.text}*\
                           \n{fare.description}\
                           \n\
                           \n{fare_price.text} {fare.price}₪/{short_month.text}\
                           \n\
-                          \n*{sim_debt.text}: {users_sim.debt}₪*\
+                          \n*{sim_debt.text}: {abs(users_sim.debt)}₪*\
                           '''
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1734,21 +1737,32 @@ async def callback_query(call: types.CallbackQuery):
             phone = data[1]
 
             if curr_input and 'manager-sim' in curr_input and len(data) == 2:
-                user.curr_input = None
-                await sync_to_async(user.save)()
-
                 sim_user = await sync_to_async(TGUser.objects.filter(id=sim_user_id).first)()
                 fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
 
                 stop_id = await send_sim_delivery_address(phone, sim_user, fare)
-                if stop_id:
+                icount_client_id = await create_icount_client(sim_user, phone)
+
+                try:
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+                except:
+                    pass
+
+                if stop_id and icount_client_id:
+                    user.curr_input = None
+                    await sync_to_async(user.save)()
+
                     users_sim = UsersSim(
                         user=sim_user,
                         fare=fare,
                         sim_phone=phone,
                         next_payment=(datetime.datetime.utcnow() + datetime.timedelta(days=31)).date(),
                         debt=(50 + fare.price),
-                        circuit_id=stop_id
+                        circuit_id=stop_id,
+                        icount_id=icount_client_id,
                     )
                     await sync_to_async(users_sim.save)()
 
@@ -1763,7 +1777,7 @@ async def callback_query(call: types.CallbackQuery):
                                 )
                 else:
                     await bot.send_message(chat_id=chat_id,
-                                text=f'Ошибка при отправке в circuit, попробуйте еще раз позднее.',
+                                text=f'Ошибка при отправке в circuit или icount, попробуйте еще раз позднее.',
                                 parse_mode='Markdown',
                                 )
 

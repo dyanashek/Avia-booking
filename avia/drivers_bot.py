@@ -13,7 +13,8 @@ from asgiref.sync import sync_to_async
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
-from core.models import UsersSim
+from core.models import UsersSim, Notification, TGText
+from core.utils import create_icount_invoice
 from drivers.models import Driver
 
 import config
@@ -115,15 +116,26 @@ async def callback_query(call: types.CallbackQuery):
                     sim.debt -= amount
                     await sync_to_async(sim.save)()
 
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=InlineKeyboardBuilder().as_markup(),
-                                            )
+                    invoice_url = await create_icount_invoice(sim.icount_id, amount)
+                    if invoice_url:
+                        sim_user = await sync_to_async(lambda: sim.user)()
+                        user_language = await sync_to_async(lambda: sim_user.language)()
+                        invoice_text = await sync_to_async(TGText.objects.get)(slug='invoice_url', language=user_language)
+                        reply_text = f'{invoice_text.text} {invoice_url}'
+                        await sync_to_async(Notification.objects.create)(
+                            user=sim_user,
+                            text=reply_text,
+                        )
 
-            await bot.send_message(chat_id=chat_id,
-                    text=f'Подтверждена передача клиентом суммы в {amount} ₪',
-                    parse_mode='Markdown',
-                    )
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+
+                await bot.send_message(chat_id=chat_id,
+                        text=f'Подтверждена передача клиентом суммы в {amount} ₪',
+                        parse_mode='Markdown',
+                        )
 
 
 @dp.message(F.text)

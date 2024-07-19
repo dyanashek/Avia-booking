@@ -9,7 +9,9 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.http import HttpResponse
 
-from config import TELEGRAM_TOKEN
+from config import (TELEGRAM_TOKEN, ICOUNT_COMPANY_ID, ICOUNT_USERNAME, 
+                    ICOUNT_PASSWORD, ICOUNT_CREATE_USER_ENDPOINT,
+                    ICOUNT_CREATE_INVOICE_ENDPOINT)
 
 
 async def send_pickup_address(application, application_type):
@@ -125,6 +127,67 @@ async def send_sim_money_collect_address(phone, user, debt):
             stop_id = False
 
     return stop_id
+
+
+async def create_icount_client(user, phone):
+    data = {
+        'cid': ICOUNT_COMPANY_ID,
+        'user': ICOUNT_USERNAME,
+        'pass': ICOUNT_PASSWORD,
+        'client_name': f'{user.family_name} {user.name}',
+        'first_name': user.name,
+        'last_name': user.family_name,
+        'mobile': phone
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            ssl_context = ssl.create_default_context()
+            ssl_context.load_verify_locations(certifi.where())
+            async with session.post(ICOUNT_CREATE_USER_ENDPOINT, data=data, ssl=ssl_context) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        icount_client_id = response_data.get('client_id')
+                    else:
+                        icount_client_id = False
+        except Exception as ex:
+            icount_client_id = False
+
+    return icount_client_id
+
+
+async def create_icount_invoice(user_id, amount):
+    data = {
+        'cid': ICOUNT_COMPANY_ID,
+        'user': ICOUNT_USERNAME,
+        'pass': ICOUNT_PASSWORD,
+        'doctype': 'invrec',
+        'client_id': user_id,
+        'lang': 'en',
+        'items': [
+            {
+                'description': 'Online support + simcard',
+                'unitprice_incvat': float(amount),
+                'quantity': 1,
+            },
+            ],
+        'cash': {'sum': float(amount)},        
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            ssl_context = ssl.create_default_context()
+            ssl_context.load_verify_locations(certifi.where())
+            async with session.post(ICOUNT_CREATE_INVOICE_ENDPOINT, json=data, ssl=ssl_context) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        doc_url = response_data.get('doc_url')
+                    else:
+                        doc_url = False
+        except Exception as ex:
+            doc_url = False
+
+    return doc_url
 
 
 def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
