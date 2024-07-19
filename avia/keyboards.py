@@ -173,6 +173,9 @@ async def confirm_price_keyboard(info_type, info_id, price):
 
     return keyboard.as_markup()
 
+#* <------------------------------------------------->
+#! КЛАВИАТУРЫ ДЛЯ СИМОК
+#* <------------------------------------------------->
 
 async def sim_fares_keyboard():
     keyboard = InlineKeyboardBuilder()

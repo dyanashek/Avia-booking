@@ -1300,7 +1300,7 @@ async def callback_query(call: types.CallbackQuery):
             user.curr_input = 'user_passport'
             await sync_to_async(user.save)()
 
-            if user.passport_photo_id and user.addresses:
+            if user.passport_photo_id and user.addresses and user.name and user.family_name:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
@@ -1308,8 +1308,12 @@ async def callback_query(call: types.CallbackQuery):
 
                 reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
                 address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+                name_text = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
+                familyname_text = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
                 reply_text = f'{reuse.text}\n\n'
-                reply_text += f'{address_text.text} {user.addresses}'
+                reply_text += f'\n*{name_text.text}* {user.name}'
+                reply_text += f'\n*{familyname_text.text}* {user.family_name}'
+                reply_text += f'\n*{address_text.text}* {user.addresses}'
 
                 await bot.send_photo(chat_id=user_id,
                             caption=reply_text,
@@ -1334,14 +1338,14 @@ async def callback_query(call: types.CallbackQuery):
 
     elif query == 's-confirm':
         info = call_data[1]
- 
-        if curr_input and curr_input == 'user_passport':
-            if info == 's-confirmation':
-                try:
-                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
-                except:
-                    pass
 
+        if curr_input and curr_input == 'user_passport':
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except:
+                pass
+
+            if info == 's-confirmation':
                 user.curr_input = 'sim-fare'
                 await sync_to_async(user.save)()
 
@@ -1353,11 +1357,6 @@ async def callback_query(call: types.CallbackQuery):
                                )
             
             else:
-                try:
-                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
-                except:
-                    pass
-
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
                 await bot.send_message(chat_id=user_id,
                                 text=error.text,
@@ -1377,10 +1376,15 @@ async def callback_query(call: types.CallbackQuery):
                 address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
                 fare_description = await sync_to_async(TGText.objects.get)(slug='fare_description', language=user_language)
                 fare_price = await sync_to_async(TGText.objects.get)(slug='fare_price', language=user_language)
-                
+
+                name_text = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
+                familyname_text = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
+                #TODO:
                 reply_text = f'''
                             *Заявка от пользователя на симку:*\
                             \n\
+                            \n*{name_text.text}* {user.name}\
+                            \n*{familyname_text.text}* {user.family_name}\
                             \n*{address_text.text}* {user.addresses}\
                             \n\
                             \n*{fare_description.text}*\
@@ -1427,6 +1431,51 @@ async def callback_query(call: types.CallbackQuery):
                                 text=error.text,
                                 parse_mode='Markdown',
                                 )
+
+        elif curr_input and curr_input == 's-name' and info == 'name':
+            user.curr_input = 's-familyname'
+            await sync_to_async(user.save)()
+            if user.family_name:
+                confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
+                reply_text = f'{confirm_text.text} *{user.family_name}*?'
+
+                await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=reply_text,
+                                        parse_mode='Markdown',
+                                        )
+
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
+                                                    )
+            else:
+                try:
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                except:
+                    pass
+
+                question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+
+        elif curr_input and curr_input == 's-familyname' and info == 'familyname':
+            user.curr_input = 'sim-fare'
+            await sync_to_async(user.save)()
+
+            choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+            await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=choose_fare.text,
+                                        parse_mode='Markdown',
+                                        )
+
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=await keyboards.sim_fares_keyboard(),
+                                                )
 
         elif info == 'address':
             sim_card = await sync_to_async(user.sim_cards.first)()
@@ -1478,28 +1527,37 @@ async def callback_query(call: types.CallbackQuery):
     elif query == 's-hand':
         info = call_data[1]
 
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except:
+            pass
+
         if curr_input and curr_input == 'user_passport':
             if info == 's-confirmation':
-                try:
-                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
-                except:
-                    pass
-
                 passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
                 await bot.send_message(chat_id=user_id,
                         text=passport_request.text,
                         parse_mode='Markdown',
                         )
-        
+
+        elif curr_input and curr_input == 's-name' and info == 'name':
+            question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
+            await bot.send_message(chat_id=chat_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+
+        elif curr_input and curr_input == 's-familyname' and info == 'familyname':
+            question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
+            await bot.send_message(chat_id=chat_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+
         elif info == 'address':
             user.curr_input = 'sim_collect_money_address'
             await sync_to_async(user.save)()
-
-            try:
-                await bot.delete_message(chat_id=chat_id, message_id=message_id)
-            except:
-                pass
 
             address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
             await bot.send_message(chat_id=user_id,
@@ -1508,11 +1566,6 @@ async def callback_query(call: types.CallbackQuery):
                             )
 
         else:
-            try:
-                await bot.delete_message(chat_id=chat_id, message_id=message_id)
-            except:
-                pass
-
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
             await bot.send_message(chat_id=user_id,
                             text=error.text,
@@ -1528,7 +1581,7 @@ async def callback_query(call: types.CallbackQuery):
         except:
             pass
 
-        if curr_input and curr_input == 'sim-fare' and user.addresses and user.passport_photo_id and fare:
+        if curr_input and curr_input == 'sim-fare' and user.addresses and user.passport_photo_id and fare and user.name and user.family_name:
             user.curr_input = 'sim-confirmation'
             await sync_to_async(user.save)()
 
@@ -1540,9 +1593,14 @@ async def callback_query(call: types.CallbackQuery):
             short_month = await sync_to_async(TGText.objects.get)(slug='short_month', language=user_language)
             new_sim_tax = await sync_to_async(TGText.objects.get)(slug='new_sim_tax', language=user_language)
 
+            name_text = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
+            familyname_text = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
+
             reply_text = f'''
                         *{confirm_application.text}*\
                         \n\
+                        \n*{name_text.text}* {user.name}\
+                        \n*{familyname_text.text}* {user.family_name}\
                         \n*{address_text.text}* {user.addresses}\
                         \n\
                         \n*{fare_description.text}*\
@@ -2110,9 +2168,49 @@ async def handle_text(message):
 
     elif curr_input and curr_input == 's-address':
         user.addresses = input_info 
-        user.curr_input = 'sim-fare'
+        user.curr_input = 's-name'
         await sync_to_async(user.save)()
 
+        if user.name:
+            confirm_text = await sync_to_async(TGText.objects.get)(slug='name_correct_question', language=user_language)
+            reply_text = f'{confirm_text.text} *{user.name}*?'
+
+            await bot.send_message(chat_id=chat_id,
+                            text=reply_text,
+                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
+                            parse_mode='Markdown',
+                            )
+        else:
+            question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
+            await bot.send_message(chat_id=chat_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+    
+    elif curr_input and curr_input == 's-name':
+        user.name = input_info 
+        user.curr_input = 's-familyname'
+        await sync_to_async(user.save)()
+
+        if user.family_name:
+            confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
+            reply_text = f'{confirm_text.text} *{user.family_name}*?'
+
+            await bot.send_message(chat_id=chat_id,
+                            text=reply_text,
+                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
+                            parse_mode='Markdown',
+                            )
+        else:
+            question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
+            await bot.send_message(chat_id=chat_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+
+    elif curr_input and curr_input == 's-familyname':
+        user.family_name = input_info 
+        user.curr_input = 'sim-fare'
         await sync_to_async(user.save)()
 
         choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
@@ -2121,6 +2219,7 @@ async def handle_text(message):
                         reply_markup=await keyboards.sim_fares_keyboard(),
                         parse_mode='Markdown',
                         )
+
 
     elif curr_input and curr_input == 'sim_collect_money_address':
         user.curr_input = None
