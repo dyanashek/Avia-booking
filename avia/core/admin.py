@@ -68,22 +68,40 @@ class RouteAdmin(SortableAdminMixin, admin.ModelAdmin):
 @admin.register(TGUser)
 class TGUserAdmin(admin.ModelAdmin):
     list_display = ('username', 'name', 'family_name', 'get_thumbnail')
-    readonly_fields = ('passport_photo_id',)
     search_fields = ('user_id', 'username', 'name', 'family_name')
+    readonly_fields = ('created_at',)
+    fields = ('user_id', 'language', 'username', 'name', 'family_name',
+              'phone', 'addresses', 'sex', 'birth_date', 'start_date',
+               'end_date', 'passport_number', 'passport_photo_user', 'created_at')
+
 
 
 @admin.register(Parcel)
 class ParcelAdmin(admin.ModelAdmin):
     list_display = ('family_name', 'variation', 'get_thumbnail', 'complete', 'confirmed')
     list_filter = ('complete', 'confirmed')
-    readonly_fields = ('passport_photo_id', 'confirmed', 'circuit_id')
+    fields = ('variation', 'fio_receiver', 'phone_receiver', 'items_list',
+              'name', 'family_name', 'phone', 'address', 'sex', 'birth_date',
+              'start_date', 'end_date', 'passport_number', 'passport_photo_parcel',
+              'complete', 'confirmed', 'price', 'user', 'created_at')
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return [field.name for field in self.model._meta.fields]
 
 
 @admin.register(Flight)
 class FlightAdmin(admin.ModelAdmin):
     list_display = ('family_name', 'route', 'departure_date', 'arrival_date', 'get_thumbnail', 'complete', 'confirmed')
     list_filter = ('complete', 'confirmed', 'departure_date', 'arrival_date')
-    readonly_fields = ('passport_photo_id', 'confirmed', 'circuit_id')
+    fields = ('route', 'type', 'departure_date', 'arrival_date', 'phone', 'name', 
+              'family_name', 'address', 'sex', 'birth_date', 'start_date', 'end_date', 
+              'passport_number', 'passport_photo_flight', 'complete', 'confirmed', 'price',
+              'user', 'created_at')
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return [field.name for field in self.model._meta.fields]
 
 
 @admin.register(SimFare)

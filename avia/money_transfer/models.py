@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.db import models, transaction
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models import Q
+from django.db.models import Count, Sum, Q, Case, When, F, Value
+from django.db.models.functions import Coalesce
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspred
 
@@ -37,6 +38,7 @@ class Address(models.Model):
 
 
 class Sender(models.Model):
+    user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.CASCADE, related_name='sender', null=True, blank=True)
     name = models.CharField(verbose_name='Имя', max_length=100)
     phone = models.CharField(verbose_name='Номер телефона', max_length=100, unique=True)
     addresses = models.ManyToManyField(Address, verbose_name='Адреса', related_name='senders_addresses', blank=True)
@@ -49,10 +51,17 @@ class Sender(models.Model):
         ordering = ('-updated_at',)
 
     def __str__(self):
-        return f'{self.name} - {self.phone}'
+        result =  f'{self.name} - {self.phone}'
+        if self.user:
+            if self.user.username:
+                result += f' - @{self.user.username}'
+            result += f' - tg_id: {self.user.user_id}'
+        
+        return result
 
 
 class Receiver(models.Model):
+    user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.CASCADE, related_name='receiver', null=True, blank=True)
     name = models.CharField(verbose_name='Имя', max_length=100)
     phone = models.CharField(verbose_name='Номер телефона', max_length=100, unique=True)
     addresses = models.ManyToManyField(Address, verbose_name='Адреса', related_name='receivers_addresses', blank=True)
@@ -64,7 +73,13 @@ class Receiver(models.Model):
         ordering = ('-updated_at',)
 
     def __str__(self):
-        return f'{self.name} - {self.phone}'
+        result =  f'{self.name} - {self.phone}'
+        if self.user:
+            if self.user.username:
+                result += f' - @{self.user.username}'
+            result += f' - tg_id: {self.user.user_id}'
+        
+        return result
 
 
 class Transfer(models.Model):
@@ -109,7 +124,8 @@ class Delivery(models.Model):
     status = models.ForeignKey('Status', verbose_name='Статус', null=True, default=None, on_delete=models.SET_NULL)
     commission = models.FloatField(verbose_name='Комиссия (₪)', help_text='Рассчитается автоматически', default=0)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
-    created_by = models.ForeignKey(User, related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+    created_by = models.ForeignKey(User, verbose_name='Менеджер', related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         verbose_name = 'доставка'
@@ -145,6 +161,46 @@ class Delivery(models.Model):
                 commission = value
         
         return commission
+
+    @classmethod
+    def aggregate_report(self, date_from, date_to):
+        finished_status = Status.objects.get(slug='finished')
+        circuit_status = Status.objects.get(slug='api')
+
+        deliveries = Delivery.objects.filter(
+            Q(created_at__date__lte=date_to) & 
+            Q(created_at__date__gte=date_from) &
+            Q(created_by__isnull=False)
+        ).values('created_by__username').annotate(
+            finished_deliveries=Count(
+                Case(
+                    When(status=finished_status, then=1),
+                    output_field=models.IntegerField()
+                )),
+            finished_commission=Coalesce(
+                Sum(
+                    Case(
+                        When(status=finished_status, then=F'commission'),
+                        output_field=models.FloatField()
+                    )),
+                Value(0.0),
+                ),
+            circuit_deliveries=Count(
+                Case(
+                    When(status=circuit_status, then=1),
+                    output_field=models.IntegerField()
+                )),
+            circuit_commission=Coalesce(
+                Sum(
+                    Case(
+                        When(status=circuit_status, then=F'commission'),
+                        output_field=models.FloatField()
+                    )),
+                Value(0.0),
+                )
+            )
+
+        return deliveries
 
 
 class Rate(models.Model):
@@ -242,7 +298,6 @@ def update_delivery_valid(sender, instance, **kwargs):
                     delivery_to_gspred(instance.delivery)
                     gspread = True
                 except Exception as ex:
-                    print(ex)
                     gspread = False
 
                 stop_id = send_pickup_address(instance.delivery.sender, instance.delivery)

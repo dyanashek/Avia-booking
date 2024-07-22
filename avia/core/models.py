@@ -12,6 +12,7 @@ from filer.fields.image import FilerImageField
 from core.utils import send_message_on_telegram
 from drivers.models import Driver
 
+
 SEX_CHOICES = (
     ('M', 'Мужской',),
     ('F', 'Женский',),

@@ -36,7 +36,6 @@ dp = Dispatcher()
 @dp.message(Command("start"))
 async def start_message(message: types.Message):
     '''Handles start command.'''
-
     user_id = str(message.from_user.id)
     username = message.from_user.username
     if not username:
@@ -124,16 +123,11 @@ async def callback_query(call: types.CallbackQuery):
         await sync_to_async(user.save)()
 
         welcome_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=language)
-        await bot.edit_message_text(chat_id=chat_id,
-                                message_id=message_id,
-                                text=welcome_text.text,
-                                parse_mode='Markdown',
-                                )
-        
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                        message_id=message_id,
-                                        reply_markup=await keyboards.flight_or_parcel_keyboard(language),
-                                        )
+
+        await call.message.edit_text(text=welcome_text.text,
+                                    reply_markup=await keyboards.flight_or_parcel_keyboard(language),
+                                    parse_mode='Markdown',
+                                    )
     
     elif query == 'flight':
         await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
@@ -146,17 +140,11 @@ async def callback_query(call: types.CallbackQuery):
 
         choose_route = await sync_to_async(TGText.objects.get)(slug='choose_route', language=user_language)
 
-        await bot.edit_message_text(chat_id=chat_id,
-                                message_id=message_id,
-                                text=choose_route.text,
-                                parse_mode='Markdown',
-                                )
-        
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                        message_id=message_id,
-                                        reply_markup=await keyboards.route_keyboard(),
-                                        )
-    
+        await call.message.edit_text(text=choose_route.text,
+                                     reply_markup=await keyboards.route_keyboard(),
+                                     parse_mode='Markdown',
+                                     )
+
     elif query == 'route':
         route_id = int(call_data[1])
         route = await sync_to_async(Route.objects.filter(id=route_id).first)()
@@ -1741,7 +1729,9 @@ async def callback_query(call: types.CallbackQuery):
                 fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
 
                 stop_id = await send_sim_delivery_address(phone, sim_user, fare)
-                icount_client_id = await create_icount_client(sim_user, phone)
+                icount_client_id = None
+                if stop_id:
+                    icount_client_id = await create_icount_client(sim_user, phone)
 
                 try:
                     await bot.edit_message_reply_markup(chat_id=chat_id,

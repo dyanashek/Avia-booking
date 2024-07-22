@@ -1,12 +1,18 @@
+import os
+import tempfile
 import requests
 import datetime
 
+import pandas
 import gspread
+from openpyxl import Workbook
 from django.conf import settings
+
 
 service_acc = gspread.service_account(filename=settings.GSPREAD_CONFIG)
 sheet = service_acc.open(settings.SPREAD_NAME)
 work_sheet = sheet.worksheet(settings.MONEY_TRANSFER_LIST)
+
 
 def send_pickup_address(sender, delivery):
     items = []
@@ -122,3 +128,19 @@ def update_delivery_pickup_status(delivery_id, comment):
     row_num = get_first_delivery_row(str(delivery_id))
     date = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
     work_sheet.update(f"B{row_num}:X{row_num}", [[date, comment]])
+
+
+def create_excel_file(data, date_from, date_to):
+    data_frame = pandas.DataFrame(list(data))
+    data_frame.columns = ['Менеджер', 
+                          'Кол-во успешных переводов', 
+                          'Комиссия с успешных переводов', 
+                          'Кол-во запланированных переводов', 
+                          'Комиссия с запланированных переводов']
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+        date_from = date_from.strftime('%d.%m.%Y')
+        date_to = date_to.strftime('%d.%m.%Y')
+        data_frame.to_excel(temp_file.name, index=False, sheet_name=f'{date_from} - {date_to}')
+        
+        return temp_file.name

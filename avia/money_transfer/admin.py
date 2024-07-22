@@ -1,7 +1,14 @@
+import os
+import datetime
+
 from django.contrib import admin
+from django.urls import path
+from django.http import HttpResponse
+from reversion.admin import VersionAdmin
+
+from money_transfer.utils import create_excel_file
 from money_transfer.models import Manager, Sender, Receiver, Address, Transfer, Delivery, Rate, Commission, Status
 from adminsortable2.admin import SortableAdminMixin
-from reversion.admin import VersionAdmin
 
 
 class TransferInline(admin.StackedInline):
@@ -36,8 +43,9 @@ class AddressAdmin(VersionAdmin):
 @admin.register(Sender)
 class SenderAdmin(VersionAdmin):
     list_display = ('name', 'phone',)
-    search_fields = ('name', 'phone',)
-    fields = ('name', 'phone',)
+    search_fields = ('name', 'phone', 'user__user_id', 'user__username')
+    fields = ('name', 'phone', 'user')
+    autocomplete_fields = ('user',)
 
     def has_module_permission(self, request):
         return False
@@ -46,8 +54,9 @@ class SenderAdmin(VersionAdmin):
 @admin.register(Receiver)
 class ReceiverAdmin(VersionAdmin):
     list_display = ('name', 'phone',)
-    search_fields = ('name', 'phone')
-    fields = ('name', 'phone',)
+    search_fields = ('name', 'phone', 'user__user_id', 'user__username')
+    fields = ('name', 'phone', 'user')
+    autocomplete_fields = ('user',)
 
     def has_module_permission(self, request):
         return False
@@ -55,10 +64,11 @@ class ReceiverAdmin(VersionAdmin):
 
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
+    # change_list_template = "admin/delivery_change_list.html"
     fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission')
     list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message')
     search_fields = ('sender__name', 'sender__phone',)
-    list_filter = ('valid', 'status')
+    list_filter = ('valid', 'status', 'created_by')
     inlines = (TransferInline,)
     autocomplete_fields = ('sender',)
 
@@ -74,6 +84,41 @@ class DeliveryAdmin(VersionAdmin):
             return [field.name for field in self.model._meta.fields]
 
         return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd',)
+
+    def download_report(self, request):
+        date_from = datetime.datetime.strptime(request.POST.get('date_from'), '%Y-%m-%d').date()
+        date_to = datetime.datetime.strptime(request.POST.get('date_to'), '%Y-%m-%d').date()
+        deliveries = Delivery.aggregate_report(date_from, date_to)
+        if deliveries.all():
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, create_excel_file(deliveries, date_from, date_to))
+
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(fh.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", status=200)
+                    response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                    return response
+            else:
+                return HttpResponse("Файл не найден", status=404)
+        else:
+            return HttpResponse("Данные за указанный период отсутствуют", status=400)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('report/', self.admin_site.admin_view(self.download_report), name='report'),
+        ]
+        return custom_urls + urls
+
+    def save_model(self, request, obj, form, change,):
+        if request.user and obj.pk is None:
+            obj.created_by = request.user
+
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Rate)

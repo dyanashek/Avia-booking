@@ -135,7 +135,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru'
 
 TIME_ZONE = 'UTC'
 
@@ -171,7 +171,7 @@ CIRCUIT_PLAN = os.getenv('CIRCUIT_PLAN')
 CURCUIT_END_POINT = 'https://api.getcircuit.com/public/v0.2b'
 
 CURCUIT_HEADER = {
-        'Authorization': f'Basic {CIRCUIT_TOKEN }', 
+        'Authorization': f'Basic {CIRCUIT_TOKEN}', 
     }
 
 ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops'
