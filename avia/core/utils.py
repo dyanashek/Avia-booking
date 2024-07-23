@@ -49,7 +49,7 @@ async def send_pickup_address(application, application_type):
             async with session.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data, ssl=ssl_context) as response:
                     if response.status == 200:
                         response_data = await response.json()
-                        stop_id = response_data.get('id')
+                        stop_id = response_data.get('stop').get('id')
                     else:
                         stop_id = False
         except Exception as ex:
@@ -85,7 +85,7 @@ async def send_sim_delivery_address(phone, user, fare):
             async with session.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data, ssl=ssl_context) as response:
                     if response.status == 200:
                         response_data = await response.json()
-                        stop_id = response_data.get('id')
+                        stop_id = response_data.get('stop').get('id')
                     else:
                         stop_id = False
         except Exception as ex:
@@ -120,8 +120,9 @@ async def send_sim_money_collect_address(phone, user, debt):
             async with session.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data, ssl=ssl_context) as response:
                     if response.status == 200:
                         response_data = await response.json()
-                        stop_id = response_data.get('id')
+                        stop_id = response_data.get('stop').get('id')
                     else:
+                        response_data = await response.json()
                         stop_id = False
         except Exception as ex:
             stop_id = False
@@ -130,11 +131,14 @@ async def send_sim_money_collect_address(phone, user, debt):
 
 
 async def create_icount_client(user, phone):
+    cl_name = user.name
+    if user.family_name:
+        cl_name += f' {user.family_name}'
     data = {
         'cid': ICOUNT_COMPANY_ID,
         'user': ICOUNT_USERNAME,
         'pass': ICOUNT_PASSWORD,
-        'client_name': f'{user.family_name} {user.name}',
+        'client_name': cl_name,
         'first_name': user.name,
         'last_name': user.family_name,
         'mobile': phone

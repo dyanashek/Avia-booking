@@ -43,6 +43,7 @@ async def start_message(message: types.Message):
 
     user, _ = await sync_to_async(TGUser.objects.get_or_create)(user_id=user_id)
     user.username = username
+    user.active = True
     user.curr_input = None
     await sync_to_async(user.save)()
 
@@ -1471,7 +1472,7 @@ async def callback_query(call: types.CallbackQuery):
         elif info == 'address':
             sim_card = await sync_to_async(user.sim_cards.first)()
 
-            if sim_card and not sim_card.circuit_id_collect and sim_card.debt >= 200:
+            if sim_card and sim_card.circuit_id_collect is None and sim_card.debt >= 200:
                 reply = await sync_to_async(TGText.objects.get)(slug='collect_sim_money', language=user_language)
 
                 await bot.edit_message_reply_markup(chat_id=chat_id,
@@ -1485,7 +1486,7 @@ async def callback_query(call: types.CallbackQuery):
                                     )
 
                 stop_id = await send_sim_money_collect_address(sim_card.sim_phone, user, sim_card.debt)
-
+                print(stop_id)
                 if stop_id:
                     sim_card.circuit_id_collect = stop_id
                     sim_card.ready_to_pay = True

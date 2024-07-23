@@ -38,7 +38,7 @@ class Address(models.Model):
 
 
 class Sender(models.Model):
-    user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.CASCADE, related_name='sender', null=True, blank=True)
+    user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.SET_NULL, related_name='sender', null=True, blank=True)
     name = models.CharField(verbose_name='Имя', max_length=100)
     phone = models.CharField(verbose_name='Номер телефона', max_length=100, unique=True)
     addresses = models.ManyToManyField(Address, verbose_name='Адреса', related_name='senders_addresses', blank=True)
@@ -61,7 +61,7 @@ class Sender(models.Model):
 
 
 class Receiver(models.Model):
-    user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.CASCADE, related_name='receiver', null=True, blank=True)
+    user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True)
     name = models.CharField(verbose_name='Имя', max_length=100)
     phone = models.CharField(verbose_name='Номер телефона', max_length=100, unique=True)
     addresses = models.ManyToManyField(Address, verbose_name='Адреса', related_name='receivers_addresses', blank=True)

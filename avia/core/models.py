@@ -112,6 +112,7 @@ class TGUser(models.Model):
     passport_photo_id = models.CharField(verbose_name='TG id паспорта', max_length=200, null=True, blank=True)
     curr_input = models.CharField(verbose_name='Текущий ввод', max_length=100, null=True, blank=True, default=None)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+    active = models.BooleanField(verbose_name='Пользователь активен?', default=True)
 
 
     class Meta:
@@ -240,7 +241,7 @@ class UsersSim(models.Model):
     created_at = models.DateField(verbose_name='Дата приобретения', auto_now_add=True)
     next_payment = models.DateField(verbose_name='Дата следующего платежа')
     pay_date = models.DateField(verbose_name='Планируемая дата оплаты', null=True, blank=True)
-    debt = models.FloatField(verbose_name='Задолженность', help_text='Отрицательная, при оплате наперед. Изменить вручную после получения денег.')
+    debt = models.FloatField(verbose_name='Задолженность', help_text='Отрицательная, при оплате наперед.')
     ready_to_pay = models.BooleanField(verbose_name='Готов оплачивать', default=False)
     notified = models.BooleanField(verbose_name='Уведомлен сегодня', default=False)
     circuit_id = models.CharField(verbose_name='Circuit id (delivery_sim)', max_length=250, blank=True, null=True, unique=True)
@@ -285,6 +286,24 @@ class Notification(models.Model):
         return str(self.user)
 
 
+class OldSim(models.Model):
+    user_id = models.CharField(verbose_name='Телеграм id', max_length=100, unique=True, null=True, blank=True, default=None)
+    sim_phone = models.CharField(verbose_name='Номер симкарты', max_length=100, unique=True)
+    fare = models.ForeignKey(SimFare, verbose_name='Тариф', on_delete=models.CASCADE, related_name='old_sims', null=True, blank=True)
+    address = models.CharField(verbose_name='Адрес', max_length=512, null=True, blank=True, default=None)
+    name = models.CharField(verbose_name='Имя', max_length=512, null=True, blank=True, default=None)
+    debt = models.FloatField(verbose_name='Задолженность')
+    next_payment = models.DateField(verbose_name='Дата следующего платежа')
+    to_main_bot = models.BooleanField(verbose_name='Перенесена в основного бота?', default=False)
+
+    class Meta:
+        verbose_name = 'старая сим карта'
+        verbose_name_plural = 'старые сим карты'
+    
+    def __str__(self):
+        return self.sim_phone
+
+
 @receiver(post_save, sender=Notification)
 def handle_notification(sender, instance, **kwargs):
     if instance.notify_now and instance.notified is None:
@@ -301,3 +320,4 @@ def handle_notification(sender, instance, **kwargs):
         
         instance.notify_time = datetime.datetime.utcnow()
         instance.save()
+

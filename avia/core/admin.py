@@ -3,7 +3,7 @@ from django.db.models import Q
 from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
-                         UsersSim, Notification)
+                         UsersSim, Notification, OldSim)
 
 
 @admin.register(Language)
@@ -67,10 +67,11 @@ class RouteAdmin(SortableAdminMixin, admin.ModelAdmin):
 
 @admin.register(TGUser)
 class TGUserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'name', 'family_name', 'get_thumbnail')
+    list_display = ('user_id', 'username', 'active', 'name', 'family_name', 'get_thumbnail')
     search_fields = ('user_id', 'username', 'name', 'family_name')
-    readonly_fields = ('created_at',)
-    fields = ('user_id', 'language', 'username', 'name', 'family_name',
+    readonly_fields = ('created_at', 'active',)
+    list_filter = ('active',)
+    fields = ('user_id', 'language', 'username', 'active', 'name', 'family_name',
               'phone', 'addresses', 'sex', 'birth_date', 'start_date',
                'end_date', 'passport_number', 'passport_photo_user', 'created_at')
 
@@ -113,7 +114,7 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 class UsersSimAdmin(admin.ModelAdmin):
     list_display = ('user', 'fare', 'debt', 'ready_to_pay')
     list_filter = ('ready_to_pay',)
-    fields = ('user', 'fare', 'debt', 'next_payment', 'pay_date', 'ready_to_pay', 'driver',)
+    fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'driver', 'circuit_id_collect')
     readonly_fields = ('driver',)
     autocomplete_fields = ('user',)
 
@@ -130,3 +131,17 @@ class NotificationAdmin(admin.ModelAdmin):
             return ('user', 'text', 'notify_now', 'notify_time', 'notified')
 
         return ('notified',)
+
+
+@admin.register(OldSim)
+class OldSimAdmin(admin.ModelAdmin):
+    list_display = ('sim_phone', 'debt', 'to_main_bot')
+    search_fields = ('sim_phone',)
+    readonly_fields = ('user_id', 'sim_phone', 'fare', 'to_main_bot')
+    list_filter = ('to_main_bot',)
+    
+    def has_module_permission(self, request):
+        return False
+    
+
+    

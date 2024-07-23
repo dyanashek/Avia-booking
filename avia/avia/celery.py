@@ -17,8 +17,12 @@ app.conf.beat_schedule = {
     },
     'run-scheduler-every-day': {
         'task': 'core.tasks.handle_sims',
-        'schedule': crontab(hour=6, minute=59),  
+        'schedule': crontab(hour=7, minute=0),  
     },
+    # 'run-scheduler-every-day-oldsims': {
+    #     'task': 'core.tasks.add_debt_old_sims',
+    #     'schedule': crontab(hour=7, minute=0),  
+    # },
 }
 
 app.autodiscover_tasks()

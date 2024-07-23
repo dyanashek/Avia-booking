@@ -174,7 +174,7 @@ CURCUIT_HEADER = {
         'Authorization': f'Basic {CIRCUIT_TOKEN}', 
     }
 
-ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops'
+ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops:liveCreate'
 
 # Google sheets
 GSPREAD_CONFIG = 'service_account.json'
