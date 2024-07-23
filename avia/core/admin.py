@@ -33,6 +33,9 @@ class TGTextAdmin(SortableAdminMixin, admin.ModelAdmin):
         for text in TGText.objects.filter(language=selected_language).all()[::-1]:
             if not TGText.objects.filter(Q(slug=text.slug) & Q(language=added_language)).exists():
                 TGText(slug=text.slug, text=text.text, language=added_language).save()
+            elif text.slug == 'month':
+                if TGText.objects.filter(Q(slug=text.slug) & Q(language=added_language)).count() < 12:
+                    TGText(slug=text.slug, text=text.text, language=added_language).save()
         
     add_language.short_description = "Добавить другой язык"
 
