@@ -143,8 +143,3 @@ class OldSimAdmin(admin.ModelAdmin):
     readonly_fields = ('user_id', 'sim_phone', 'fare', 'to_main_bot')
     list_filter = ('to_main_bot',)
     
-    def has_module_permission(self, request):
-        return False
-    
-
-    
