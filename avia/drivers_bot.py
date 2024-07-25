@@ -116,7 +116,7 @@ async def callback_query(call: types.CallbackQuery):
                     sim.debt -= amount
                     await sync_to_async(sim.save)()
 
-                    invoice_url = await create_icount_invoice(sim.icount_id, amount)
+                    invoice_url = await create_icount_invoice(sim.icount_id, amount, sim.is_old_sim)
                     if invoice_url:
                         sim_user = await sync_to_async(lambda: sim.user)()
                         user_language = await sync_to_async(lambda: sim_user.language)()
@@ -127,15 +127,20 @@ async def callback_query(call: types.CallbackQuery):
                             text=reply_text,
                         )
 
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
 
-                await bot.send_message(chat_id=chat_id,
-                        text=f'Подтверждена передача клиентом суммы в {amount} ₪',
-                        parse_mode='Markdown',
-                        )
+                    await bot.send_message(chat_id=chat_id,
+                            text=f'Подтверждена передача клиентом суммы в {amount} ₪',
+                            parse_mode='Markdown',
+                            )
+                else:
+                    await bot.send_message(chat_id=chat_id,
+                            text=f'Ошибка подтверждения, попробуйте позднее.',
+                            parse_mode='Markdown',
+                            )
 
 
 @dp.message(F.text)

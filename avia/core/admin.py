@@ -116,9 +116,9 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 @admin.register(UsersSim)
 class UsersSimAdmin(admin.ModelAdmin):
     list_display = ('user', 'fare', 'debt', 'ready_to_pay')
-    list_filter = ('ready_to_pay',)
-    fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'driver',)
-    readonly_fields = ('driver',)
+    list_filter = ('ready_to_pay', 'is_old_sim',)
+    fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
+    readonly_fields = ('driver', 'is_old_sim',)
     autocomplete_fields = ('user',)
 
 

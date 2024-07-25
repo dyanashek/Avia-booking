@@ -21,6 +21,7 @@ class Command(BaseCommand):
             debt = row.balance * (-1)
             phone = row.simcard_mobile
             address = row.tags
+            icount_id = int(row.icount_id)
 
             OldSim.objects.create(
                 sim_phone=phone,
@@ -28,7 +29,8 @@ class Command(BaseCommand):
                 address=address,
                 name=name,
                 debt=debt,
-                next_payment=datetime.date(year=2024, month=7, day=26),
+                next_payment=datetime.date(year=2024, month=8, day=26),
+                icount_id=icount_id,
             )
             counter += 1
     

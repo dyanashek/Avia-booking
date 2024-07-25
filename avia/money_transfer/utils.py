@@ -14,6 +14,18 @@ sheet = service_acc.open(settings.SPREAD_NAME)
 work_sheet = sheet.worksheet(settings.MONEY_TRANSFER_LIST)
 
 
+def reoptimize_plan():
+    data = {
+        'optimizationType': 'reorder_changed_stops',
+    }
+
+    response = requests.post(settings.REOPTIMIZE_PLAN_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
+
+
+def redistribute_plan():
+    response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+
+
 def send_pickup_address(sender, delivery):
     items = []
     if delivery.usd_amount:
@@ -53,6 +65,11 @@ def send_pickup_address(sender, delivery):
     if response:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
+            # try:
+            #     reoptimize_plan()
+            #     redistribute_plan()
+            # except:
+            #     pass
         else:
             stop_id = False
     else:

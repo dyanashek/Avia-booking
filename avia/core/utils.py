@@ -9,9 +9,16 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.http import HttpResponse
 
-from config import (TELEGRAM_TOKEN, ICOUNT_COMPANY_ID, ICOUNT_USERNAME, 
-                    ICOUNT_PASSWORD, ICOUNT_CREATE_USER_ENDPOINT,
-                    ICOUNT_CREATE_INVOICE_ENDPOINT)
+from config import (TELEGRAM_TOKEN, 
+                    ICOUNT_COMPANY_ID, 
+                    ICOUNT_USERNAME, 
+                    ICOUNT_PASSWORD, 
+                    OLD_ICOUNT_COMPANY_ID, 
+                    OLD_ICOUNT_USERNAME, 
+                    OLD_ICOUNT_PASSWORD, 
+                    ICOUNT_CREATE_USER_ENDPOINT,
+                    ICOUNT_CREATE_INVOICE_ENDPOINT,
+                    )
 
 
 async def send_pickup_address(application, application_type):
@@ -160,11 +167,19 @@ async def create_icount_client(user, phone):
     return icount_client_id
 
 
-async def create_icount_invoice(user_id, amount):
+async def create_icount_invoice(user_id, amount, is_old_sim=False):
+    icount_cid = ICOUNT_COMPANY_ID
+    icount_user = ICOUNT_USERNAME
+    icount_pass = ICOUNT_PASSWORD
+    if is_old_sim:
+        icount_cid = OLD_ICOUNT_COMPANY_ID
+        icount_user = OLD_ICOUNT_USERNAME
+        icount_pass = OLD_ICOUNT_PASSWORD
+        
     data = {
-        'cid': ICOUNT_COMPANY_ID,
-        'user': ICOUNT_USERNAME,
-        'pass': ICOUNT_PASSWORD,
+        'cid': icount_cid,
+        'user': icount_user,
+        'pass': icount_pass,
         'doctype': 'invrec',
         'client_id': user_id,
         'lang': 'en',

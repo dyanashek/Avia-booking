@@ -1712,7 +1712,7 @@ async def callback_query(call: types.CallbackQuery):
                 pass
 
             await bot.send_message(chat_id=chat_id,
-                                text='Введите номер выдаваемой симки',
+                                text='Введите номер выдаваемой симки (должен начинаться с 972)',
                                 parse_mode='Markdown',
                                 )
     
@@ -2156,7 +2156,7 @@ async def handle_text(message):
         data = curr_input.split('_')
         sim_user_id = int(data[1])
         fare_id = int(data[2])
-        phone = await utils.validate_phone(input_info)
+        phone = await utils.validate_phone_sim(input_info)
         if phone:
             user.curr_input = f'manager-sim_{phone}'
             await sync_to_async(user.save)()
@@ -2168,7 +2168,7 @@ async def handle_text(message):
                             )
         else:
             await bot.send_message(chat_id=user_id,
-                            text='Не похоже на корректный номер телефона, введите еще раз.',
+                            text='Не похоже на корректный номер телефона, введите еще раз (должен начинаться с 972).',
                             )
 
     elif curr_input and curr_input == 's-address':

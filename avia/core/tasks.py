@@ -13,7 +13,7 @@ def add_debt():
     for users_sim in users_sims:
         price = users_sim.fare.price
         users_sim.debt += price
-        users_sim.next_payment = datetime.datetime.utcnow() + datetime.timedelta(days=31)
+        users_sim.next_payment = datetime.datetime.utcnow() + datetime.timedelta(days=30)
         users_sim.save()
 
 
@@ -88,14 +88,14 @@ def select_notifications():
     return notifications
 
 
-# @shared_task
-# def add_debt_old_sims():
-#     users_sims = OldSim.objects.filter(next_payment=datetime.datetime.utcnow().date(), to_main_bot=False).select_related('fare').all()
-#     for users_sim in users_sims:
-#         price = users_sim.fare.price
-#         users_sim.debt += price
-#         users_sim.next_payment = datetime.datetime.utcnow() + datetime.timedelta(days=31)
-#         users_sim.save()
+@shared_task
+def add_debt_old_sims():
+    users_sims = OldSim.objects.filter(next_payment=datetime.datetime.utcnow().date(), to_main_bot=False).select_related('fare').all()
+    for users_sim in users_sims:
+        price = users_sim.fare.price
+        users_sim.debt += price
+        users_sim.next_payment = datetime.datetime.utcnow() + datetime.timedelta(days=30)
+        users_sim.save()
 
 
 @shared_task

@@ -175,6 +175,8 @@ CURCUIT_HEADER = {
     }
 
 ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops:liveCreate'
+REOPTIMIZE_PLAN_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}:reoptimize'
+REDISTRIBUTE_PLAN_ENDPOINT  = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}:redistribute'
 
 # Google sheets
 GSPREAD_CONFIG = 'service_account.json'

@@ -248,7 +248,8 @@ class UsersSim(models.Model):
     icount_id = models.IntegerField(null=True, blank=True, default=None)
     circuit_id_collect = models.CharField(verbose_name='Circuit id (collect money)', help_text='После получения денег - удалить.', max_length=250, blank=True, null=True, unique=True)
     driver = models.ForeignKey(Driver, verbose_name='Водитель', help_text='Последний водитель, вносивший информацию через бота о переданных клиентом деньгах', on_delete=models.SET_NULL, related_name='sim_cards', null=True, blank=True)
-    
+    is_old_sim = models.BooleanField(verbose_name='Старая симка?', default=False)
+
     # алгоритм поиска тех, кому направлять уведомления: 
     # !-> смотрим у кого next_payment=today() и начисляем по тарифу dept
     # !-> dept больше определенного значения, ready_to_pay=False, pay_date=None
@@ -295,6 +296,7 @@ class OldSim(models.Model):
     debt = models.FloatField(verbose_name='Задолженность')
     next_payment = models.DateField(verbose_name='Дата следующего платежа')
     to_main_bot = models.BooleanField(verbose_name='Перенесена в основного бота?', default=False)
+    icount_id = models.IntegerField(null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'старая сим карта'

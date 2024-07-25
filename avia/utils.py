@@ -14,6 +14,14 @@ async def validate_phone(phone):
         return False
 
 
+async def validate_phone_sim(phone):
+    phone = await extract_digits(phone)
+    if len(phone) > 10 and phone.startswith('972'):
+        return phone
+    else:
+        return False
+
+
 async def validate_date(input_string):
     date = await extract_digits(input_string)
     try:

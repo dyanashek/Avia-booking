@@ -81,6 +81,12 @@ def calculate_commission(request):
 
 @csrf_exempt
 def stop_status(request):
+    #? 1 - забор билета (создан через бота)
+    #? 2 - забор посылки (создана через бота)
+    #? 3 - забор денег для трансфера в Узбекистан (через админку)
+    #? 4 - доставка симки (через бота)
+    #? 5 - забор денег за симку (через бота)
+
     stop_id = request.POST.get('id')
     order_id = request.POST.get('order_id')
     driver_comment = request.POST.get('comment')

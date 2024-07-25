@@ -14,7 +14,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
 from core.models import UsersSim, TGUser, SimFare, OldSim
-from core.utils import create_icount_client
 
 import config
 import text
@@ -58,7 +57,7 @@ async def handle_text(message):
 
     input_info = await utils.escape_markdown(message.text)
 
-    phone = await utils.validate_phone(input_info)
+    phone = await utils.validate_phone_sim(input_info)
 
     if phone:
         old_sim = await sync_to_async(OldSim.objects.filter(sim_phone=phone).first)()
@@ -95,31 +94,31 @@ async def handle_text(message):
                         user.active = False
                         await sync_to_async(user.save)()
                     
-                    icount_id = await create_icount_client(user, old_sim.sim_phone)
-                    if icount_id:
-                        try:
-                            fare = await sync_to_async(lambda: old_sim.fare)()
 
-                            await sync_to_async(UsersSim.objects.create)(
-                                user=user,
-                                fare=fare,
-                                sim_phone=old_sim.sim_phone,
-                                next_payment=old_sim.next_payment,
-                                debt=old_sim.debt,
-                                icount_id=icount_id,
+                    try:
+                        fare = await sync_to_async(lambda: old_sim.fare)()
+
+                        await sync_to_async(UsersSim.objects.create)(
+                            user=user,
+                            fare=fare,
+                            sim_phone=old_sim.sim_phone,
+                            next_payment=old_sim.next_payment,
+                            debt=old_sim.debt,
+                            icount_id=old_sim.icount_id,
+                            is_old_sim=True,
+                        )
+                        old_sim.user_id = user_id
+                        old_sim.to_main_bot = True
+                        await sync_to_async(old_sim.save)()
+                        
+                        await bot.send_message(chat_id=user_id,
+                            text=text.SUCCESS,
+                            parse_mode='Markdown',
                             )
-                            old_sim.user_id = user_id
-                            old_sim.to_main_bot = True
-                            await sync_to_async(old_sim.save)()
-                            
-                            await bot.send_message(chat_id=user_id,
-                                text=text.SUCCESS,
-                                parse_mode='Markdown',
-                                )
-                        except:
-                            await bot.send_message(chat_id=user_id,
-                            text=text.TRY_AGAIN,
-                            )
+                    except:
+                        await bot.send_message(chat_id=user_id,
+                        text=text.TRY_AGAIN,
+                        )
 
                     else:
                         await bot.send_message(chat_id=user_id,
