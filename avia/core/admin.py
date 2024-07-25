@@ -140,6 +140,6 @@ class NotificationAdmin(admin.ModelAdmin):
 class OldSimAdmin(admin.ModelAdmin):
     list_display = ('sim_phone', 'debt', 'to_main_bot')
     search_fields = ('sim_phone',)
-    readonly_fields = ('user_id', 'sim_phone', 'fare', 'to_main_bot')
+    readonly_fields = ('user_id', 'sim_phone', 'fare', 'to_main_bot', 'icount_id')
     list_filter = ('to_main_bot',)
     
