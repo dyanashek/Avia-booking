@@ -21,6 +21,18 @@ from config import (TELEGRAM_TOKEN,
                     )
 
 
+def reoptimize_plan():
+    data = {
+        'optimizationType': 'reorder_changed_stops',
+    }
+
+    requests.post(settings.REOPTIMIZE_PLAN_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
+
+
+def redistribute_plan():
+    requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+
+
 async def send_pickup_address(application, application_type):
     if application_type == 'flight':
         order_id = '1'
@@ -57,6 +69,12 @@ async def send_pickup_address(application, application_type):
                     if response.status == 200:
                         response_data = await response.json()
                         stop_id = response_data.get('stop').get('id')
+
+                        try:
+                            reoptimize_plan()
+                            redistribute_plan()
+                        except:
+                            pass
                     else:
                         stop_id = False
         except Exception as ex:
@@ -93,6 +111,12 @@ async def send_sim_delivery_address(phone, user, fare):
                     if response.status == 200:
                         response_data = await response.json()
                         stop_id = response_data.get('stop').get('id')
+
+                        try:
+                            reoptimize_plan()
+                            redistribute_plan()
+                        except:
+                            pass
                     else:
                         stop_id = False
         except Exception as ex:
@@ -128,6 +152,12 @@ async def send_sim_money_collect_address(phone, user, debt):
                     if response.status == 200:
                         response_data = await response.json()
                         stop_id = response_data.get('stop').get('id')
+
+                        try:
+                            reoptimize_plan()
+                            redistribute_plan()
+                        except:
+                            pass
                     else:
                         response_data = await response.json()
                         stop_id = False
@@ -175,7 +205,7 @@ async def create_icount_invoice(user_id, amount, is_old_sim=False):
         icount_cid = OLD_ICOUNT_COMPANY_ID
         icount_user = OLD_ICOUNT_USERNAME
         icount_pass = OLD_ICOUNT_PASSWORD
-        
+
     data = {
         'cid': icount_cid,
         'user': icount_user,

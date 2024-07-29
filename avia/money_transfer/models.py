@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from django.db.models import Count, Sum, Q, Case, When, F, Value
 from django.db.models.functions import Coalesce
 
-from money_transfer.utils import send_pickup_address, delivery_to_gspred
+from money_transfer.utils import send_pickup_address, delivery_to_gspread
 
 
 User = get_user_model()
@@ -63,7 +63,7 @@ class Sender(models.Model):
 class Receiver(models.Model):
     user = models.OneToOneField('core.TGUser', verbose_name='Пользователь tg', on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True)
     name = models.CharField(verbose_name='Имя', max_length=100)
-    phone = models.CharField(verbose_name='Номер телефона', max_length=100, unique=True)
+    phone = models.CharField(verbose_name='Номер телефона', max_length=100)
     addresses = models.ManyToManyField(Address, verbose_name='Адреса', related_name='receivers_addresses', blank=True)
     updated_at = models.DateTimeField(verbose_name='Последнее обновление', auto_now=True)
 
@@ -295,7 +295,7 @@ def update_delivery_valid(sender, instance, **kwargs):
                 instance.delivery.status_message = 'Доставка сохранена.'
 
                 try:
-                    delivery_to_gspred(instance.delivery)
+                    delivery_to_gspread(instance.delivery)
                     gspread = True
                 except Exception as ex:
                     gspread = False

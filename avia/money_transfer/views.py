@@ -100,15 +100,14 @@ def stop_status(request):
         delivery = Delivery.objects.filter(circuit_id=stop_id).first()
         if delivery:
             if status:
-                
+                succeeded = Status.objects.get(slug='finished')
+                delivery.status = succeeded
+                delivery.status_message = 'Получено от отправителя'
+
                 try:
                     update_delivery_pickup_status(delivery.pk, driver_comment)
                 except:
                     pass
-
-                succeeded = Status.objects.get(slug='finished')
-                delivery.status = succeeded
-                delivery.status_message = 'Получено от отправителя'
             else:
                 attempted = Status.objects.get(slug='attempted')
                 delivery.status = attempted

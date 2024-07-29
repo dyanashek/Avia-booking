@@ -120,11 +120,6 @@ async def handle_text(message):
                         text=text.TRY_AGAIN,
                         )
 
-                    else:
-                        await bot.send_message(chat_id=user_id,
-                            text=text.TRY_AGAIN,
-                            )
-
         else:
             await bot.send_message(chat_id=user_id,
                                     text=text.WRONG_PHONE,

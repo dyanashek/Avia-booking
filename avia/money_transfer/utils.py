@@ -19,11 +19,11 @@ def reoptimize_plan():
         'optimizationType': 'reorder_changed_stops',
     }
 
-    response = requests.post(settings.REOPTIMIZE_PLAN_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
+    requests.post(settings.REOPTIMIZE_PLAN_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
 
 
 def redistribute_plan():
-    response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
 
 
 def send_pickup_address(sender, delivery):
@@ -89,7 +89,7 @@ def get_first_delivery_row(delivery_id):
         return False
 
 
-def delivery_to_gspred(delivery):
+def delivery_to_gspread(delivery):
     delivery_data = []
     for num, transfer in enumerate(delivery.transfers.all()):
         pickup = 'Нет'
@@ -143,7 +143,7 @@ def delivery_to_gspred(delivery):
 
 def update_delivery_pickup_status(delivery_id, comment):
     row_num = get_first_delivery_row(str(delivery_id))
-    date = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
+    date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')
     work_sheet.update(f"B{row_num}:X{row_num}", [[date, comment]])
 
 

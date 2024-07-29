@@ -171,12 +171,13 @@ CIRCUIT_PLAN = os.getenv('CIRCUIT_PLAN')
 CURCUIT_END_POINT = 'https://api.getcircuit.com/public/v0.2b'
 
 CURCUIT_HEADER = {
-        'Authorization': f'Basic {CIRCUIT_TOKEN}', 
+        'Authorization': f'Basic {CIRCUIT_TOKEN}',
     }
 
 ADD_STOP_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}/stops:liveCreate'
 REOPTIMIZE_PLAN_ENDPOINT = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}:reoptimize'
 REDISTRIBUTE_PLAN_ENDPOINT  = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}:redistribute'
+SAVE_PLAN_ENDPOINT  = f'{CURCUIT_END_POINT}/plans/{CIRCUIT_PLAN}:save'
 
 # Google sheets
 GSPREAD_CONFIG = 'service_account.json'
