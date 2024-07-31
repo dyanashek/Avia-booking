@@ -88,6 +88,7 @@ class Transfer(models.Model):
     address = models.ForeignKey(Address, verbose_name='Адрес получателя', related_name='receivers_deliveries', blank=True, null=True, on_delete=models.SET_NULL)
     pick_up = models.BooleanField(verbose_name='Доставка до адреса', default=False)
     usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
+    pass_date = models.DateTimeField(verbose_name='Передано получателю', null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'получатель'

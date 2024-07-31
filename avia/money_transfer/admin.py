@@ -66,7 +66,7 @@ class ReceiverAdmin(VersionAdmin):
 class DeliveryAdmin(VersionAdmin):
     # change_list_template = "admin/delivery_change_list.html"
     fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission')
-    list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message')
+    list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes')
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status', 'created_by')
     inlines = (TransferInline,)
@@ -120,6 +120,17 @@ class DeliveryAdmin(VersionAdmin):
 
         super().save_model(request, obj, form, change)
 
+    def receivers_codes(self, obj):
+        if obj.transfers.all():
+            codes = ''
+            for transfer in obj.transfers.all():
+                codes += f', {transfer.pk}'
+            codes = codes.lstrip(', ')
+        else:
+            codes = '-'
+        return codes
+
+    receivers_codes.short_description = 'коды для получения'
 
 @admin.register(Rate)
 class RateAdmin(VersionAdmin):

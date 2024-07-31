@@ -1,11 +1,9 @@
-import os
 import tempfile
 import requests
 import datetime
 
 import pandas
 import gspread
-from openpyxl import Workbook
 from django.conf import settings
 
 
@@ -35,7 +33,7 @@ def send_pickup_address(sender, delivery):
     if delivery.commission:
         items.append(f'комиссия: {delivery.commission}₪')
 
-    notes = 'Отправка денег, '
+    notes = f'{sender.phone}\nОтправка денег, '
     notes += ', '.join(items)
     
     data = {
@@ -52,7 +50,7 @@ def send_pickup_address(sender, delivery):
             'products': items,
             'sellerOrderId': '3',
         },
-        'activity': 'pickup',
+        'activity': 'delivery',
         'notes': notes,
     }
 

@@ -39,10 +39,12 @@ async def send_pickup_address(application, application_type):
         route = await sync_to_async(lambda: application.route)()
         departure_date = application.departure_date.strftime('%d.%m.%Y')
         notes = f'Билет {application.type} {route.route}, {departure_date}'
+        activity = 'delivery'
     elif application_type == 'parcel':
         order_id = '2'
         variation = await sync_to_async(lambda: application.variation)()
         notes = f'Посылка, {variation.name}: {application.items_list}'
+        activity = 'pickup'
 
     data = {
         'address': {
@@ -57,7 +59,7 @@ async def send_pickup_address(application, application_type):
             'products': [f'{application.price} ₪'],
             'sellerOrderId': order_id,
         },
-        'activity': 'pickup',
+        'activity': activity,
         'notes': notes,
     }
 
@@ -140,7 +142,7 @@ async def send_sim_money_collect_address(phone, user, debt):
         'orderInfo': {
             'sellerOrderId': '5',
         },
-        'activity': 'pickup',
+        'activity': 'delivery',
         'notes': notes,
     }
 
@@ -242,5 +244,5 @@ async def create_icount_invoice(user_id, amount, is_old_sim=False):
 def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
     """Отправка сообщения в телеграм."""
     endpoint = f'https://api.telegram.org/bot{token}/sendMessage'
-    response = requests.post(endpoint, params=params)
+    requests.post(endpoint, params=params)
     return HttpResponse()
