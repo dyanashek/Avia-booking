@@ -244,3 +244,16 @@ async def confirm_amount_keyboard(amount, sim_id):
     keyboard.row(types.InlineKeyboardButton(text='Ввести заново', callback_data=f'retype_{sim_id}'))
 
     return keyboard.as_markup()
+
+
+#* <------------------------------------------------->
+#! КЛАВИАТУРЫ ДЛЯ ВЫДАЧИ ДЕНЕГ В САМАРКАНДЕ
+#* <------------------------------------------------->
+
+async def pass_money_keyboard(transfer_id):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Отметить выданным', callback_data=f'pass_{transfer_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Отменить', callback_data=f'cancel'))
+
+    return keyboard.as_markup()

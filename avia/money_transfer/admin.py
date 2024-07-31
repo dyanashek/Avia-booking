@@ -19,16 +19,14 @@ class TransferInline(admin.StackedInline):
         if obj and obj.valid:
             return [field.name for field in self.model._meta.fields]
 
-        return []
+        return ('pass_date',)
 
 
 @admin.register(Manager)
 class ManagerAdmin(VersionAdmin):
-    list_display = ('telegram_id', 'updated_at')
+    list_display = ('name', 'telegram_id', 'updated_at',)
     date_hierarchy = 'updated_at'
 
-    def has_module_permission(self, request):
-        return False
         
 @admin.register(Address)
 class AddressAdmin(VersionAdmin):
@@ -76,8 +74,6 @@ class DeliveryAdmin(VersionAdmin):
         if obj.commission == 0:
             return '-'
         return f'{obj.commission}₪'
-
-    final_commission.short_description = 'комиссия'
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.valid:
@@ -130,7 +126,9 @@ class DeliveryAdmin(VersionAdmin):
             codes = '-'
         return codes
 
+    final_commission.short_description = 'комиссия'
     receivers_codes.short_description = 'коды для получения'
+
 
 @admin.register(Rate)
 class RateAdmin(VersionAdmin):
@@ -170,3 +168,29 @@ class StatusAdmin(VersionAdmin):
 
     def has_module_permission(self, request):
         return False
+
+class DatePassedFilter(admin.SimpleListFilter):
+    title = 'передано получателю'
+    parameter_name = 'date_received'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', 'Да'),
+            ('no', 'Нет'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.filter(pass_date__isnull=False)
+        if self.value() == 'no':
+            return queryset.filter(pass_date__isnull=True)
+        return queryset
+
+        
+@admin.register(Transfer)
+class TransferAdmin(VersionAdmin):
+    list_display = ('pk', 'usd_amount', 'pass_date')
+    date_hierarchy = 'pass_date'
+    search_fields = ('pk',)
+    list_filter = (DatePassedFilter,)
+    readonly_fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount')

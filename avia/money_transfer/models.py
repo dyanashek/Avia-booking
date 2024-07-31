@@ -12,6 +12,7 @@ User = get_user_model()
 
 
 class Manager(models.Model):
+    name = models.CharField(verbose_name='Имя', max_length=100, null=True, blank=True, default=None)
     telegram_id = models.CharField(verbose_name='Telegram id', max_length=100, unique=True)
     updated_at = models.DateTimeField(verbose_name='Последнее обновление', auto_now=True)
 
@@ -91,8 +92,8 @@ class Transfer(models.Model):
     pass_date = models.DateTimeField(verbose_name='Передано получателю', null=True, blank=True, default=None)
 
     class Meta:
-        verbose_name = 'получатель'
-        verbose_name_plural = 'получатели'
+        verbose_name = 'перевод'
+        verbose_name_plural = 'переводы'
 
     def __str__(self):
         return f'({self.pk}) {self.receiver.name} - {self.receiver.phone}'

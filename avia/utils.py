@@ -63,4 +63,10 @@ async def escape_markdown(text):
         pass
     
     return text
-    
+
+
+async def validate_id(value):
+    try:
+        return int(value)
+    except:
+        return False

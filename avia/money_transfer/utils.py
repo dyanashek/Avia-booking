@@ -1,3 +1,4 @@
+import asyncio
 import tempfile
 import requests
 import datetime
@@ -159,3 +160,17 @@ def create_excel_file(data, date_from, date_to):
         data_frame.to_excel(temp_file.name, index=False, sheet_name=f'{date_from} - {date_to}')
         
         return temp_file.name
+
+
+async def get_transfer_row(transfer_id):
+    try:
+        row = work_sheet.col_values(4)
+        row_num = row.index(transfer_id)
+        return  row_num + 1
+    except:
+        return False
+
+
+async def update_transfer_pass_status(transfer_id, date):
+    row_num = await get_transfer_row(str(transfer_id))
+    work_sheet.update_cell(row_num, 16, date)
