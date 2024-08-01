@@ -29,7 +29,8 @@ dp = Dispatcher()
 @dp.message(Command("start"))
 async def start_message(message: types.Message):
     user_id = str(message.from_user.id)
-    if await sync_to_async(Manager.objects.filter(telegram_id=user_id).exists)():
+    is_exists = sync_to_async(Manager.objects.filter(telegram_id=user_id).exists)()
+    if is_exists:
         await bot.send_message(chat_id=user_id,
                          text='Привет.\nЗдесь можно контролировать выдачу денежных средств.\nОтправьте код получателя для вывода информации и внесения изменений.',
                          )
