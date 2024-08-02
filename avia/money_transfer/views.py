@@ -7,7 +7,7 @@ from django.db.models import Q
 
 from core.models import UsersSim
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission
-from money_transfer.utils import update_delivery_pickup_status
+from money_transfer.utils import update_delivery_pickup_status, update_credit_status
 from core.utils import send_message_on_telegram
 from drivers.utils import construct_collect_sim_money_message, construct_delivery_sim_message
 
@@ -104,6 +104,14 @@ def stop_status(request):
                 delivery.status = succeeded
                 delivery.status_message = 'Получено от отправителя'
 
+                for transfer in delivery.transfers.filter(credit=True):
+                    transfer.credit = False
+                    transfer.save()
+                    try:
+                        update_credit_status(transfer.id)
+                    except:
+                        pass
+
                 try:
                     update_delivery_pickup_status(delivery.pk, driver_comment)
                 except:
@@ -112,7 +120,7 @@ def stop_status(request):
                 attempted = Status.objects.get(slug='attempted')
                 delivery.status = attempted
                 delivery.status_message = 'Не удалось забрать у отправителя'
-            
+
             delivery.save()
 
     elif order_id and order_id == '4' and status:

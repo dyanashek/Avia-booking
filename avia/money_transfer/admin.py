@@ -14,6 +14,7 @@ from adminsortable2.admin import SortableAdminMixin
 class TransferInline(admin.StackedInline):
     model = Transfer
     extra = 0
+    fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount',)
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.valid:
@@ -63,7 +64,7 @@ class ReceiverAdmin(VersionAdmin):
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
     # change_list_template = "admin/delivery_change_list.html"
-    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission')
+    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission',)
     list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes')
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status', 'created_by')
@@ -169,6 +170,7 @@ class StatusAdmin(VersionAdmin):
     def has_module_permission(self, request):
         return False
 
+
 class DatePassedFilter(admin.SimpleListFilter):
     title = 'передано получателю'
     parameter_name = 'date_received'
@@ -189,8 +191,8 @@ class DatePassedFilter(admin.SimpleListFilter):
         
 @admin.register(Transfer)
 class TransferAdmin(VersionAdmin):
-    list_display = ('pk', 'usd_amount', 'pass_date')
+    list_display = ('pk', 'usd_amount', 'pass_date', 'credit',)
     date_hierarchy = 'pass_date'
     search_fields = ('pk',)
-    list_filter = (DatePassedFilter,)
+    list_filter = (DatePassedFilter, 'credit',)
     readonly_fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount')

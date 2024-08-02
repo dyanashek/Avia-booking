@@ -1,5 +1,6 @@
 import datetime
 import json
+import time
 
 from django.db.models import Q
 from celery import shared_task
@@ -76,6 +77,7 @@ def notify_users(users_sims):
                 send_message_on_telegram(params)
                 users_sim.notified = True
                 users_sim.save()
+                time.sleep(2)
             except:
                 pass
 

@@ -58,7 +58,7 @@ async def callback_query(call: types.CallbackQuery):
                                                 chat_id=chat_id,
                                                 reply_markup=InlineKeyboardBuilder().as_markup(),
                                                 )
-        elif query == 'pass':
+        elif query == 'pass' or query == 'credit':
             transfer_id = int(call_data[1])
             await bot.edit_message_reply_markup(message_id=message_id,
                                                 chat_id=chat_id,
@@ -69,10 +69,18 @@ async def callback_query(call: types.CallbackQuery):
             if transfer:
                 curr_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3))
                 transfer.pass_date = curr_date
-                curr_date = curr_date.strftime('%d.%m.%Y %H:%M')
+                curr_date = curr_date.strftime("%d.%m.%Y %H:%M")
+
+                if query == 'credit':
+                    transfer.credit = True
+                    credit = 'Да'
+                else:
+                    transfer.credit = False
+                    credit = 'Нет'
+
                 await sync_to_async(transfer.save)()
                 try:
-                    await update_transfer_pass_status(transfer_id, curr_date)
+                    await update_transfer_pass_status(transfer_id, curr_date, credit)
                 except:
                     pass
 
@@ -123,6 +131,9 @@ async def handle_text(message):
                 else:
                     pass_date = 'не выдано'
 
+                if transfer.credit:
+                    pass_date += f' (в кредит)'
+
                 reply_text = f'''
                             *Отправитель:*\
                             \nИмя: *{sender.name}*\
@@ -132,6 +143,7 @@ async def handle_text(message):
                             \n\
                             \n*Получатель:*\
                             \nКод: *{transfer.pk}*\
+                            \nСумма: *{transfer.usd_amount} $*\
                             \nИмя: *{receiver.name}*\
                             \nНомер: *{receiver.phone}*\
                             \nДоставка: *{pick_up}*\
@@ -142,6 +154,8 @@ async def handle_text(message):
                 status: Status = await sync_to_async(lambda: delivery.status)()
                 if status.slug == 'finished' and pass_date == 'не выдано':
                     keyboard = await keyboards.pass_money_keyboard(transfer.pk)
+                elif status.slug == 'api' and pass_date == 'не выдано':
+                    keyboard = await keyboards.credit_money_keyboard(transfer.pk)
                 else:
                     keyboard = InlineKeyboardBuilder().as_markup()
 

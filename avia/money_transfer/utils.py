@@ -34,7 +34,7 @@ def send_pickup_address(sender, delivery):
     if delivery.commission:
         items.append(f'комиссия: {delivery.commission}₪')
 
-    notes = f'{sender.phone}\nОтправка денег, '
+    notes = f'{sender.phone} Отправка денег, '
     notes += ', '.join(items)
     
     data = {
@@ -113,6 +113,7 @@ def delivery_to_gspread(delivery):
                 pickup,
                 address,
                 transfer.usd_amount,
+                delivery.rate,
             ]
         else:
             transfer_data = [
@@ -131,13 +132,14 @@ def delivery_to_gspread(delivery):
                 pickup,
                 address,
                 transfer.usd_amount,
+                delivery.rate,
             ]
         
         delivery_data.append(transfer_data)
 
     first_row = get_first_empty_row()
     end_row = first_row + len(delivery_data) - 1
-    work_sheet.update(f"A{first_row}:O{end_row}", delivery_data)
+    work_sheet.update(f"A{first_row}:P{end_row}", delivery_data)
 
 
 def update_delivery_pickup_status(delivery_id, comment):
@@ -171,6 +173,18 @@ async def get_transfer_row(transfer_id):
         return False
 
 
-async def update_transfer_pass_status(transfer_id, date):
+async def update_transfer_pass_status(transfer_id, date, credit):
     row_num = await get_transfer_row(str(transfer_id))
-    work_sheet.update_cell(row_num, 16, date)
+    work_sheet.update(f"Q{row_num}:R{row_num}", [[date, credit,]])
+
+
+def update_credit_status(transfer_id):
+    try:
+        row = work_sheet.col_values(4)
+        row_num = row.index(str(transfer_id))
+        row_num += 1
+    except:
+        row_num = False
+
+    if row_num:
+        work_sheet.update_cell(row_num, 18, 'Нет')

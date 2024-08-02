@@ -257,3 +257,12 @@ async def pass_money_keyboard(transfer_id):
     keyboard.row(types.InlineKeyboardButton(text='Отменить', callback_data=f'cancel'))
 
     return keyboard.as_markup()
+
+
+async def credit_money_keyboard(transfer_id):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Выдать в кредит', callback_data=f'credit_{transfer_id}'))
+    keyboard.row(types.InlineKeyboardButton(text='Отменить', callback_data=f'cancel'))
+
+    return keyboard.as_markup()

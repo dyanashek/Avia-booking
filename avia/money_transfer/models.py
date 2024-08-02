@@ -90,6 +90,7 @@ class Transfer(models.Model):
     pick_up = models.BooleanField(verbose_name='Доставка до адреса', default=False)
     usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
     pass_date = models.DateTimeField(verbose_name='Передано получателю', null=True, blank=True, default=None)
+    credit = models.BooleanField(verbose_name='В кредит?', null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'перевод'
@@ -128,6 +129,7 @@ class Delivery(models.Model):
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
     created_by = models.ForeignKey(User, verbose_name='Менеджер', related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
+    rate = models.FloatField(verbose_name='Курс на момент перевода', null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'доставка'
@@ -139,6 +141,8 @@ class Delivery(models.Model):
     def save(self, *args, **kwargs) -> None:
         self.sender.addresses.add(self.sender_address)
         self.sender.save()
+        if not self.rate:
+            self.rate = Rate.objects.get(slug='usd-ils').rate
 
         super().save(*args, **kwargs)
     
