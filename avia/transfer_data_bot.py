@@ -39,7 +39,7 @@ async def start_message(message: types.Message):
                             text=text.SIM_PHONE,
                             )
     else:
-        is_exists = await sync_to_async(OldSim.objects.filter(user_id=user_id, to_main_bot=True).exists)()
+        user = await sync_to_async(OldSim.objects.filter(user_id=user_id, to_main_bot=True).first)()
         if is_exists:
             await bot.send_message(chat_id=user_id,
                             text=text.ALREADY_HAVE_SIM,
