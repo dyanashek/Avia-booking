@@ -131,6 +131,9 @@ class Delivery(models.Model):
     created_by = models.ForeignKey(User, verbose_name='Менеджер', related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
     rate = models.FloatField(verbose_name='Курс на момент перевода', null=True, blank=True, default=None)
 
+    circuit_api = models.BooleanField(null=True, blank=True, default=None)
+    gspread_api = models.BooleanField(null=True, blank=True, default=None)
+
     class Meta:
         verbose_name = 'доставка'
         verbose_name_plural = 'доставки'
@@ -270,7 +273,10 @@ def update_delivery_valid(sender, instance, **kwargs):
     delivery_total_usd_amount = instance.delivery.calculate_total_usd_amount()
     instance.delivery.total_usd = round(delivery_total_usd_amount, 2)
 
+    codes = ''
+
     for transfer in instance.delivery.transfers.all():
+        codes += f'{transfer.id}, '
         usd_amount += transfer.usd_amount
 
         if usd_amount < 1:
@@ -306,20 +312,25 @@ def update_delivery_valid(sender, instance, **kwargs):
                 except Exception as ex:
                     gspread = False
 
-                stop_id = send_pickup_address(instance.delivery.sender, instance.delivery)
+                codes = codes.rstrip(', ')
+                stop_id = send_pickup_address(instance.delivery.sender, instance.delivery, codes)
                 if stop_id:
                     api_status = Status.objects.get(slug='api')
                     instance.delivery.circuit_id = stop_id
+                    instance.delivery.circuit_api = True
                     instance.delivery.status = api_status
                     instance.delivery.status_message = 'Доставка передана в Circuit.'
                 else:
                     api_error_status = Status.objects.get(slug='api_error')
+                    instance.delivery.circuit_api = False
                     instance.delivery.status = api_error_status
                     instance.delivery.status_message = 'Ошибка передачи в Circuit (необходимо вручную).'
                 
                 if not gspread:
                     instance.delivery.status_message += ' Ошибка при записи в гугл таблицу.'
-                        
+                    instance.delivery.gspread_api = False
+                else:
+                    instance.delivery.gspread_api = True
         else:
             instance.delivery.valid = False
             instance.delivery.status = error_status

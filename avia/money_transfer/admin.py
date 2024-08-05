@@ -4,6 +4,7 @@ import datetime
 from django.contrib import admin
 from django.urls import path
 from django.http import HttpResponse
+from django.utils.html import format_html
 from reversion.admin import VersionAdmin
 
 from money_transfer.utils import create_excel_file
@@ -65,7 +66,7 @@ class ReceiverAdmin(VersionAdmin):
 class DeliveryAdmin(VersionAdmin):
     # change_list_template = "admin/delivery_change_list.html"
     fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission',)
-    list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes')
+    # list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes')
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status', 'created_by')
     inlines = (TransferInline,)
@@ -127,8 +128,32 @@ class DeliveryAdmin(VersionAdmin):
             codes = '-'
         return codes
 
+    def to_circuit_button(self, obj):
+        if obj.circuit_api is False:
+            return format_html('<a class="button" href="#">Сircuit</a>')
+        return '-'
+
+    def to_gspread_button(self, obj):
+        if obj.circuit_api is False:
+            return format_html('<a class="button" href="#">Deposit</a>')
+        return '-'
+    
+    def get_list_display(self, request, obj=None):
+        fields = ['pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes']
+        # for delivery in super().get_queryset(request):
+        #     if delivery.circuit_api is False:
+        #         if 'to_circuit_button' not in fields:
+        #             fields.append('to_circuit_button')
+        #     if delivery.gspread_api is False:
+        #         if 'to_gspread_button' not in fields:
+        #             fields.append('to_gspread_button')
+
+        return fields
+
     final_commission.short_description = 'комиссия'
     receivers_codes.short_description = 'коды для получения'
+    to_circuit_button.short_description = 'circuit'
+    to_gspread_button.short_description = 'google таблица'
 
 
 @admin.register(Rate)

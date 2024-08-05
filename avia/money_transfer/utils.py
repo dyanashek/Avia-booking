@@ -25,7 +25,7 @@ def redistribute_plan():
     requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
 
 
-def send_pickup_address(sender, delivery):
+def send_pickup_address(sender, delivery, codes):
     items = []
     if delivery.usd_amount:
         items.append(f'{delivery.usd_amount}$')
@@ -36,6 +36,8 @@ def send_pickup_address(sender, delivery):
 
     notes = f'{sender.phone}, '
     notes += ', '.join(items)
+
+    notes += f', {codes}'
     
     data = {
         'address': {
