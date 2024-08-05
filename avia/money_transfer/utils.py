@@ -34,7 +34,7 @@ def send_pickup_address(sender, delivery):
     if delivery.commission:
         items.append(f'комиссия: {delivery.commission}₪')
 
-    notes = f'{sender.phone} Отправка денег, '
+    notes = f'{sender.phone}, '
     notes += ', '.join(items)
     
     data = {
@@ -42,13 +42,7 @@ def send_pickup_address(sender, delivery):
             'addressLineOne': delivery.sender_address.address,
             'country': 'Israel',
         },
-        'recipient': {
-            'name': sender.name,
-            'phone': sender.phone,
-            'externalId': str(delivery.id),
-        },
         'orderInfo': {
-            'products': items,
             'sellerOrderId': '3',
         },
         'activity': 'delivery',
