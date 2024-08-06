@@ -1247,6 +1247,10 @@ async def callback_query(call: types.CallbackQuery):
                 stop_id = await send_pickup_address(application, info_type)
                 if stop_id:
                     application.circuit_id = stop_id
+                    application.circuit_api = True
+                else:
+                    application.circuit_api = False
+
                 await sync_to_async(application.save)()
 
                 try:
@@ -1486,11 +1490,15 @@ async def callback_query(call: types.CallbackQuery):
                                     )
 
                 stop_id = await send_sim_money_collect_address(sim_card.sim_phone, user, sim_card.debt)
-                print(stop_id)
+
+                sim_card.ready_to_pay = True
                 if stop_id:
                     sim_card.circuit_id_collect = stop_id
-                    sim_card.ready_to_pay = True
-                    await sync_to_async(sim_card.save)()
+                    sim_card.circuit_api_collect = True
+                else:
+                    sim_card.circuit_api_collect = False
+
+                await sync_to_async(sim_card.save)()
 
             else:
                 try:
@@ -1726,14 +1734,6 @@ async def callback_query(call: types.CallbackQuery):
             phone = data[1]
 
             if curr_input and 'manager-sim' in curr_input and len(data) == 2:
-                sim_user = await sync_to_async(TGUser.objects.filter(id=sim_user_id).first)()
-                fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
-
-                stop_id = await send_sim_delivery_address(phone, sim_user, fare)
-                icount_client_id = None
-                if stop_id:
-                    icount_client_id = await create_icount_client(sim_user, phone)
-
                 try:
                     await bot.edit_message_reply_markup(chat_id=chat_id,
                                                     message_id=message_id,
@@ -1741,22 +1741,43 @@ async def callback_query(call: types.CallbackQuery):
                                                     )
                 except:
                     pass
+                
+                sim_user = await sync_to_async(TGUser.objects.filter(id=sim_user_id).first)()
+                fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
+
+                icount_client_id = await create_icount_client(sim_user, phone)
+
+                if icount_client_id:
+                    icount_api = True
+                    stop_id = await send_sim_delivery_address(phone, sim_user, fare)
+                else:
+                    icount_client_id = None
+                    icount_api = False
+                    stop_id = False
+                
+                if stop_id:
+                    circuit_api = True
+                else:
+                    stop_id = None
+                    circuit_api = False
+
+                user.curr_input = None
+                await sync_to_async(user.save)()
+
+                users_sim = UsersSim(
+                    user=sim_user,
+                    fare=fare,
+                    sim_phone=phone,
+                    next_payment=(datetime.datetime.utcnow() + datetime.timedelta(days=31)).date(),
+                    debt=(50 + fare.price),
+                    circuit_id=stop_id,
+                    icount_id=icount_client_id,
+                    circuit_api=circuit_api,
+                    icount_api=icount_api,
+                )
+                await sync_to_async(users_sim.save)()
 
                 if stop_id and icount_client_id:
-                    user.curr_input = None
-                    await sync_to_async(user.save)()
-
-                    users_sim = UsersSim(
-                        user=sim_user,
-                        fare=fare,
-                        sim_phone=phone,
-                        next_payment=(datetime.datetime.utcnow() + datetime.timedelta(days=31)).date(),
-                        debt=(50 + fare.price),
-                        circuit_id=stop_id,
-                        icount_id=icount_client_id,
-                    )
-                    await sync_to_async(users_sim.save)()
-
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
@@ -1768,7 +1789,7 @@ async def callback_query(call: types.CallbackQuery):
                                 )
                 else:
                     await bot.send_message(chat_id=chat_id,
-                                text=f'Ошибка при отправке в circuit или icount, попробуйте еще раз позднее.',
+                                text=f'Ошибка при отправке в circuit или icount, воспользуйтесь админ панелью.',
                                 parse_mode='Markdown',
                                 )
 

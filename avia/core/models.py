@@ -154,13 +154,13 @@ class Parcel(models.Model):
     passport_photo_parcel = FilerImageField(verbose_name='Фото паспорта', on_delete=models.SET_NULL, null=True, blank=True)
     passport_photo_id = models.CharField(verbose_name='TG id паспорта', max_length=200, null=True, blank=True)
     complete = models.BooleanField(verbose_name='Заявка подтверждена пользователем', null=True, blank=True, default=None)
-    # finished = models.BooleanField(verbose_name='Заявка обработана', null=True, blank=True, default=False)
     confirmed = models.BooleanField(verbose_name='Заявка подтверждена менеджером', null=True, blank=True, default=None)
     price = models.FloatField(verbose_name='Стоимость', default=0)
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='parcels', null=True, blank=True)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
 
+    circuit_api = models.BooleanField(null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'посылка'
@@ -195,13 +195,13 @@ class Flight(models.Model):
     passport_photo_flight = FilerImageField(verbose_name='Фото паспорта', on_delete=models.SET_NULL, null=True, blank=True)
     passport_photo_id = models.CharField(verbose_name='TG id паспорта', max_length=200, null=True, blank=True)
     complete = models.BooleanField(verbose_name='Заявка подтверждена пользователем', null=True, blank=True, default=None)
-    # finished = models.BooleanField(verbose_name='Заявка обработана', null=True, blank=True, default=False)
     confirmed = models.BooleanField(verbose_name='Заявка подтверждена менеджером', null=True, blank=True, default=None)
     price = models.FloatField(verbose_name='Стоимость', default=0)
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='flights', null=True, blank=True)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
 
+    circuit_api = models.BooleanField(null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'перелет'
@@ -250,6 +250,11 @@ class UsersSim(models.Model):
     driver = models.ForeignKey(Driver, verbose_name='Водитель', help_text='Последний водитель, вносивший информацию через бота о переданных клиентом деньгах', on_delete=models.SET_NULL, related_name='sim_cards', null=True, blank=True)
     is_old_sim = models.BooleanField(verbose_name='Старая симка?', default=False)
 
+    circuit_api = models.BooleanField(null=True, blank=True, default=None)
+    icount_api = models.BooleanField(null=True, blank=True, default=None)
+    circuit_api_collect = models.BooleanField(null=True, blank=True, default=None)
+    icount_api_collect = models.BooleanField(null=True, blank=True, default=None)
+    icount_collect_amount = models.FloatField(default=0.0)
     # алгоритм поиска тех, кому направлять уведомления: 
     # !-> смотрим у кого next_payment=today() и начисляем по тарифу dept
     # !-> dept больше определенного значения, ready_to_pay=False, pay_date=None

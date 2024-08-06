@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from money_transfer import views as money_transfer_views
+from core import views as core_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,6 +30,14 @@ urlpatterns = [
     path('get_receiver_addresses/', money_transfer_views.get_receiver_addresses, name='receiver_addresses'),
     path('calculate_commission/', money_transfer_views.calculate_commission, name='calculate_commission'),
     path('stop_status/', money_transfer_views.stop_status, name='stop_status'),
+    path('circuit/delivery/<int:pk>/', money_transfer_views.delivery_resend_circuit, name='delivery_circuit'),
+    path('gspread/delivery/<int:pk>/', money_transfer_views.delivery_resend_gspread, name='delivery_gspread'),
+    path('circuit/flight/<int:pk>/', core_views.flight_resend_circuit, name='flight_circuit'),
+    path('circuit/parcel/<int:pk>/', core_views.parcel_resend_circuit, name='parcel_circuit'),
+    path('circuit/sim/<int:pk>/', core_views.sim_resend_circuit, name='sim_circuit'),
+    path('circuit/sim-collect/<int:pk>/', core_views.sim_resend_collect_circuit, name='sim_collect_circuit'),
+    path('icount/sim/<int:pk>/', core_views.sim_resend_icount, name='sim_icount'),
+    path('icount/sim-collect/<int:pk>/', core_views.sim_resend_collect_icount, name='sim_collect_icount'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

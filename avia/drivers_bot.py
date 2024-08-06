@@ -117,6 +117,11 @@ async def callback_query(call: types.CallbackQuery):
                     sim.debt -= amount
                     await sync_to_async(sim.save)()
 
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+
                     invoice_url = await create_icount_invoice(sim.icount_id, amount, sim.is_old_sim)
                     if invoice_url:
                         sim_user = await sync_to_async(lambda: sim.user)()
@@ -128,15 +133,26 @@ async def callback_query(call: types.CallbackQuery):
                             text=reply_text,
                         )
 
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                    )
+                        try:
+                            await bot.send_message(chat_id=chat_id,
+                                text=f'Подтверждена передача клиентом суммы в {amount} ₪',
+                                parse_mode='Markdown',
+                                )
+                        except:
+                            pass
+                    else:
+                        sim.icount_collect_amount += amount
+                        sim.icount_api_collect = False
+                        await sync_to_async(sim.save)()
 
-                    await bot.send_message(chat_id=chat_id,
-                            text=f'Подтверждена передача клиентом суммы в {amount} ₪',
-                            parse_mode='Markdown',
-                            )
+                        try:
+                            await bot.send_message(chat_id=chat_id,
+                                text=f'Подтверждена передача клиентом суммы в {amount} ₪. Квитанция не сформировалась, воспользуйтесь админ панелью.',
+                                parse_mode='Markdown',
+                                )
+                        except:
+                            pass
+
                 else:
                     await bot.send_message(chat_id=chat_id,
                             text=f'Ошибка подтверждения, попробуйте позднее.',

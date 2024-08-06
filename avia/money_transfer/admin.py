@@ -64,9 +64,8 @@ class ReceiverAdmin(VersionAdmin):
 
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
-    # change_list_template = "admin/delivery_change_list.html"
+    change_list_template = "admin/delivery_change_list.html"
     fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission',)
-    # list_display = ('pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes')
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status', 'created_by')
     inlines = (TransferInline,)
@@ -130,12 +129,18 @@ class DeliveryAdmin(VersionAdmin):
 
     def to_circuit_button(self, obj):
         if obj.circuit_api is False:
-            return format_html('<a class="button" href="#">Сircuit</a>')
+            return format_html(f'''
+                <a class="button" href="/circuit/delivery/{obj.id}/">Circuit</a>
+                ''')
+
         return '-'
 
     def to_gspread_button(self, obj):
-        if obj.circuit_api is False:
-            return format_html('<a class="button" href="#">Deposit</a>')
+        if obj.gspread_api is False:
+            return format_html(f'''
+                <a class="button" href="/gspread/delivery/{obj.id}/">GoogleSheets</a>
+                ''')
+
         return '-'
     
     def get_list_display(self, request, obj=None):

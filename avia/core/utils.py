@@ -246,3 +246,213 @@ def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
     endpoint = f'https://api.telegram.org/bot{token}/sendMessage'
     requests.post(endpoint, params=params)
     return HttpResponse()
+
+
+def send_pickup_address_sync(application, application_type):
+    if application_type == 'flight':
+        order_id = '1'
+        route = application.route
+        departure_date = application.departure_date.strftime('%d.%m.%Y')
+        notes = f'Билет {application.type} {route.route}, {departure_date}'
+        activity = 'delivery'
+    elif application_type == 'parcel':
+        order_id = '2'
+        variation = application.variation
+        notes = f'Посылка, {variation.name}: {application.items_list}'
+        activity = 'pickup'
+
+    data = {
+        'address': {
+            'addressLineOne': application.address,
+            'country': 'Israel',
+        },
+        'recipient': {
+            'name': f'{application.name} {application.family_name}',
+            'phone': application.phone,
+        },
+        'orderInfo': {
+            'products': [f'{application.price} ₪'],
+            'sellerOrderId': order_id,
+        },
+        'activity': activity,
+        'notes': notes,
+    }
+
+    try:
+        response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
+    except:
+        stop_id = False
+        response = None
+    
+    if response:
+        if response.status_code == 200:
+            stop_id = response.json().get('stop').get('id')
+            try:
+                reoptimize_plan()
+                redistribute_plan()
+            except:
+                pass
+        else:
+            stop_id = False
+    else:
+        stop_id = False
+
+    return stop_id
+
+
+def send_sim_delivery_address_sync(phone, user, fare):
+    notes = f'Симка, {fare.title}, {phone}, за тариф(первый месяц) + подключение: {fare.price + 50} ₪'
+
+    data = {
+        'address': {
+            'addressLineOne': user.addresses,
+            'country': 'Israel',
+        },
+        'recipient': {
+            'name': f'{user.name} {user.family_name}',
+            'phone': phone,
+        },
+        'orderInfo': {
+            'products': [fare.title],
+            'sellerOrderId': '4',
+        },
+        'activity': 'delivery',
+        'notes': notes,
+    }
+
+    try:
+        response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
+    except:
+        stop_id = False
+        response = None
+    
+    if response:
+        if response.status_code == 200:
+            stop_id = response.json().get('stop').get('id')
+            try:
+                reoptimize_plan()
+                redistribute_plan()
+            except:
+                pass
+        else:
+            stop_id = False
+    else:
+        stop_id = False
+
+
+    return stop_id
+
+
+def create_icount_client_sync(user, phone):
+    cl_name = user.name
+    if user.family_name:
+        cl_name += f' {user.family_name}'
+    data = {
+        'cid': ICOUNT_COMPANY_ID,
+        'user': ICOUNT_USERNAME,
+        'pass': ICOUNT_PASSWORD,
+        'client_name': cl_name,
+        'first_name': user.name,
+        'last_name': user.family_name,
+        'mobile': phone
+    }
+
+    try:
+        response = requests.post(ICOUNT_CREATE_USER_ENDPOINT, data=data)
+    except:
+        icount_client_id = False
+        response = None
+
+    if response:
+        try:
+            icount_client_id = response.json().get('client_id')
+        except:
+            icount_client_id = False
+    else:
+        icount_client_id = False
+
+    return icount_client_id
+
+
+def send_sim_money_collect_address_sync(phone, user, debt):
+    notes = f'Симка - сбор денег, {phone}, {debt} ₪'
+
+    data = {
+        'address': {
+            'addressLineOne': user.addresses,
+            'country': 'Israel',
+        },
+        'recipient': {
+            'name': f'{user.name} {user.family_name}',
+            'phone': phone,
+        },
+        'orderInfo': {
+            'sellerOrderId': '5',
+        },
+        'activity': 'delivery',
+        'notes': notes,
+    }
+
+    try:
+        response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
+    except:
+        stop_id = False
+        response = None
+    
+    if response:
+        if response.status_code == 200:
+            stop_id = response.json().get('stop').get('id')
+            try:
+                reoptimize_plan()
+                redistribute_plan()
+            except:
+                pass
+        else:
+            stop_id = False
+    else:
+        stop_id = False
+
+    return stop_id
+
+
+def create_icount_invoice_sync(user_id, amount, is_old_sim=False):
+    icount_cid = ICOUNT_COMPANY_ID
+    icount_user = ICOUNT_USERNAME
+    icount_pass = ICOUNT_PASSWORD
+    if is_old_sim:
+        icount_cid = OLD_ICOUNT_COMPANY_ID
+        icount_user = OLD_ICOUNT_USERNAME
+        icount_pass = OLD_ICOUNT_PASSWORD
+
+    data = {
+        'cid': icount_cid,
+        'user': icount_user,
+        'pass': icount_pass,
+        'doctype': 'invrec',
+        'client_id': user_id,
+        'lang': 'en',
+        'items': [
+            {
+                'description': 'Online support + simcard',
+                'unitprice_incvat': float(amount),
+                'quantity': 1,
+            },
+            ],
+        'cash': {'sum': float(amount)},        
+    }
+
+    try:
+        response = requests.post(ICOUNT_CREATE_INVOICE_ENDPOINT, json=data)
+    except:
+        doc_url = False
+        response = None
+    
+    if response:
+        try:
+            doc_url = response.json().get('doc_url')
+        except:
+            doc_url = False
+    else:
+        doc_url = False
+
+    return doc_url

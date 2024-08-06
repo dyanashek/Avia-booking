@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db.models import Q
+from django.utils.html import format_html
 from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
@@ -82,7 +83,6 @@ class TGUserAdmin(admin.ModelAdmin):
 
 @admin.register(Parcel)
 class ParcelAdmin(admin.ModelAdmin):
-    list_display = ('family_name', 'variation', 'get_thumbnail', 'complete', 'confirmed')
     list_filter = ('complete', 'confirmed')
     fields = ('variation', 'fio_receiver', 'phone_receiver', 'items_list',
               'name', 'family_name', 'phone', 'address', 'sex', 'birth_date',
@@ -92,11 +92,30 @@ class ParcelAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return [field.name for field in self.model._meta.fields]
+    
+    def to_circuit_button(self, obj):
+        if obj.circuit_api is False:
+            return format_html(f'''
+                <a class="button" href="/circuit/parcel/{obj.id}/">Circuit</a>
+                ''')
+
+        return '-'
+    
+    def get_list_display(self, request, obj=None):
+        fields = ['family_name', 'variation', 'get_thumbnail', 'complete', 'confirmed']
+
+        # for parcel in super().get_queryset(request):
+        #     if parcel.circuit_api is False:
+        #         if 'to_circuit_button' not in fields:
+        #             fields.append('to_circuit_button')
+
+        return fields
+
+    to_circuit_button.short_description = 'circuit'
 
 
 @admin.register(Flight)
 class FlightAdmin(admin.ModelAdmin):
-    list_display = ('family_name', 'route', 'departure_date', 'arrival_date', 'get_thumbnail', 'complete', 'confirmed')
     list_filter = ('complete', 'confirmed', 'departure_date', 'arrival_date')
     fields = ('route', 'type', 'departure_date', 'arrival_date', 'phone', 'name', 
               'family_name', 'address', 'sex', 'birth_date', 'start_date', 'end_date', 
@@ -106,6 +125,27 @@ class FlightAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return [field.name for field in self.model._meta.fields]
+    
+    def to_circuit_button(self, obj):
+        if obj.circuit_api is False:
+            return format_html(f'''
+                <a class="button" href="/circuit/flight/{obj.id}/">Circuit</a>
+                ''')
+
+        return '-'
+    
+    def get_list_display(self, request, obj=None):
+        fields = ['family_name', 'route', 'departure_date', 'arrival_date', 
+                  'get_thumbnail', 'complete', 'confirmed']
+
+        # for flight in super().get_queryset(request):
+        #     if flight.circuit_api is False:
+        #         if 'to_circuit_button' not in fields:
+        #             fields.append('to_circuit_button')
+
+        return fields
+
+    to_circuit_button.short_description = 'circuit'
 
 
 @admin.register(SimFare)
@@ -115,11 +155,70 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 
 @admin.register(UsersSim)
 class UsersSimAdmin(admin.ModelAdmin):
-    list_display = ('user', 'fare', 'debt', 'ready_to_pay')
     list_filter = ('ready_to_pay', 'is_old_sim',)
     fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
     readonly_fields = ('driver', 'is_old_sim',)
     autocomplete_fields = ('user',)
+
+    def to_circuit_button(self, obj):
+        if obj.circuit_api is False and obj.icount_api:
+            return format_html(f'''
+                <a class="button" href="/circuit/sim/{obj.id}/">Circuit</a>
+                ''')
+
+        return '-'
+    
+    def to_icount_button(self, obj):
+        if obj.icount_api is False:
+            return format_html(f'''
+                <a class="button" href="/icount/sim/{obj.id}/">iCount</a>
+                ''')
+
+        return '-'
+
+    def to_circuit_collect_button(self, obj):
+        if obj.circuit_api_collect is False:
+            return format_html(f'''
+                <a class="button" href="/circuit/sim-collect/{obj.id}/">Circuit</a>
+                ''')
+
+        return '-'
+    
+    def to_icount_collect_button(self, obj):
+        if obj.icount_api_collect is False and obj.icount_collect_amount > 0:
+            return format_html(f'''
+                <a class="button" href="/icount/sim-collect/{obj.id}/">iCount</a>
+                ''')
+
+        return '-'
+
+    def get_list_display(self, request, obj=None):
+        fields = ['user', 'fare', 'debt', 'ready_to_pay',]
+
+        # for sim in super().get_queryset(request):
+        #     if sim.circuit_api is False and sim.icount_api:
+        #         if 'to_circuit_button' not in fields:
+        #             fields.append('to_circuit_button')
+            
+        #     if sim.icount_api is False:
+        #         if 'to_icount_button' not in fields:
+        #             fields.append('to_icount_button')
+
+        #     if sim.circuit_api_collect is False:
+        #         if 'to_circuit_collect_button' not in fields:
+        #             fields.append('to_circuit_collect_button')
+            
+        #     if sim.icount_api_collect is False and sim.icount_collect_amount > 0:
+        #         if 'to_icount_collect_button' not in fields:
+        #             fields.append('to_icount_collect_button')
+            
+
+        return fields
+    
+    to_circuit_button.short_description = 'circuit (доставка)'
+    to_icount_button.short_description = 'iCount (клиент)'
+    to_circuit_collect_button.short_description = 'circuit (сбор)'
+    to_icount_collect_button.short_description = 'iCount (чек)'
 
 
 @admin.register(Notification)
