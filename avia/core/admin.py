@@ -104,10 +104,10 @@ class ParcelAdmin(admin.ModelAdmin):
     def get_list_display(self, request, obj=None):
         fields = ['family_name', 'variation', 'get_thumbnail', 'complete', 'confirmed']
 
-        # for parcel in super().get_queryset(request):
-        #     if parcel.circuit_api is False:
-        #         if 'to_circuit_button' not in fields:
-        #             fields.append('to_circuit_button')
+        for parcel in super().get_queryset(request):
+            if parcel.circuit_api is False:
+                if 'to_circuit_button' not in fields:
+                    fields.append('to_circuit_button')
 
         return fields
 
@@ -138,10 +138,10 @@ class FlightAdmin(admin.ModelAdmin):
         fields = ['family_name', 'route', 'departure_date', 'arrival_date', 
                   'get_thumbnail', 'complete', 'confirmed']
 
-        # for flight in super().get_queryset(request):
-        #     if flight.circuit_api is False:
-        #         if 'to_circuit_button' not in fields:
-        #             fields.append('to_circuit_button')
+        for flight in super().get_queryset(request):
+            if flight.circuit_api is False:
+                if 'to_circuit_button' not in fields:
+                    fields.append('to_circuit_button')
 
         return fields
 
@@ -195,22 +195,22 @@ class UsersSimAdmin(admin.ModelAdmin):
     def get_list_display(self, request, obj=None):
         fields = ['user', 'fare', 'debt', 'ready_to_pay',]
 
-        # for sim in super().get_queryset(request):
-        #     if sim.circuit_api is False and sim.icount_api:
-        #         if 'to_circuit_button' not in fields:
-        #             fields.append('to_circuit_button')
+        for sim in super().get_queryset(request):
+            if sim.circuit_api is False and sim.icount_api:
+                if 'to_circuit_button' not in fields:
+                    fields.append('to_circuit_button')
             
-        #     if sim.icount_api is False:
-        #         if 'to_icount_button' not in fields:
-        #             fields.append('to_icount_button')
+            if sim.icount_api is False:
+                if 'to_icount_button' not in fields:
+                    fields.append('to_icount_button')
 
-        #     if sim.circuit_api_collect is False:
-        #         if 'to_circuit_collect_button' not in fields:
-        #             fields.append('to_circuit_collect_button')
+            if sim.circuit_api_collect is False:
+                if 'to_circuit_collect_button' not in fields:
+                    fields.append('to_circuit_collect_button')
             
-        #     if sim.icount_api_collect is False and sim.icount_collect_amount > 0:
-        #         if 'to_icount_collect_button' not in fields:
-        #             fields.append('to_icount_collect_button')
+            if sim.icount_api_collect is False and sim.icount_collect_amount > 0:
+                if 'to_icount_collect_button' not in fields:
+                    fields.append('to_icount_collect_button')
             
 
         return fields

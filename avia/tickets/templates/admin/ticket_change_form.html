@@ -1,0 +1,27 @@
+{% extends 'admin/change_form.html' %}
+{% block admin_change_form_document_ready %}
+  <script>
+    (function($) {
+        $(document).ready(function() {
+            $('#id_route').change(function() {
+                const senderId = $(this).val();
+                if (senderId !== "") {
+                    const departureDates = $('#id_departure_date');
+                    const arrivalDates = $('#id_arrival_date');
+
+                    $.ajax({
+                        url: '/get_ticket_dates/',
+                        data: {
+                            'route_id': senderId
+                        },
+                        success: function (data) {
+                            departureDates.html(data.departure);
+                            arrivalDates.html(data.arrival)
+                        }
+                    });
+                }
+            });
+        });
+    })(django.jQuery);
+  </script>
+{% endblock %}

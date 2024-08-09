@@ -28,16 +28,16 @@ def redistribute_plan():
 def send_pickup_address(sender, delivery, codes):
     items = []
     if delivery.usd_amount:
-        items.append(f'{delivery.usd_amount}$')
+        items.append(f'{int(delivery.usd_amount)}$')
     if delivery.ils_amount:
-        items.append(f'{delivery.ils_amount}₪')
+        items.append(f'{int(delivery.ils_amount)}₪')
     if delivery.commission:
-        items.append(f'комиссия: {delivery.commission}₪')
+        items.append(f'к{int(delivery.commission)}₪')
 
-    notes = f'{sender.phone}, '
+    notes = f'{codes}, {sender.phone}, {sender.name}, '
     notes += ', '.join(items)
 
-    notes += f', {codes}'
+    notes += f', '
     
     data = {
         'address': {
@@ -92,9 +92,11 @@ def delivery_to_gspread(delivery):
         if transfer.pick_up:
             pickup = 'Да'
             address = transfer.address.address
+        created_date = (delivery.created_at + datetime.timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')
         if num == 0:
             transfer_data = [
                 str(delivery.pk),
+                created_date,
                 '',
                 '',
                 str(transfer.pk),
@@ -116,6 +118,7 @@ def delivery_to_gspread(delivery):
                 str(delivery.pk),
                 '',
                 '',
+                '',
                 str(transfer.pk),
                 '',
                 '',
@@ -135,13 +138,13 @@ def delivery_to_gspread(delivery):
 
     first_row = get_first_empty_row()
     end_row = first_row + len(delivery_data) - 1
-    work_sheet.update(f"A{first_row}:P{end_row}", delivery_data)
+    work_sheet.update(f"A{first_row}:Q{end_row}", delivery_data)
 
 
 def update_delivery_pickup_status(delivery_id, comment):
     row_num = get_first_delivery_row(str(delivery_id))
     date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')
-    work_sheet.update(f"B{row_num}:X{row_num}", [[date, comment]])
+    work_sheet.update(f"C{row_num}:X{row_num}", [[date, comment]])
 
 
 def create_excel_file(data, date_from, date_to):
@@ -171,7 +174,7 @@ async def get_transfer_row(transfer_id):
 
 async def update_transfer_pass_status(transfer_id, date, credit):
     row_num = await get_transfer_row(str(transfer_id))
-    work_sheet.update(f"Q{row_num}:R{row_num}", [[date, credit,]])
+    work_sheet.update(f"R{row_num}:S{row_num}", [[date, credit,]])
 
 
 def update_credit_status(transfer_id):
@@ -183,4 +186,4 @@ def update_credit_status(transfer_id):
         row_num = False
 
     if row_num:
-        work_sheet.update_cell(row_num, 18, 'Нет')
+        work_sheet.update_cell(row_num, 19, 'Нет')

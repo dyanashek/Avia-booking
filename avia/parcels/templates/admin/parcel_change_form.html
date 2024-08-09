@@ -1,0 +1,16 @@
+{% extends 'admin/change_form.html' %}
+{% block admin_change_form_document_ready %}
+  <script>
+    (function($) {
+        $(document).ready(function() {
+            const variations = $('#id_variation');
+            $.ajax({
+                url: '/get_parcel_variations/',
+                success: function (data) {
+                    variations.html(data.variations);
+                }
+            });
+        });
+    })(django.jQuery);
+  </script>
+{% endblock %}

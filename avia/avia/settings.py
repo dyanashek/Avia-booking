@@ -43,6 +43,8 @@ ALLOWED_HOSTS = ['*',]
 INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'money_transfer.apps.MoneyTransferConfig',
+    'tickets.apps.TicketsConfig',
+    'parcels.apps.ParcelsConfig',
     'drivers.apps.DriversConfig',
     'django.contrib.admin',
     'django.contrib.auth',

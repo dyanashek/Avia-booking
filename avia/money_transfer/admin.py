@@ -145,13 +145,13 @@ class DeliveryAdmin(VersionAdmin):
     
     def get_list_display(self, request, obj=None):
         fields = ['pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes']
-        # for delivery in super().get_queryset(request):
-        #     if delivery.circuit_api is False:
-        #         if 'to_circuit_button' not in fields:
-        #             fields.append('to_circuit_button')
-        #     if delivery.gspread_api is False:
-        #         if 'to_gspread_button' not in fields:
-        #             fields.append('to_gspread_button')
+        for delivery in super().get_queryset(request):
+            if delivery.circuit_api is False:
+                if 'to_circuit_button' not in fields:
+                    fields.append('to_circuit_button')
+            if delivery.gspread_api is False:
+                if 'to_gspread_button' not in fields:
+                    fields.append('to_gspread_button')
 
         return fields
 

@@ -22,6 +22,8 @@ from django.conf.urls.static import static
 
 from money_transfer import views as money_transfer_views
 from core import views as core_views
+from tickets import views as tickets_view
+from parcels import views as parcels_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +32,8 @@ urlpatterns = [
     path('get_receiver_addresses/', money_transfer_views.get_receiver_addresses, name='receiver_addresses'),
     path('calculate_commission/', money_transfer_views.calculate_commission, name='calculate_commission'),
     path('stop_status/', money_transfer_views.stop_status, name='stop_status'),
+    path('get_ticket_dates/', tickets_view.get_ticket_dates, name='ticket_dates'),
+    path('get_parcel_variations/', parcels_view.get_parcel_variations, name='parcel_variations'),
     path('circuit/delivery/<int:pk>/', money_transfer_views.delivery_resend_circuit, name='delivery_circuit'),
     path('gspread/delivery/<int:pk>/', money_transfer_views.delivery_resend_gspread, name='delivery_gspread'),
     path('circuit/flight/<int:pk>/', core_views.flight_resend_circuit, name='flight_circuit'),
@@ -38,8 +42,11 @@ urlpatterns = [
     path('circuit/sim-collect/<int:pk>/', core_views.sim_resend_collect_circuit, name='sim_collect_circuit'),
     path('icount/sim/<int:pk>/', core_views.sim_resend_icount, name='sim_icount'),
     path('icount/sim-collect/<int:pk>/', core_views.sim_resend_collect_icount, name='sim_collect_icount'),
+    path('circuit/ticket/<int:pk>/', tickets_view.ticket_send_circuit, name='circuit_admin_ticket'),
+    path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

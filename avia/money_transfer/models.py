@@ -7,7 +7,6 @@ from django.db.models.functions import Coalesce
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspread
 
-
 User = get_user_model()
 
 

@@ -1,0 +1,51 @@
+{% extends 'admin/change_list.html' %}
+{% block object-tools %}
+  <style>
+    .form-inline {
+        display: flex;
+        align-items: center;
+    }
+    .form-group {
+        margin-right: 10px;
+    }
+    label {
+        margin-right: 5px;
+    }
+  </style>
+  <form method="post" class="form-inline" action="{% url 'admin:report-tickets' %}" style="padding-bottom: 15px;" id="reportForm">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="date_from">От:</label>
+        <input type="date" id="date_from" name="date_from" required>
+    </div>
+    <div class="form-group">
+        <label for="date_to">До:</label>
+        <input type="date" id="date_to" name="date_to" required>
+    </div>
+    <input type="submit" value="Скачать отчет" />
+    
+  </form>
+  <div id="error-message" style="color: red; padding-left: 10px; padding-bottom: 10px; display: none"></div>
+    {{ block.super }}
+  <script>
+    document.getElementById('reportForm').addEventListener('submit', function(event) {
+        var dateFromValue = document.getElementById('date_from').value;
+        var dateToValue = document.getElementById('date_to').value;
+        var errorMessage = document.getElementById('error-message');
+
+        // Преобразование строк в объекты Date
+        var dateFrom = new Date(dateFromValue);
+        var dateTo = new Date(dateToValue);
+
+        // Проверка дат
+        if (dateFrom && dateTo && dateFrom > dateTo) {
+            event.preventDefault();
+            errorMessage.textContent = 'Дата "До" должна быть больше или равна дате "От".';
+            errorMessage.style.display = 'block';
+        } else {
+            errorMessage.textContent = '';
+            errorMessage.style.display = 'none';
+        }
+    });
+  </script>
+{% endblock %}

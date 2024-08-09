@@ -4,8 +4,6 @@ from django.db import models
 from django.utils.html import format_html
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from easy_thumbnails.files import get_thumbnailer
 from filer.fields.image import FilerImageField
 
