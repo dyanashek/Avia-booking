@@ -14,7 +14,7 @@ from asgiref.sync import sync_to_async
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
-from money_transfer.models import Manager, Transfer, Delivery, Status
+from money_transfer.models import Manager, Transfer, Delivery, Status, Balance
 from money_transfer.utils import update_transfer_pass_status
 
 import config
@@ -58,6 +58,7 @@ async def callback_query(call: types.CallbackQuery):
                                                 chat_id=chat_id,
                                                 reply_markup=InlineKeyboardBuilder().as_markup(),
                                                 )
+
         elif query == 'pass' or query == 'credit':
             transfer_id = int(call_data[1])
             await bot.edit_message_reply_markup(message_id=message_id,
@@ -79,6 +80,14 @@ async def callback_query(call: types.CallbackQuery):
                     credit = 'Нет'
 
                 await sync_to_async(transfer.save)()
+
+                try:
+                    balance = await sync_to_async(Balance.objects.get)(id=1)
+                    balance.balance -= transfer.usd_amount
+                    await sync_to_async(balance.save)()
+                except:
+                    pass
+
                 try:
                     await update_transfer_pass_status(transfer_id, curr_date, credit)
                 except:

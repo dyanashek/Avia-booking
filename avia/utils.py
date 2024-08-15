@@ -34,12 +34,13 @@ async def validate_date(input_string):
 
 async def validate_price(input_string):
     try:
+        input_string = input_string.replace(',', '.')
         price = float(input_string)
     except:
         return False
     
-    if price > 0:
-        return price
+    if price >= 0:
+        return round(price, 2)
     
     return False
 
@@ -70,3 +71,16 @@ async def validate_id(value):
         return int(value)
     except:
         return False
+
+
+async def validate_rate(input_string):
+    try:
+        input_string = input_string.replace(',', '.')
+        rate = float(input_string)
+    except:
+        return False
+    
+    if rate > 0:
+        return round(rate, 2)
+    
+    return False

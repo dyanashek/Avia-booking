@@ -266,3 +266,60 @@ async def credit_money_keyboard(transfer_id):
     keyboard.row(types.InlineKeyboardButton(text='Отменить', callback_data=f'cancel'))
 
     return keyboard.as_markup()
+
+#* <------------------------------------------------->
+#! КЛАВИАТУРЫ ДЛЯ ОТЧЕТОВ
+#* <------------------------------------------------->
+async def data_or_report_keyboard():
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Внести данные', callback_data=f'data_choose'))
+    keyboard.row(types.InlineKeyboardButton(text='Отчет', callback_data=f'report_choose'))
+    keyboard.row(types.InlineKeyboardButton(text='Последние записи', callback_data=f'db'))
+    keyboard.row(types.InlineKeyboardButton(text='Отсутствующие курсы покупки', callback_data=f'missing'))
+
+    return keyboard.as_markup()
+
+
+async def data_type_keyboard():
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Все данные', callback_data=f'data_all'))
+    keyboard.row(types.InlineKeyboardButton(text='Передано фирмам', callback_data=f'data_1'))
+    keyboard.row(types.InlineKeyboardButton(text='Передано Равшану', callback_data=f'data_2'))
+    keyboard.row(types.InlineKeyboardButton(text='Получено от фирм', callback_data=f'data_3'))
+    keyboard.row(types.InlineKeyboardButton(text='Получено от Равшана', callback_data=f'data_4'))
+    keyboard.row(types.InlineKeyboardButton(text='Курс покупки', callback_data=f'data_rate'))
+    keyboard.row(types.InlineKeyboardButton(text='⬅️ Назад', callback_data=f'back_main'))
+
+    return keyboard.as_markup()
+
+
+async def report_type_keyboard():
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(types.InlineKeyboardButton(text='Текущие балансы', callback_data=f'report_balance'))
+    keyboard.row(types.InlineKeyboardButton(text='За год', callback_data=f'report_year'))
+    keyboard.row(types.InlineKeyboardButton(text='За месяц', callback_data=f'report_month'))
+    keyboard.row(types.InlineKeyboardButton(text='За день', callback_data=f'report_day'))
+    keyboard.row(types.InlineKeyboardButton(text='Выбрать период', callback_data=f'report_input'))
+    keyboard.row(types.InlineKeyboardButton(text='⬅️ Назад', callback_data=f'back_main'))
+
+    return keyboard.as_markup()
+
+
+async def data_date_keyboard(data_type):
+    keyboard = InlineKeyboardBuilder()
+
+    curr_date = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
+    the_day_before_yesterday = (curr_date - datetime.timedelta(days=2)).date().strftime('%d.%m.%Y')
+    yesterday = (curr_date - datetime.timedelta(days=1)).date().strftime('%d.%m.%Y')
+    today = curr_date.date().strftime('%d.%m.%Y')
+
+    keyboard.row(types.InlineKeyboardButton(text=the_day_before_yesterday, callback_data=f'date_{data_type}_{the_day_before_yesterday}'))
+    keyboard.row(types.InlineKeyboardButton(text=yesterday, callback_data=f'date_{data_type}_{yesterday}'))
+    keyboard.row(types.InlineKeyboardButton(text=today, callback_data=f'date_{data_type}_{today}'))
+    keyboard.row(types.InlineKeyboardButton(text='Ввести вручную', callback_data=f'date_{data_type}_input'))
+    keyboard.row(types.InlineKeyboardButton(text='⬅️ Назад', callback_data=f'back_data'))
+
+    return keyboard.as_markup()

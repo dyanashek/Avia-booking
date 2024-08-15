@@ -187,3 +187,11 @@ def update_credit_status(transfer_id):
 
     if row_num:
         work_sheet.update_cell(row_num, 19, 'Нет')
+
+
+def get_delivery_ids():
+    return work_sheet.col_values(1)
+
+
+def update_delivery_buy_rate(rate, row_num):
+    work_sheet.update_cell(row_num, 20, rate)

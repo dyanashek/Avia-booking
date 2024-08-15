@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from django.db.models import Count, Sum, Q, Case, When, F, Value
 from django.db.models.functions import Coalesce
 
-from money_transfer.utils import send_pickup_address, delivery_to_gspread
+from money_transfer.utils import send_pickup_address, delivery_to_gspread, get_delivery_ids, update_delivery_buy_rate
 
 User = get_user_model()
 
@@ -14,6 +14,7 @@ class Manager(models.Model):
     name = models.CharField(verbose_name='Имя', max_length=100, null=True, blank=True, default=None)
     telegram_id = models.CharField(verbose_name='Telegram id', max_length=100, unique=True)
     updated_at = models.DateTimeField(verbose_name='Последнее обновление', auto_now=True)
+    curr_input = models.CharField(verbose_name='Текущий ввод', max_length=100, null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'менеджер'
@@ -210,6 +211,41 @@ class Delivery(models.Model):
 
         return deliveries
 
+    @classmethod
+    def calculate_params(self, start_date, end_date):
+        profit = 0
+
+        brutto = 0
+        netto = 0
+
+        not_picked = 0
+        not_provided = 0
+
+        deliveries = Delivery.objects.filter(Q(status__slug__in=['api', 'finished']) &
+                                Q(created_at__date__gte=start_date) &
+                                Q(created_at__date__lte=end_date)).select_related('status').all()
+
+        for delivery in deliveries:
+            brutto += delivery.usd_amount
+
+            if delivery.status.slug == 'api':
+                not_picked += delivery.usd_amount
+
+            elif delivery.status.slug == 'finished':
+                profit += delivery.commission
+                if delivery.rate and delivery.ils_amount > 0:
+                    buy_rate = BuyRate.objects.filter(date=delivery.created_at.date()).first()
+                    if buy_rate:
+                        profit += (delivery.ils_amount / delivery.rate) * (delivery.rate - buy_rate.rate)
+
+                for transfer in delivery.transfers.all():
+                    if transfer.pass_date is not None:
+                        netto += transfer.usd_amount
+                    else:
+                        not_provided += transfer.usd_amount
+        
+        return int(profit), int(brutto), int(netto), int(not_picked), int(not_provided)
+
 
 class Rate(models.Model):
     slug = models.CharField(verbose_name='Валютная пара', max_length=10, unique=True)
@@ -221,6 +257,19 @@ class Rate(models.Model):
     
     def __str__(self):
         return f'{self.slug} : {self.rate}'
+
+
+class BuyRate(models.Model):
+    date = models.DateField(verbose_name='Дата')
+    rate = models.FloatField(verbose_name='Курс', default=0)
+
+    class Meta:
+        verbose_name = 'курс покупки'
+        verbose_name_plural = 'курсы покупки'
+        ordering = ('-date',)
+    
+    def __str__(self):
+        return str(self.rate)
 
 
 Units = (
@@ -259,6 +308,31 @@ class Status(models.Model):
     
     def __str__(self):
         return self.text
+
+
+class Balance(models.Model):
+    debt_firms = models.FloatField(verbose_name='Задолженность перед фирмами', default=0)
+    debt_ravshan = models.FloatField(verbose_name='Задолженность перед Равшаном', default=0)
+    balance = models.FloatField(verbose_name='Остаток Самарканд', default=0)
+
+
+Operation_types = (
+    (1, 'передано фирмам'),
+    (2, 'передано Равшану'),
+    (3, 'получено от фирм'),
+    (4, 'получено от Равшана'),
+)
+
+
+class DebitCredit(models.Model):
+    amount = models.FloatField(verbose_name='Сумма в $', default=0)
+    operation_type = models.IntegerField('Тип операции', choices=Operation_types)
+    date = models.DateField(verbose_name='Дата')
+
+    class Meta:
+        verbose_name = 'дебит-кредит'
+        verbose_name_plural = 'дебит-кредит'
+        ordering = ('date',)
 
 
 @receiver(post_save, sender=Transfer)
@@ -336,3 +410,18 @@ def update_delivery_valid(sender, instance, **kwargs):
             instance.delivery.status_message = f'Не сходится сумма долларов к отправке.'
         
         instance.delivery.save()
+
+
+@receiver(post_save, sender=BuyRate)
+def update_gspread_buy_rate(sender, instance, created, **kwargs):
+    if not created:
+        ids = Delivery.objects.filter(created_at__date=instance.date).values_list('id', flat=True)
+        ids = list(ids)
+        
+        for num, delivery_id in enumerate(get_delivery_ids()):
+            if num != 0:
+                try:
+                    if int(delivery_id) in ids:
+                        update_delivery_buy_rate(instance.rate, num + 1)        
+                except:
+                    pass

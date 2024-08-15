@@ -8,7 +8,9 @@ from django.utils.html import format_html
 from reversion.admin import VersionAdmin
 
 from money_transfer.utils import create_excel_file
-from money_transfer.models import Manager, Sender, Receiver, Address, Transfer, Delivery, Rate, Commission, Status
+from money_transfer.models import (Manager, Sender, Receiver, Address, Transfer, 
+                                   Delivery, Rate, Commission, Status, DebitCredit,
+                                   Balance, BuyRate)
 from adminsortable2.admin import SortableAdminMixin
 
 
@@ -28,6 +30,7 @@ class TransferInline(admin.StackedInline):
 class ManagerAdmin(VersionAdmin):
     list_display = ('name', 'telegram_id', 'updated_at',)
     date_hierarchy = 'updated_at'
+    fields = ('name', 'telegram_id',)
 
         
 @admin.register(Address)
@@ -226,3 +229,28 @@ class TransferAdmin(VersionAdmin):
     search_fields = ('pk',)
     list_filter = (DatePassedFilter, 'credit',)
     readonly_fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount')
+
+
+@admin.register(DebitCredit)
+class DebitCreditAdmin(VersionAdmin):
+    list_display = ('date', 'amount', 'operation_type')
+    list_filter = ('operation_type',)
+
+    def has_module_permission(self, request):
+        return False
+
+
+@admin.register(Balance)
+class BalanceAdmin(VersionAdmin):
+    list_display = ('debt_firms', 'debt_ravshan', 'balance')
+
+    def has_module_permission(self, request):
+        return False
+
+
+@admin.register(BuyRate)
+class BuyTareAdmin(VersionAdmin):
+    list_display = ('date', 'rate',)
+
+    def has_module_permission(self, request):
+        return False
