@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'money_transfer.apps.MoneyTransferConfig',
     'tickets.apps.TicketsConfig',
     'parcels.apps.ParcelsConfig',
+    'sim.apps.SimConfig',
     'drivers.apps.DriversConfig',
     'django.contrib.admin',
     'django.contrib.auth',

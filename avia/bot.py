@@ -7,7 +7,7 @@ import django
 import asyncio
 from aiogram import F
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters.command import Command
+from aiogram.filters.command import Command, CommandObject
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from asgiref.sync import sync_to_async
@@ -22,6 +22,7 @@ from django.db.models import Q
 from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, UsersSim
 from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address,
                         create_icount_client)
+from sim.models import SimCard
 
 import config
 import keyboards
@@ -34,7 +35,7 @@ dp = Dispatcher()
 
 
 @dp.message(Command("start"))
-async def start_message(message: types.Message):
+async def start_message(message: types.Message, command: CommandObject):
     '''Handles start command.'''
     user_id = str(message.from_user.id)
     username = message.from_user.username
@@ -46,6 +47,33 @@ async def start_message(message: types.Message):
     user.active = True
     user.curr_input = None
     await sync_to_async(user.save)()
+
+    if command.args:
+        phone_number = await utils.extract_digits(command.args)
+        if phone_number:
+            user_sim = await sync_to_async(UsersSim.objects.filter(user=user).first)()
+            if not user_sim:
+                admin_sim = await sync_to_async(SimCard.objects.filter(
+                    Q(icount_api=True) & 
+                    Q(to_main_bot=False) & 
+                    Q(sim_phone=phone_number)).first)()
+                
+                if admin_sim:
+                    fare = await sync_to_async(lambda: admin_sim.fare)()
+                    users_sim = UsersSim(
+                        user=user,
+                        fare=fare,
+                        sim_phone=admin_sim.sim_phone,
+                        next_payment=admin_sim.next_payment,
+                        debt=admin_sim.debt,
+                        icount_id=admin_sim.icount_id,
+                        icount_api=True,
+                        is_old_sim=True,
+                    )
+
+                    await sync_to_async(users_sim.save)()
+                    admin_sim.to_main_bot = True
+                    await sync_to_async(admin_sim.save)()
 
     await sync_to_async(Parcel.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
     await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
@@ -158,16 +186,19 @@ async def callback_query(call: types.CallbackQuery):
             await sync_to_async(user.save)()
 
             choose_flight_type = await sync_to_async(TGText.objects.get)(slug='choose_options', language=user_language)
-            await bot.edit_message_text(chat_id=chat_id,
-                                    message_id=message_id,
-                                    text=choose_flight_type.text,
-                                    parse_mode='Markdown',
-                                    )
-            
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=await keyboards.flight_type_keyboard(user_language),
-                                            )
+            try:
+                await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=choose_flight_type.text,
+                                        parse_mode='Markdown',
+                                        )
+                
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=await keyboards.flight_type_keyboard(user_language),
+                                                )
+            except:
+                pass
 
         else:
             try:
@@ -191,16 +222,19 @@ async def callback_query(call: types.CallbackQuery):
             await sync_to_async(user.save)()
 
             departure_text = await sync_to_async(TGText.objects.get)(slug='choose_departure_month', language=user_language)
-            await bot.edit_message_text(chat_id=chat_id,
-                                    message_id=message_id,
-                                    text=departure_text.text,
-                                    parse_mode='Markdown',
-                                    )
-            
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language),
-                                            )
+            try:
+                await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=departure_text.text,
+                                        parse_mode='Markdown',
+                                        )
+                
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language),
+                                                )
+            except:
+                pass
 
         else:
             try:
@@ -224,16 +258,19 @@ async def callback_query(call: types.CallbackQuery):
             departure_days = await sync_to_async(lambda: list(flight.route.days.filter(Q(day__year=year) & Q(day__month=month) & Q(day__gte=datetime.date.today()))))()
             if departure_days:
                 departure_day = await sync_to_async(TGText.objects.get)(slug='choose_departure_day', language=user_language)
-                await bot.edit_message_text(chat_id=chat_id,
-                                    message_id=message_id,
-                                    text=departure_day.text,
-                                    parse_mode='Markdown',
-                                    )
-            
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=await keyboards.choose_day_keyboard(departure_days, user_language),
-                                                )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=departure_day.text,
+                                        parse_mode='Markdown',
+                                        )
+                
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=await keyboards.choose_day_keyboard(departure_days, user_language),
+                                                    )
+                except:
+                    pass
 
             else:
                 no_flight = await sync_to_async(TGText.objects.get)(slug='no_flights', language=user_language)
@@ -247,24 +284,30 @@ async def callback_query(call: types.CallbackQuery):
             arrival_days = await sync_to_async(lambda: list(flight.route.opposite.days.filter(Q(day__year=year) & Q(day__month=month) & Q(day__gte=datetime.date.today()))))()
             if arrival_days:
                 arrival_day = await sync_to_async(TGText.objects.get)(slug='choose_arrival_day', language=user_language)
-                await bot.edit_message_text(chat_id=chat_id,
-                                    message_id=message_id,
-                                    text=arrival_day.text,
-                                    parse_mode='Markdown',
-                                    )
-            
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=await keyboards.choose_day_keyboard(arrival_days, user_language, 'arrival'),
-                                                )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=arrival_day.text,
+                                        parse_mode='Markdown',
+                                        )
+                
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=await keyboards.choose_day_keyboard(arrival_days, user_language, 'arrival'),
+                                                    )
+                except:
+                    pass
 
             else:
                 no_flight = await sync_to_async(TGText.objects.get)(slug='no_flights', language=user_language)
-                await bot.answer_callback_query(
-                                callback_query_id=call.id,
-                                text=no_flight.text,
-                                show_alert=True,
-                                )
+                try:
+                    await bot.answer_callback_query(
+                                    callback_query_id=call.id,
+                                    text=no_flight.text,
+                                    show_alert=True,
+                                    )
+                except:
+                    pass
 
         else:
             try:
@@ -291,17 +334,19 @@ async def callback_query(call: types.CallbackQuery):
                 await sync_to_async(user.save)()
 
                 arrival_text = await sync_to_async(TGText.objects.get)(slug='choose_arrival_month', language=user_language)
-                await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=arrival_text.text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language, 'arrival'),
-                                                )
-
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=arrival_text.text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language, 'arrival'),
+                                                    )
+                except:
+                    pass
 
             elif flight.type == 'oneway':
                 user.curr_input = 'passport'
@@ -420,19 +465,23 @@ async def callback_query(call: types.CallbackQuery):
     
     elif query == 'curryear':
         direction = call_data[1]
-
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                    message_id=message_id,
-                                    reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language, direction),
-                                    )
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                        message_id=message_id,
+                                        reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language, direction),
+                                        )
+        except:
+            pass
     
     elif query == 'nextyear':
         direction = call_data[1]
-
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                    message_id=message_id,
-                                    reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year + 1, user_language, direction),
-                                    )
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                        message_id=message_id,
+                                        reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year + 1, user_language, direction),
+                                        )
+        except:
+            pass
 
     elif query == 'parcel':
         await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
@@ -445,16 +494,19 @@ async def callback_query(call: types.CallbackQuery):
         await sync_to_async(user.save)()
 
         choose = await sync_to_async(TGText.objects.get)(slug='choose_options', language=user_language)
-        await bot.edit_message_text(chat_id=chat_id,
-                                message_id=message_id,
-                                text=choose.text,
-                                parse_mode='Markdown',
-                                )
-        
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                        message_id=message_id,
-                                        reply_markup=await keyboards.parcel_types_keyboard(user_language),
-                                        )
+        try:
+            await bot.edit_message_text(chat_id=chat_id,
+                                    message_id=message_id,
+                                    text=choose.text,
+                                    parse_mode='Markdown',
+                                    )
+            
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                            message_id=message_id,
+                                            reply_markup=await keyboards.parcel_types_keyboard(user_language),
+                                            )
+        except:
+            pass
     
     elif query == 'parceltype':
         parcel_type_id = int(call_data[1])
@@ -526,16 +578,19 @@ async def callback_query(call: types.CallbackQuery):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{family_name}*?'
 
-                    await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('familyname', user_language),
-                                                    )
+                    try:
+                        await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('familyname', user_language),
+                                                        )
+                    except:
+                        pass
 
                 else:
                     try:
@@ -563,16 +618,19 @@ async def callback_query(call: types.CallbackQuery):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='passport_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{passport_num}*?'
 
-                    await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('passportnum', user_language),
-                                                    )
+                    try:
+                        await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('passportnum', user_language),
+                                                        )
+                    except:
+                        pass
 
                 else:
                     try:
@@ -600,16 +658,19 @@ async def callback_query(call: types.CallbackQuery):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='sex_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{sex}*?'
 
-                    await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('sex', user_language),
-                                                    )
+                    try:
+                        await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('sex', user_language),
+                                                        )
+                    except:
+                        pass
 
                 else:
                     try:
@@ -640,16 +701,19 @@ async def callback_query(call: types.CallbackQuery):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='birth_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{birth_date}*?'
 
-                    await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('birthdate', user_language),
-                                                    )
+                    try:
+                        await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('birthdate', user_language),
+                                                        )
+                    except:
+                        pass
 
                 else:
                     try:
@@ -679,16 +743,19 @@ async def callback_query(call: types.CallbackQuery):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='start_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{start_date}*?'
 
-                    await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('startdate', user_language),
-                                                    )
+                    try:
+                        await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('startdate', user_language),
+                                                        )
+                    except:
+                        pass
 
                 else:
                     try:
@@ -718,16 +785,19 @@ async def callback_query(call: types.CallbackQuery):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='end_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{end_date}*?'
 
-                    await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
-                
-                    await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('enddate', user_language),
-                                                    )
+                    try:
+                        await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
+                    
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('enddate', user_language),
+                                                        )
+                    except:
+                        pass
 
                 else:
                     try:
@@ -793,10 +863,13 @@ async def callback_query(call: types.CallbackQuery):
 
                 await sync_to_async(user.save)()
 
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+                try:
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+                except:
+                    pass
                 
                 reply_text = await sync_to_async(TGText.objects.get)(slug='contact_soon', language=user_language)
                 await bot.send_message(chat_id=chat_id,
@@ -1144,17 +1217,20 @@ async def callback_query(call: types.CallbackQuery):
                 confirm_text = await sync_to_async(TGText.objects.get)(slug='birth_correct_question', language=user_language)
                 reply_text = f'{confirm_text.text} *{birth_date}*?'
 
-                await bot.edit_message_text(chat_id=chat_id,
-                                    message_id=message_id,
-                                    text=reply_text,
-                                    parse_mode='Markdown',
-                                    )
-            
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('birthdate', user_language),
-                                                )
-
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=reply_text,
+                                        parse_mode='Markdown',
+                                        )
+                
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('birthdate', user_language),
+                                                    )
+                except:
+                    pass
+                
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1193,10 +1269,13 @@ async def callback_query(call: types.CallbackQuery):
         user.curr_input = f'{info_type}price_{info_id}'
         await sync_to_async(user.save)()
 
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=InlineKeyboardBuilder().as_markup(),
-                                            )
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+        except:
+            pass
 
         await bot.send_message(chat_id=chat_id,
                                text='Введите стоимость в шекелях',
@@ -1219,10 +1298,13 @@ async def callback_query(call: types.CallbackQuery):
         user.curr_input = None
         await sync_to_async(user.save)()
 
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=InlineKeyboardBuilder().as_markup(),
-                                            )
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+        except:
+            pass
 
         await bot.send_message(chat_id=chat_id,
                                text='Заявка отклонена.',
@@ -1402,10 +1484,14 @@ async def callback_query(call: types.CallbackQuery):
                                 disable_notification=False,
                                 ) 
 
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+                try:
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+                except:
+                    pass
+
                 if user.username:
                     reply_text = await sync_to_async(TGText.objects.get)(slug='contact_soon', language=user_language)
                 else:
@@ -1435,16 +1521,20 @@ async def callback_query(call: types.CallbackQuery):
                 confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
                 reply_text = f'{confirm_text.text} *{user.family_name}*?'
 
-                await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=reply_text,
-                                        parse_mode='Markdown',
-                                        )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=reply_text,
+                                            parse_mode='Markdown',
+                                            )
 
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
-                                                    )
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
+                                                        )
+                except:
+                    pass
+
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1462,16 +1552,19 @@ async def callback_query(call: types.CallbackQuery):
             await sync_to_async(user.save)()
 
             choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
-            await bot.edit_message_text(chat_id=chat_id,
-                                        message_id=message_id,
-                                        text=choose_fare.text,
-                                        parse_mode='Markdown',
-                                        )
+            try:
+                await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=choose_fare.text,
+                                            parse_mode='Markdown',
+                                            )
 
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=await keyboards.sim_fares_keyboard(),
-                                                )
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=await keyboards.sim_fares_keyboard(),
+                                                    )
+            except:
+                pass
 
         elif info == 'address':
             sim_card = await sync_to_async(user.sim_cards.first)()
@@ -1479,11 +1572,14 @@ async def callback_query(call: types.CallbackQuery):
             if sim_card and sim_card.circuit_id_collect is None and sim_card.debt >= 200:
                 reply = await sync_to_async(TGText.objects.get)(slug='collect_sim_money', language=user_language)
 
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                    )
-
+                try:
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                        )
+                except:
+                    pass
+            
                 await bot.send_message(chat_id=chat_id,
                                     text=reply.text,
                                     parse_mode='Markdown',
@@ -1678,10 +1774,13 @@ async def callback_query(call: types.CallbackQuery):
         user.curr_input = None
         await sync_to_async(user.save)()
 
-        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=InlineKeyboardBuilder().as_markup(),
-                                            )
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+        except:
+            pass
 
         await bot.send_message(chat_id=chat_id,
                                text='Заявка отклонена.',
@@ -1696,10 +1795,13 @@ async def callback_query(call: types.CallbackQuery):
             user.curr_input = f'manager-sim_{sim_user_id}_{fare_id}'
             await sync_to_async(user.save)()
 
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                            message_id=message_id,
-                                            reply_markup=InlineKeyboardBuilder().as_markup(),
-                                            )
+            try:
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+            except:
+                pass
 
             await bot.send_message(chat_id=chat_id,
                                 text='Введите номер выдаваемой симки',
@@ -1832,10 +1934,13 @@ async def callback_query(call: types.CallbackQuery):
                     \n{pay_date_text.text} *{human_pay_date}*\
                     '''
 
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+            try:
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+            except:
+                pass
 
             await bot.send_message(chat_id=user_id,
                             text=reply_text,
@@ -1859,10 +1964,13 @@ async def callback_query(call: types.CallbackQuery):
             address_question = await sync_to_async(TGText.objects.get)(slug='address_correct_question', language=user_language)
             reply_text = f'{address_question.text}\n*{user.addresses}*'
 
-            await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                message_id=message_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+            try:
+                await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+            except:
+                pass
 
             await bot.send_message(chat_id=chat_id,
                             text=reply_text,
@@ -2713,6 +2821,7 @@ async def handle_text(message):
 
 
 async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 

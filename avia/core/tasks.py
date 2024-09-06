@@ -7,6 +7,7 @@ from celery import shared_task
 
 from core.models import UsersSim, TGText, Notification, OldSim
 from core.utils import send_message_on_telegram
+from sim.models import SimCard
 
 
 def add_debt():
@@ -93,6 +94,16 @@ def select_notifications():
 @shared_task
 def add_debt_old_sims():
     users_sims = OldSim.objects.filter(next_payment=datetime.datetime.utcnow().date(), to_main_bot=False).select_related('fare').all()
+    for users_sim in users_sims:
+        price = users_sim.fare.price
+        users_sim.debt += price
+        users_sim.next_payment = datetime.datetime.utcnow() + datetime.timedelta(days=30)
+        users_sim.save()
+
+
+@shared_task
+def add_debt_admin_sims():
+    users_sims = SimCard.objects.filter(next_payment=datetime.datetime.utcnow().date(), to_main_bot=False).select_related('fare').all()
     for users_sim in users_sims:
         price = users_sim.fare.price
         users_sim.debt += price

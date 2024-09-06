@@ -24,6 +24,8 @@ from money_transfer import views as money_transfer_views
 from core import views as core_views
 from tickets import views as tickets_view
 from parcels import views as parcels_view
+from sim import views as sim_view
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -44,6 +46,7 @@ urlpatterns = [
     path('icount/sim-collect/<int:pk>/', core_views.sim_resend_collect_icount, name='sim_collect_icount'),
     path('circuit/ticket/<int:pk>/', tickets_view.ticket_send_circuit, name='circuit_admin_ticket'),
     path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
+    path('icount/admin-sim/<int:pk>/', sim_view.sim_resend_icount, name='sim_admin_icount'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

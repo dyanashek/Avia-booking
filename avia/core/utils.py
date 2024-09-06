@@ -456,3 +456,4 @@ def create_icount_invoice_sync(user_id, amount, is_old_sim=False):
         doc_url = False
 
     return doc_url
+    
