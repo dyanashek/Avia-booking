@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from easy_thumbnails.files import get_thumbnailer
 from filer.fields.image import FilerImageField
+from django_ckeditor_5.fields import CKEditor5Field
 
 from core.utils import send_message_on_telegram
 from drivers.models import Driver
@@ -309,6 +310,69 @@ class OldSim(models.Model):
         return self.sim_phone
 
 
+NOTIFICATION_TYPES = (
+    ('1', 'Индивидуальное'),
+    ('2', 'Всем пользователям')
+)
+
+
+class LinkButton(models.Model):
+    notification = models.ForeignKey('ImprovedNotification', verbose_name='Уведомление', on_delete=models.CASCADE, related_name='buttons')
+    text = models.CharField(verbose_name='Текст (русский)', max_length=50)
+    link = models.CharField(verbose_name='Ссылка', max_length=1024, help_text='Обязательно должна содержать "https://"')
+    my_order = models.PositiveIntegerField(verbose_name='Порядок', default=0, blank=False, null=False)
+
+    class Meta:
+        verbose_name = 'кнопка с ссылкой'
+        verbose_name_plural = 'кнопки с ссылками'
+        ordering = ('my_order',)
+    
+    def __str__(self):
+        return self.link
+
+
+class ImprovedNotification(models.Model):
+    target = models.CharField(verbose_name='Тип уведомления', choices=NOTIFICATION_TYPES, max_length=30)
+    user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='improved_notifications', null=True, blank=True, help_text='Учитывается только если выбран тип "индивидуальное"')
+    text = CKEditor5Field(verbose_name='Текст уведомления (русский)')
+    notify_time = models.DateTimeField(verbose_name='Время уведомления', help_text='Указывается в UTC (-3 от МСК).')
+    image = FilerImageField(verbose_name='Изображение', on_delete=models.SET_NULL, null=True, blank=True)
+    is_valid = models.BooleanField(verbose_name='Рассылка валидна?', default=False) 
+    started = models.BooleanField(verbose_name='Рассылка началась?', default=False) 
+    notified = models.BooleanField(verbose_name='Успешно?', null=True, blank=True, default=None)
+
+    success_users = models.IntegerField(default=0)
+    total_send_users = models.IntegerField(default=0)
+    total_users = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'уведомление пользователей'
+        verbose_name_plural = 'уведомления пользователей'
+        ordering = ('-notify_time',)
+    
+    def __str__(self):
+        return self.target
+    
+    def save(self, *args, **kwargs) -> None:
+        if self.text == '<p>&nbsp;</p>':
+            self.is_valid = False
+
+        elif self.target == '1' and self.user is None:
+            self.is_valid = False
+        
+        else:
+            self.is_valid = True
+        
+        if self.pk:
+            if self.buttons.all():
+                for button in self.buttons.all():
+                    if 'https://' not in button.link:
+                        self.is_valid = False
+                        break
+
+        super().save(*args, **kwargs)
+
+
 @receiver(post_save, sender=Notification)
 def handle_notification(sender, instance, **kwargs):
     if instance.notify_now and instance.notified is None:
@@ -325,4 +389,3 @@ def handle_notification(sender, instance, **kwargs):
         
         instance.notify_time = datetime.datetime.utcnow()
         instance.save()
-

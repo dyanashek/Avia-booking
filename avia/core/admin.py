@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
-                         UsersSim, Notification, OldSim)
+                         UsersSim, Notification, OldSim, ImprovedNotification, LinkButton)
 
 
 @admin.register(Language)
@@ -241,4 +241,41 @@ class OldSimAdmin(admin.ModelAdmin):
     search_fields = ('sim_phone',)
     readonly_fields = ('user_id', 'sim_phone', 'fare', 'to_main_bot', 'icount_id')
     list_filter = ('to_main_bot',)
+
+
+class LinkButtonInline(admin.StackedInline):
+    model = LinkButton
+    extra = 0
+    fields = ('text', 'link',)
     
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.started:
+            return [field.name for field in self.model._meta.fields]
+        else:
+            return []
+
+
+@admin.register(ImprovedNotification)
+class ImprovedNotificationAdmin(admin.ModelAdmin):
+    list_display = ('notify_time', 'target', 'is_valid', 'started', 'notified', 'curr_status',)
+    list_filter = ('is_valid', 'started', 'notified', 'target',)
+    fields = ('target', 'user', 'text', 'notify_time', 'image',)
+    inlines = (LinkButtonInline,)
+    autocomplete_fields = ('user',)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.started:
+            return [field.name for field in self.model._meta.fields]
+        else:
+            return []
+    
+    def curr_status(self, obj):
+        if obj and obj.total_users > 0:
+            return f'{obj.success_users}/{obj.total_send_users}/{obj.total_users}'
+        
+        return '-/-/-'
+    
+    curr_status.short_description = 'Успешно/Отправлено/Всего'
+
+    def has_module_permission(self, request):
+        return False

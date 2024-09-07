@@ -27,6 +27,10 @@ app.conf.beat_schedule = {
         'task': 'core.tasks.add_debt_admin_sims',
         'schedule': crontab(hour=7, minute=0),  
     },
+    'run-scheduler-every-one-minute': {
+        'task': 'core.tasks.send_improved_notifications',
+        'schedule': crontab(minute='*/1'),  
+    },
 }
 
 app.autodiscover_tasks()

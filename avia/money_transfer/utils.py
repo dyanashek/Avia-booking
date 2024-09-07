@@ -32,12 +32,10 @@ def send_pickup_address(sender, delivery, codes):
     if delivery.ils_amount:
         items.append(f'{int(delivery.ils_amount)}₪')
     if delivery.commission:
-        items.append(f'к{int(delivery.commission)}₪')
+        items.append(f'+{int(delivery.commission)}₪')
 
-    notes = f'{codes}, {sender.phone}, {sender.name}, '
-    notes += ', '.join(items)
-
-    notes += f', '
+    notes = f'{codes} | {sender.phone} | {sender.name} | '
+    notes += ' | '.join(items)
     
     data = {
         'address': {

@@ -248,6 +248,24 @@ def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
     return HttpResponse()
 
 
+def send_improved_message_on_telegram(params, files=False, token=TELEGRAM_TOKEN):
+    """Отправка сообщения в телеграм."""
+    if files:
+        try:
+            endpoint = f'https://api.telegram.org/bot{token}/sendPhoto'
+            response = requests.post(endpoint, data=params, files=files)
+        except:
+            response = False
+    else:
+        try:
+            endpoint = f'https://api.telegram.org/bot{token}/sendMessage'
+            response = requests.post(endpoint, data=params)
+        except:
+            response = False
+
+    return response
+
+
 def send_pickup_address_sync(application, application_type):
     if application_type == 'flight':
         order_id = '1'

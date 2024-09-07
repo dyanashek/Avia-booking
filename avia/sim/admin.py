@@ -9,6 +9,8 @@ from django.http import HttpResponse
 from sim.models import SimCard
 from sim.utils import create_excel_file
 
+import config
+
 
 @admin.register(SimCard)
 class SimCardAdmin(admin.ModelAdmin):
@@ -33,8 +35,13 @@ class SimCardAdmin(admin.ModelAdmin):
 
         return '-'
     
+    def ref_link(self, obj):
+        if obj and obj.sim_phone:
+            return f'https://t.me/{config.TELEGRAM_BOT}?start={obj.sim_phone}'
+        return '-'
+    
     def get_list_display(self, request, obj=None):
-        fields = ['name', 'fare', 'to_main_bot', 'to_icount_button']
+        fields = ['name', 'fare', 'to_main_bot', 'to_icount_button', 'ref_link']
 
         return fields
     

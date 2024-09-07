@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'filer',
     'adminsortable2',
     'reversion',
+    'django_ckeditor_5',
 ]
 
 THUMBNAIL_PROCESSORS = (
@@ -190,3 +191,16 @@ MONEY_TRANSFER_LIST = 'money_transfer'
 #Celery
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'UTC'
+
+CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': ['bold', 'italic', 'underline', 'strikethrough', 'link', 'blockQuote', ],
+    },
+    'list': {
+        'properties': {
+            'styles': 'true',
+            'startIndex': 'true',
+            'reversed': 'true',
+        }
+    }
+}

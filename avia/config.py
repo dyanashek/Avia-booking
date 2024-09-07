@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TELEGRAM_BOT = 'MusofirimBot'
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_DRIVERS_TOKEN = os.getenv('TELEGRAM_DRIVERS_TOKEN')
 TELEGRAM_SIM_TOKEN = os.getenv('TELEGRAM_SIM_TOKEN')
