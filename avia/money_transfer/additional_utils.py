@@ -29,8 +29,6 @@ def report_to_db(report: dict):
 
 
 def stop_to_report(stop_id):
-    print('got command')
-    stop_id = 'plans/3fziBPuyWzlLrjL64wfL/stops/UUUhrLVwU9VgIin0xlLY'
     response = requests.get(f'{settings.CURCUIT_END_POINT}/{stop_id}', headers=settings.CURCUIT_HEADER)
     stop = response.json()
 
@@ -38,16 +36,13 @@ def stop_to_report(stop_id):
     order_code = stop.get('orderInfo').get('sellerOrderId')
 
     if success and order_code == '3':
-        print('valid to change')
         timestamp = stop.get('deliveryInfo').get('attemptedAt')
         delivery_date = (datetime.datetime.utcfromtimestamp(timestamp) + datetime.timedelta(hours=3)).date()
         state = stop.get('deliveryInfo').get('state')
 
         try:
             curr_delivery = Delivery.objects.get(circuit_id=stop_id)
-            print('found delivery')
         except:
-            print('no such delivery')
             curr_delivery = None
 
         if curr_delivery:
