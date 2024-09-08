@@ -116,6 +116,13 @@ class Transfer(models.Model):
         super().save(*args, **kwargs)
 
 
+DRIVERS = (
+    ('1', 'Первый водитель',),
+    ('2', 'Второй водитель',),
+    ('3', 'Третий водитель',),
+)
+
+
 class Delivery(models.Model):
     sender = models.ForeignKey(Sender, verbose_name='Отправитель', related_name='deliveries', on_delete=models.CASCADE)
     sender_address = models.ForeignKey(Address, verbose_name='Адрес отправителя', related_name='senders_deliveries', null=True, on_delete=models.SET_NULL)
@@ -130,6 +137,7 @@ class Delivery(models.Model):
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
     created_by = models.ForeignKey(User, verbose_name='Менеджер', related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
     rate = models.FloatField(verbose_name='Курс на момент перевода', null=True, blank=True, default=None)
+    driver = models.CharField(verbose_name='Водитель', max_length=50, null=True, blank=True, choices=DRIVERS)
 
     circuit_api = models.BooleanField(null=True, blank=True, default=None)
     gspread_api = models.BooleanField(null=True, blank=True, default=None)
@@ -332,7 +340,107 @@ class DebitCredit(models.Model):
     class Meta:
         verbose_name = 'дебит-кредит'
         verbose_name_plural = 'дебит-кредит'
-        ordering = ('date',)
+        ordering = ('-date',)
+
+
+class Report(models.Model):
+    report_date = models.DateField(verbose_name='Дата отчета',)
+    first_driver_usd = models.FloatField(verbose_name='Получено $ (первый водитель)', default=0)
+    first_driver_ils = models.FloatField(verbose_name='Получено ₪ (первый водитель)', default=0)
+    first_driver_commission = models.FloatField(verbose_name='Получено комиссии ₪ (первый водитель)', default=0)
+    first_driver_points = models.IntegerField(verbose_name='Кол-во адресов (первый водитель)', default=0)
+
+    second_driver_usd = models.FloatField(verbose_name='Получено $ (второй водитель)', default=0)
+    second_driver_ils = models.FloatField(verbose_name='Получено ₪ (второй водитель)', default=0)
+    second_driver_commission = models.FloatField(verbose_name='Получено комиссии ₪ (второй водитель)', default=0)
+    second_driver_points = models.IntegerField(verbose_name='Кол-во адресов (второй водитель)', default=0)
+
+    third_driver_usd = models.FloatField(verbose_name='Получено $ (третий водитель)', default=0)
+    third_driver_ils = models.FloatField(verbose_name='Получено ₪ (третий водитель)', default=0)
+    third_driver_commission = models.FloatField(verbose_name='Получено комиссии ₪ (третий водитель)', default=0)
+    third_driver_points = models.IntegerField(verbose_name='Кол-во адресов (третий водитель)', default=0)
+
+    class Meta:
+        verbose_name = 'отчет'
+        verbose_name_plural = 'отчеты'
+        ordering = ('-report_date',)
+
+    def __str__(self):
+        return self.report_date.strftime('%d.%m.%Y')
+
+    @property
+    def total_usd(self):
+        return self.first_driver_usd + self.second_driver_usd + self.third_driver_usd
+    
+    @property
+    def total_ils(self):
+        return self.first_driver_ils + self.second_driver_ils + self.third_driver_ils
+    
+    @property
+    def total_commission(self):
+        return self.first_driver_commission + self.second_driver_commission + self.third_driver_commission
+    
+    @property
+    def total_points(self):
+        return self.first_driver_points + self.second_driver_points + self.third_driver_points
+
+    @classmethod
+    def aggregate_report(self, date_from, date_to):
+        first_driver = {
+            'driver': 'Первый водитель',
+            'usd': 0,
+            'ils': 0,
+            'commission': 0,
+            'points': 0,
+        }
+        second_driver = {
+            'driver': 'Второй водитель',
+            'usd': 0,
+            'ils': 0,
+            'commission': 0,
+            'points': 0,
+        }
+        third_driver = {
+            'driver': 'Третий водитель',
+            'usd': 0,
+            'ils': 0,
+            'commission': 0,
+            'points': 0,
+        }
+
+        report_summary = Report.objects.filter(
+            Q(report_date__lte=date_to) & 
+            Q(report_date__gte=date_from)
+        ).aggregate(
+            first_driver_usd=Sum('first_driver_usd'),
+            first_driver_ils=Sum('first_driver_ils'),
+            first_driver_commission=Sum('first_driver_commission'),
+            first_driver_points=Sum('first_driver_points'),
+            second_driver_usd=Sum('second_driver_usd'),
+            second_driver_ils=Sum('second_driver_ils'),
+            second_driver_commission=Sum('second_driver_commission'),
+            second_driver_points=Sum('second_driver_points'),
+            third_driver_usd=Sum('third_driver_usd'),
+            third_driver_ils=Sum('third_driver_ils'),
+            third_driver_commission=Sum('third_driver_commission'),
+            third_driver_points=Sum('third_driver_points'),
+            )
+        
+        for title, value in report_summary.items():
+            if 'first' in title:
+                if value:
+                    first_driver[title.replace('first_driver_' , '')] = value
+            elif 'second' in title:
+                if value:
+                    second_driver[title.replace('second_driver_' , '')] = value
+            elif 'third' in title:
+                if value:
+                    third_driver[title.replace('third_driver_' , '')] = value
+
+        first_driver = [first_driver['driver'], first_driver['usd'], first_driver['ils'], first_driver['commission'], first_driver['points'],]
+        second_driver = [second_driver['driver'], second_driver['usd'], second_driver['ils'], second_driver['commission'], second_driver['points'],]
+        third_driver = [third_driver['driver'], third_driver['usd'], third_driver['ils'], third_driver['commission'], third_driver['points'],]
+        return [first_driver, second_driver, third_driver]
 
 
 @receiver(post_save, sender=Transfer)

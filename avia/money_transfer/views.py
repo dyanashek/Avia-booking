@@ -1,5 +1,8 @@
 import json
+import requests
+import datetime
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
@@ -7,11 +10,12 @@ from django.db.models import Q
 from django.shortcuts import redirect, get_object_or_404
 
 from core.models import UsersSim
-from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission
+from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission, Report
 from money_transfer.utils import (update_delivery_pickup_status, update_credit_status, send_pickup_address,
                                   delivery_to_gspread)
 from core.utils import send_message_on_telegram
 from drivers.utils import construct_collect_sim_money_message, construct_delivery_sim_message
+from money_transfer.additional_utils import report_to_db, stop_to_report
 
 from config import TELEGRAM_DRIVERS_TOKEN
 
@@ -127,6 +131,11 @@ def stop_status(request):
 
             delivery.save()
 
+            try:
+                stop_to_report(stop_id)
+            except:
+                pass
+
     elif order_id and order_id == '4' and status:
 
         users_sim = UsersSim.objects.filter(circuit_id=stop_id).first()
@@ -206,3 +215,70 @@ def delivery_resend_gspread(request, pk):
 
 
     return redirect('/admin/money_transfer/delivery/')
+
+
+@csrf_exempt
+def construct_report(request):
+    page_token = 'first'
+    data = {
+            'maxPageSize': 10,
+        }
+    report = {}
+    while page_token:
+        if page_token != 'first':
+            data['pageToken'] = page_token
+        response = requests.get(settings.GET_STOPS_ENDPOINT, headers=settings.CURCUIT_HEADER, params=data)
+
+        for stop in response.json().get('stops'):
+            success = stop.get('deliveryInfo').get('succeeded')
+            order_code = stop.get('orderInfo').get('sellerOrderId')
+
+            if success and order_code == '3':
+                timestamp = stop.get('deliveryInfo').get('attemptedAt')
+                delivery_date = (datetime.datetime.utcfromtimestamp(timestamp) + datetime.timedelta(hours=3)).date()
+                state = stop.get('deliveryInfo').get('state')
+                delivery_id = stop.get('id')
+                
+                try:
+                    curr_delivery = Delivery.objects.get(circuit_id=delivery_id)
+                except:
+                    curr_delivery = None
+
+                if delivery_date not in report:
+                    report[delivery_date] = {
+                        'first_driver': {
+                            'usd': 0,
+                            'ils': 0,
+                            'commission': 0,
+                            'total_points': 0,
+                        }, 
+                        'second_driver': {
+                            'usd': 0,
+                            'ils': 0,
+                            'commission': 0,
+                            'total_points': 0,
+                        }, 
+                        'third_driver': {
+                            'usd': 0,
+                            'ils': 0,
+                            'commission': 0,
+                            'total_points': 0,
+                        }, 
+                        }
+                if curr_delivery:
+                    if state == 'delivered_to_recipient':
+                        driver_name = 'first_driver'
+                    elif state == 'delivered_to_third_party': 
+                        driver_name = 'second_driver'
+                    elif state == 'delivered_to_mailbox':
+                        driver_name = 'third_driver'
+
+                    report[delivery_date][driver_name]['usd'] += curr_delivery.usd_amount
+                    report[delivery_date][driver_name]['ils'] += curr_delivery.ils_amount
+                    report[delivery_date][driver_name]['commission'] += curr_delivery.commission
+                    report[delivery_date][driver_name]['total_points'] += 1
+
+        page_token = response.json().get('nextPageToken')
+
+    report_to_db(report)
+    return JsonResponse({'done': True})

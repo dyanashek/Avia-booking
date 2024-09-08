@@ -47,6 +47,7 @@ urlpatterns = [
     path('circuit/ticket/<int:pk>/', tickets_view.ticket_send_circuit, name='circuit_admin_ticket'),
     path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
     path('icount/admin-sim/<int:pk>/', sim_view.sim_resend_icount, name='sim_admin_icount'),
+    path('money/report/', money_transfer_views.construct_report, name='money_transfer_report'),
     path("ckeditor5/", include('django_ckeditor_5.urls')),
 ]
 
