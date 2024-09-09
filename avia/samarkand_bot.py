@@ -8,6 +8,7 @@ from aiogram import F
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from django.db.models import Q
 
 from asgiref.sync import sync_to_async
 
@@ -33,6 +34,34 @@ async def start_message(message: types.Message):
     if user:
         await bot.send_message(chat_id=user_id,
                          text='Привет.\nЗдесь можно контролировать выдачу денежных средств.\nОтправьте код получателя для вывода информации и внесения изменений.',
+                         )
+    else:
+        await bot.send_message(chat_id=user_id,
+                         text='Доступ закрыт.\nОбратитесь к администратору.',
+                         )
+
+
+@dp.message(Command("delivery"))
+async def delivery_message(message: types.Message):
+    user_id = str(message.from_user.id)
+    user = await sync_to_async(Manager.objects.filter(telegram_id=user_id).first)()
+    if user:
+        transfers =  await sync_to_async(lambda: list(Transfer.objects.filter(
+            Q(pass_date__isnull=True) & 
+            Q(pick_up=True) &
+            Q(delivery__valid=True) &
+            Q(delivery__status__slug='finished')).all()))()
+        transfers_ids = ', '.join([str(transfer.id) for transfer in transfers])
+
+        credit_transfers =  await sync_to_async(lambda: list(Transfer.objects.filter(
+            Q(pass_date__isnull=True) & 
+            Q(pick_up=True) &
+            Q(delivery__valid=True) &
+            Q(delivery__status__slug='api')).all()))()
+        credit_transfers_ids = ', '.join([str(transfer.id) for transfer in credit_transfers])
+        await bot.send_message(chat_id=user_id,
+                         text=f'*Требуется доставка:*\n*Можно выдать:* {transfers_ids}\n*Можно выдать в кредит:* {credit_transfers_ids}',
+                         parse_mode='Markdown',
                          )
     else:
         await bot.send_message(chat_id=user_id,
