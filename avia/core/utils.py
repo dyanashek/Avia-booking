@@ -1,8 +1,11 @@
 import requests
-import datetime
 import aiohttp
 import ssl
 import certifi
+import tempfile
+
+
+import pandas
 
 from asgiref.sync import sync_to_async
 
@@ -474,4 +477,18 @@ def create_icount_invoice_sync(user_id, amount, is_old_sim=False):
         doc_url = False
 
     return doc_url
-    
+
+
+def create_excel_file(data, old=True):
+    data_frame = pandas.DataFrame(list(data))
+    data_frame.columns = ['Номер', 
+                          'Долг',]
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+        if old:
+            data_frame.to_excel(temp_file.name, index=False, sheet_name=f'Старые сим карты')
+        else:
+            data_frame.to_excel(temp_file.name, index=False, sheet_name=f'Cим карты')
+
+        return temp_file.name
+        

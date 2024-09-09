@@ -68,9 +68,9 @@ class ReceiverAdmin(VersionAdmin):
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
     change_list_template = "admin/delivery_change_list.html"
-    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission',)
+    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver',)
     search_fields = ('sender__name', 'sender__phone',)
-    list_filter = ('valid', 'status', 'created_by',)
+    list_filter = ('valid', 'status', 'created_by', 'driver')
     inlines = (TransferInline,)
     autocomplete_fields = ('sender',)
 
@@ -83,7 +83,7 @@ class DeliveryAdmin(VersionAdmin):
         if obj and obj.valid:
             return [field.name for field in self.model._meta.fields]
 
-        return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd',)
+        return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd', 'driver',)
 
     def download_report(self, request):
         date_from = datetime.datetime.strptime(request.POST.get('date_from'), '%Y-%m-%d').date()

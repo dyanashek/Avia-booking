@@ -274,6 +274,9 @@ class UsersSim(models.Model):
     def __str__(self):
         return self.sim_phone
 
+    @classmethod
+    def aggregate_report(self):
+        return UsersSim.objects.values('sim_phone', 'debt')
 
 class Notification(models.Model):
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
@@ -308,6 +311,10 @@ class OldSim(models.Model):
     
     def __str__(self):
         return self.sim_phone
+
+    @classmethod
+    def aggregate_report(self):
+        return OldSim.objects.values('sim_phone', 'debt')
 
 
 NOTIFICATION_TYPES = (

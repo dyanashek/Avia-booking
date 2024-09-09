@@ -1,11 +1,15 @@
+import os
+
 from django.contrib import admin
 from django.db.models import Q
+from django.urls import path
 from django.utils.html import format_html
+from django.http import HttpResponse
 from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
                          UsersSim, Notification, OldSim, ImprovedNotification, LinkButton)
-
+from core.utils import create_excel_file
 
 @admin.register(Language)
 class LanguageAdmin(SortableAdminMixin, admin.ModelAdmin):
@@ -155,6 +159,7 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 
 @admin.register(UsersSim)
 class UsersSimAdmin(admin.ModelAdmin):
+    change_list_template = "admin/sims_change_list.html"
     list_filter = ('ready_to_pay', 'is_old_sim',)
     fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
     readonly_fields = ('driver', 'is_old_sim',)
@@ -220,6 +225,33 @@ class UsersSimAdmin(admin.ModelAdmin):
     to_circuit_collect_button.short_description = 'circuit (сбор)'
     to_icount_collect_button.short_description = 'iCount (чек)'
 
+    def download_report(self, request):
+        sims = UsersSim.aggregate_report()
+        if sims.all():
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, create_excel_file(sims, old=False))
+
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(fh.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", status=200)
+                    response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                    return response
+            else:
+                return HttpResponse("Файл не найден", status=404)
+        else:
+            return HttpResponse("Данные за указанный период отсутствуют", status=400)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('report/', self.admin_site.admin_view(self.download_report), name='report_sims'),
+        ]
+        return custom_urls + urls
+
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
@@ -237,10 +269,38 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(OldSim)
 class OldSimAdmin(admin.ModelAdmin):
+    change_list_template = "admin/old_sims_change_list.html"
     list_display = ('sim_phone', 'debt', 'to_main_bot')
     search_fields = ('sim_phone',)
     readonly_fields = ('user_id', 'sim_phone', 'fare', 'to_main_bot', 'icount_id')
     list_filter = ('to_main_bot',)
+
+    def download_report(self, request):
+        old_sims = OldSim.aggregate_report()
+        if old_sims.all():
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, create_excel_file(old_sims))
+
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(fh.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", status=200)
+                    response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                    return response
+            else:
+                return HttpResponse("Файл не найден", status=404)
+        else:
+            return HttpResponse("Данные за указанный период отсутствуют", status=400)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('report/', self.admin_site.admin_view(self.download_report), name='report_old_sims'),
+        ]
+        return custom_urls + urls
 
 
 class LinkButtonInline(admin.StackedInline):
