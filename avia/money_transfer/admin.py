@@ -258,7 +258,7 @@ class BuyTareAdmin(VersionAdmin):
 
 @admin.register(Report)
 class ReportAdmin(VersionAdmin):
-    #change_list_template = "admin/report_change_list.html"
+    change_list_template = "admin/report_change_list.html"
     list_display = ('report_date', 'first_driver', 'second_driver', 'third_driver', 'total_stats',)
     date_hierarchy = 'report_date'
 
