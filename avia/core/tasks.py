@@ -11,7 +11,8 @@ from sim.models import SimCard
 
 
 def add_debt():
-    users_sims = UsersSim.objects.filter(next_payment=datetime.datetime.utcnow().date()).select_related('fare').all()
+    users_sims = UsersSim.objects.filter(Q(next_payment=datetime.datetime.utcnow().date()) &
+                                         Q(is_stopped=False)).select_related('fare').all()
     for users_sim in users_sims:
         price = users_sim.fare.price
         users_sim.debt += price
@@ -78,7 +79,7 @@ def notify_users(users_sims):
                 send_message_on_telegram(params)
                 users_sim.notified = True
                 users_sim.save()
-                time.sleep(2)
+                time.sleep(3)
             except:
                 pass
 
@@ -103,7 +104,9 @@ def add_debt_old_sims():
 
 @shared_task
 def add_debt_admin_sims():
-    users_sims = SimCard.objects.filter(next_payment=datetime.datetime.utcnow().date(), to_main_bot=False).select_related('fare').all()
+    users_sims = SimCard.objects.filter(Q(next_payment=datetime.datetime.utcnow().date()) &
+                                        Q(to_main_bot=False) &
+                                        Q(is_stopped=False)).select_related('fare').all()
     for users_sim in users_sims:
         price = users_sim.fare.price
         users_sim.debt += price
@@ -127,6 +130,7 @@ def send_notifications():
             notification.notified = False
         
         notification.save()
+        time.sleep(3)
 
 
 @shared_task

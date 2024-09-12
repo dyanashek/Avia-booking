@@ -248,7 +248,8 @@ class UsersSim(models.Model):
     circuit_id_collect = models.CharField(verbose_name='Circuit id (collect money)', help_text='После получения денег - удалить.', max_length=250, blank=True, null=True, unique=True)
     driver = models.ForeignKey(Driver, verbose_name='Водитель', help_text='Последний водитель, вносивший информацию через бота о переданных клиентом деньгах', on_delete=models.SET_NULL, related_name='sim_cards', null=True, blank=True)
     is_old_sim = models.BooleanField(verbose_name='Старая симка?', default=False)
-
+    is_stopped = models.BooleanField(verbose_name='Приостановлен', default=False)
+    
     circuit_api = models.BooleanField(null=True, blank=True, default=None)
     icount_api = models.BooleanField(null=True, blank=True, default=None)
     circuit_api_collect = models.BooleanField(null=True, blank=True, default=None)

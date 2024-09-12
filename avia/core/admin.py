@@ -160,7 +160,7 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 @admin.register(UsersSim)
 class UsersSimAdmin(admin.ModelAdmin):
     change_list_template = "admin/sims_change_list.html"
-    list_filter = ('ready_to_pay', 'is_old_sim',)
+    list_filter = ('ready_to_pay', 'is_old_sim', 'is_stopped',)
     fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
     readonly_fields = ('driver', 'is_old_sim',)
     autocomplete_fields = ('user',)
@@ -198,7 +198,7 @@ class UsersSimAdmin(admin.ModelAdmin):
         return '-'
 
     def get_list_display(self, request, obj=None):
-        fields = ['user', 'fare', 'debt', 'ready_to_pay',]
+        fields = ['user', 'fare', 'debt', 'ready_to_pay', 'is_stopped']
 
         for sim in super().get_queryset(request):
             if sim.circuit_api is False and sim.icount_api:
@@ -217,7 +217,6 @@ class UsersSimAdmin(admin.ModelAdmin):
                 if 'to_icount_collect_button' not in fields:
                     fields.append('to_icount_collect_button')
             
-
         return fields
     
     to_circuit_button.short_description = 'circuit (доставка)'
@@ -301,6 +300,9 @@ class OldSimAdmin(admin.ModelAdmin):
             path('report/', self.admin_site.admin_view(self.download_report), name='report_old_sims'),
         ]
         return custom_urls + urls
+    
+    def has_module_permission(self, request):
+        return False
 
 
 class LinkButtonInline(admin.StackedInline):

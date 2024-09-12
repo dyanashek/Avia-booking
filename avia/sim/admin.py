@@ -16,8 +16,9 @@ import config
 class SimCardAdmin(admin.ModelAdmin):
     change_list_template = "admin/sim_change_list.html"
 
+    search_fields = ('sim_phone',)
     fields = ('name', 'sim_phone', 'fare', 'next_payment', 'debt',)
-    list_filter = ('to_main_bot',)
+    list_filter = ('to_main_bot', 'is_stopped', 'icount_api',)
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.icount_api and obj.to_main_bot:
@@ -26,6 +27,9 @@ class SimCardAdmin(admin.ModelAdmin):
         return []
 
     def to_icount_button(self, obj):
+        if obj.name is None:
+            return 'необходимо указать имя'
+
         if obj.icount_api is False:
             return format_html(f'''
                 <a class="button" href="/icount/admin-sim/{obj.id}/">iCount</a>
@@ -41,7 +45,7 @@ class SimCardAdmin(admin.ModelAdmin):
         return '-'
     
     def get_list_display(self, request, obj=None):
-        fields = ['name', 'fare', 'to_main_bot', 'to_icount_button', 'ref_link']
+        fields = ['name', 'fare', 'debt', 'to_main_bot', 'to_icount_button', 'ref_link', 'is_stopped']
 
         return fields
     

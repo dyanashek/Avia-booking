@@ -69,6 +69,7 @@ async def start_message(message: types.Message, command: CommandObject):
                         icount_id=admin_sim.icount_id,
                         icount_api=True,
                         is_old_sim=True,
+                        is_stopped=admin_sim.is_stopped,
                     )
 
                     await sync_to_async(users_sim.save)()

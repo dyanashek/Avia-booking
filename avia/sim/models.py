@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class SimCard(models.Model):
-    name = models.CharField(verbose_name='Имя', max_length=512)
+    name = models.CharField(verbose_name='Имя', max_length=512, null=True, blank=True)
     sim_phone = models.CharField(verbose_name='Номер телефона', max_length=25, unique=True)
     fare = models.ForeignKey(SimFare, verbose_name='Тариф', on_delete=models.CASCADE, related_name='admins_sims', null=True, blank=True)
     created_at = models.DateField(verbose_name='Дата приобретения', auto_now_add=True)
@@ -19,8 +19,9 @@ class SimCard(models.Model):
     icount_id = models.IntegerField(null=True, blank=True, default=None)
     to_main_bot = models.BooleanField(verbose_name='Перенесена в основного бота?', default=False)
     created_by = models.ForeignKey(User, verbose_name='Менеджер', related_name='admin_sims', on_delete=models.SET_NULL, null=True, blank=True)
+    is_stopped = models.BooleanField(verbose_name='Приостановлен', default=False)
 
-    icount_api = models.BooleanField(null=True, blank=True, default=None)
+    icount_api = models.BooleanField(verbose_name='Аккаунт в icount', null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'сим карта'
@@ -32,13 +33,15 @@ class SimCard(models.Model):
     
     def save(self, *args, **kwargs) -> None:
         self.sim_phone = extract_digits(self.sim_phone)
-        if self.id is None:
+        if self.id is None and self.icount_api is None and self.name:
             icount_id = create_icount_client(self.name, self.sim_phone)
             if icount_id:
                 self.icount_id = icount_id
                 self.icount_api = True
             else:
                 self.icount_api = False
+        elif self.name is None:
+            self.icount_api = False
 
         super().save(*args, **kwargs)
     
