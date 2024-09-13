@@ -264,6 +264,9 @@ class NotificationAdmin(admin.ModelAdmin):
             return ('user', 'text', 'notify_now', 'notify_time', 'notified')
 
         return ('notified',)
+    
+    def has_module_permission(self, request):
+        return False
 
 
 @admin.register(OldSim)
@@ -338,6 +341,3 @@ class ImprovedNotificationAdmin(admin.ModelAdmin):
         return '-/-/-'
     
     curr_status.short_description = 'Успешно/Отправлено/Всего'
-
-    def has_module_permission(self, request):
-        return False
