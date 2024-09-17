@@ -1569,7 +1569,7 @@ class Command(BaseCommand):
                     if name.lower() == 'x':
                         name = None
 
-                    next_payment = datetime.date(2024, 10, 26)
+                    next_payment = datetime.date(2024, 9, 26)
                     old_sim = OldSim.objects.filter(sim_phone=number).first()
 
                     if old_sim:
