@@ -36,9 +36,10 @@ async def flight_or_parcel_keyboard(language):
     parcel_button = await sync_to_async(TGText.objects.get)(slug='parcel_button', language=language)
     sim_button = await sync_to_async(TGText.objects.get)(slug='sim_button', language=language)
 
-    keyboard.add(types.InlineKeyboardButton(text=flight_button.text, callback_data = f'flight'))
-    keyboard.add(types.InlineKeyboardButton(text=parcel_button.text, callback_data = f'parcel'))
-    keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'))
+    # keyboard.add(types.InlineKeyboardButton(text=flight_button.text, callback_data = f'flight'))
+    # keyboard.add(types.InlineKeyboardButton(text=parcel_button.text, callback_data = f'parcel'))
+    transfer = types.InlineKeyboardButton(text='Перевод', url = 'https://t.me/Roma0927')
+    keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'), transfer)
 
     return keyboard.as_markup()
 
@@ -172,6 +173,21 @@ async def confirm_price_keyboard(info_type, info_id, price):
     keyboard.row(types.InlineKeyboardButton(text='Отклонить заявку', callback_data=f'refuse_{info_type}_{info_id}'))
 
     return keyboard.as_markup()
+
+
+async def ready_pay_keyboard(language):
+    keyboard = InlineKeyboardBuilder()
+
+    ready_pay_button = await sync_to_async(TGText.objects.get)(slug='ready_pay_button', language=language)
+    week_later_button = await sync_to_async(TGText.objects.get)(slug='later_week_button', language=language)
+    month_later_button = await sync_to_async(TGText.objects.get)(slug='later_month_button', language=language)
+
+    keyboard.row(types.InlineKeyboardButton(text=ready_pay_button.text, callback_data='readypay'))
+    keyboard.row(types.InlineKeyboardButton(text=week_later_button.text, callback_data='later_week'))
+    keyboard.row(types.InlineKeyboardButton(text=month_later_button.text, callback_data='later_month'))
+
+    return keyboard.as_markup()
+
 
 #* <------------------------------------------------->
 #! КЛАВИАТУРЫ ДЛЯ СИМОК

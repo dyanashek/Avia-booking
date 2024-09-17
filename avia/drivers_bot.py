@@ -13,7 +13,7 @@ from asgiref.sync import sync_to_async
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
-from core.models import UsersSim, Notification, TGText
+from core.models import UsersSim, Notification, TGText, Language
 from core.utils import create_icount_invoice
 from drivers.models import Driver
 
@@ -126,6 +126,8 @@ async def callback_query(call: types.CallbackQuery):
                     if invoice_url:
                         sim_user = await sync_to_async(lambda: sim.user)()
                         user_language = await sync_to_async(lambda: sim_user.language)()
+                        if not user_language:
+                            user_language = await sync_to_async(Language.objects.get)(slug='rus')
                         invoice_text = await sync_to_async(TGText.objects.get)(slug='invoice_url', language=user_language)
                         reply_text = f'{invoice_text.text} {invoice_url}'
                         await sync_to_async(Notification.objects.create)(

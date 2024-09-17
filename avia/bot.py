@@ -76,6 +76,43 @@ async def start_message(message: types.Message, command: CommandObject):
                     admin_sim.to_main_bot = True
                     await sync_to_async(admin_sim.save)()
 
+                    if users_sim.debt >= 200:
+                        users_sim.pay_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()
+                        language = await sync_to_async(lambda: user.language)()
+                        if not language:
+                            language = await sync_to_async(Language.objects.get)(slug='rus')
+
+                        sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt', language=language)
+                        fare_text = await sync_to_async(TGText.objects.get)(slug='fare', language=language)
+                        fare_price_text = await sync_to_async(TGText.objects.get)(slug='fare_price', language=language)
+                        payment_needed = await sync_to_async(TGText.objects.get)(slug='payment_needed', language=language)
+
+                        message = f'''
+                            {sim_debt.text} {users_sim.sim_phone}:\
+                            \n*{users_sim.debt} ₪*\
+                            \n\
+                            \n*{fare_text.text}*\
+                            \n{fare.description}\
+                            \n*{fare_price_text.text} {fare.price}₪*\
+                            \n\
+                            \n{payment_needed.text}\
+                            '''
+                        
+                        try:
+                            await bot.send_message(
+                                chat_id=user_id,
+                                text=message,
+                                reply_markup=await keyboards.ready_pay_keyboard(language),
+                                parse_mode='Markdown',
+                            )
+                            users_sim.notified = True
+                            await sync_to_async(users_sim.save)()
+
+                            return
+
+                        except:
+                            pass
+
     await sync_to_async(Parcel.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
     await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
 
@@ -134,6 +171,8 @@ async def callback_query(call: types.CallbackQuery):
 
     user = await sync_to_async(TGUser.objects.get)(user_id=user_id)
     user_language = await sync_to_async(lambda: user.language)()
+    if not user_language:
+        user_language = await sync_to_async(Language.objects.get)(slug='rus')
     curr_input = user.curr_input
 
     if username:
@@ -2007,6 +2046,8 @@ async def handle_photo(message: types.Message):
         await sync_to_async(user.save)()
 
     user_language = await sync_to_async(lambda: user.language)()
+    if not user_language:
+        user_language = await sync_to_async(Language.objects.get)(slug='rus')
     curr_input = user.curr_input
 
     if curr_input and curr_input == 'passport':
@@ -2195,6 +2236,8 @@ async def handle_contact(message: types.Message):
         await sync_to_async(user.save)()
 
     user_language = await sync_to_async(lambda: user.language)()
+    if not user_language:
+        user_language = await sync_to_async(Language.objects.get)(slug='rus')
     curr_input = user.curr_input
 
     if curr_input and curr_input == 'phone':
@@ -2246,6 +2289,9 @@ async def handle_text(message):
         await sync_to_async(user.save)()
 
     user_language = await sync_to_async(lambda: user.language)()
+    if not user_language:
+        user_language = await sync_to_async(Language.objects.get)(slug='rus')
+
     curr_input = user.curr_input
     input_info = await utils.escape_markdown(message.text)
 

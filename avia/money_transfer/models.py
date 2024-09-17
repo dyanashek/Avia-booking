@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models import Count, Sum, Q, Case, When, F, Value
+from django.db.models import Count, Sum, Q, Case, When, F, Value, ExpressionWrapper, DecimalField
 from django.db.models.functions import Coalesce
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspread, get_delivery_ids, update_delivery_buy_rate
@@ -254,6 +254,15 @@ class Delivery(models.Model):
         
         return int(profit), int(brutto), int(netto), int(not_picked), int(not_provided)
 
+    @classmethod
+    def count_uncollected(self):
+        return dict(Delivery.objects.filter(status__slug='api').aggregate(
+            usd=Sum('usd_amount'),
+            ils=Sum('ils_amount'),
+            commission=Sum('commission'),
+            total_usd=Sum('total_usd'),
+        ))
+
 
 class Rate(models.Model):
     slug = models.CharField(verbose_name='Валютная пара', max_length=10, unique=True)
@@ -441,6 +450,7 @@ class Report(models.Model):
         second_driver = [second_driver['driver'], second_driver['usd'], second_driver['ils'], second_driver['commission'], second_driver['points'],]
         third_driver = [third_driver['driver'], third_driver['usd'], third_driver['ils'], third_driver['commission'], third_driver['points'],]
         return [first_driver, second_driver, third_driver]
+
 
 
 @receiver(post_save, sender=Transfer)

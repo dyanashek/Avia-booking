@@ -85,3 +85,4 @@ class SimCardAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     to_icount_button.short_description = 'icount'
+    ref_link.short_description = 'ссылка'

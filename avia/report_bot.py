@@ -15,7 +15,9 @@ from asgiref.sync import sync_to_async
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
-from money_transfer.models import Delivery, Transfer, Manager, BuyRate, DebitCredit, Balance, Operation_types
+from money_transfer.models import (Delivery, Transfer, Manager, BuyRate, 
+                                   DebitCredit, Balance, Operation_types, Report,
+                                   Rate)
 
 import config
 import keyboards
@@ -38,6 +40,66 @@ async def start_message(message: types.Message):
         await bot.send_message(chat_id=user_id,
                         text='Выберите один из вариантов:',
                         reply_markup=await keyboards.data_or_report_keyboard(),
+                        )
+    else:
+        await bot.send_message(chat_id=user_id,
+                        text='Нет доступа, обратитесь к администратору.',
+                        )
+
+
+@dp.message(Command("report"))
+async def report_message(message: types.Message):
+    user_id = str(message.from_user.id)
+    if user_id in config.REPORT_MANAGER_ID:
+        user, created = await sync_to_async(Manager.objects.get_or_create)(telegram_id=user_id)
+        if not created:
+            user.curr_input = None
+            await sync_to_async(user.save)()
+
+        curr_date = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
+        curr_date_text = curr_date.strftime('%d.%m.%Y')
+        curr_date = curr_date.date()
+        report = await sync_to_async(Report.objects.filter(report_date=curr_date).first)()
+        if report:
+            collected_usd = await sync_to_async(lambda: report.total_usd)()
+            collected_ils = await sync_to_async(lambda: report.total_ils)()
+            collected_commission = await sync_to_async(lambda: report.total_commission)()
+        else:
+            collected_usd = 0
+            collected_ils = 0
+            collected_commission = 0
+
+        rate = await sync_to_async(Rate.objects.get)(slug='usd-ils')
+        collected_total = round(collected_usd + collected_ils / rate.rate, 2)
+        uncollected = await sync_to_async(lambda: Delivery.count_uncollected())()
+        uncollected_usd = uncollected.get('usd')
+        if uncollected_usd is None:
+            uncollected_usd = 0
+        
+        uncollected_ils = uncollected.get('ils')
+        if uncollected_ils is None:
+            uncollected_ils = 0
+        
+        uncollected_commission = uncollected.get('commission')
+        if uncollected_commission is None:
+            uncollected_commission = 0
+        
+        uncollected_total = uncollected.get('total_usd')
+        if uncollected_total is None:
+            uncollected_total = 0
+        
+        reply_text = f'''*Собрано за {curr_date_text}:*\
+                     \n{collected_usd} $ | {collected_ils} ₪ | +{collected_commission} ₪\
+                     \n*В долларах:* {collected_total} $\
+                     \n\
+                     \n*Не собрано:*\
+                     \n{uncollected_usd} $ | {uncollected_ils} ₪ | +{uncollected_commission} ₪\
+                     \n*В долларах:* {uncollected_total} $\
+                     '''
+
+        await bot.send_message(chat_id=user_id,
+                        text=reply_text,
+                        parse_mode='Markdown',
                         )
     else:
         await bot.send_message(chat_id=user_id,
