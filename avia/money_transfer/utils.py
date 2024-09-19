@@ -8,9 +8,14 @@ import gspread
 from django.conf import settings
 
 
-service_acc = gspread.service_account(filename=settings.GSPREAD_CONFIG)
-sheet = service_acc.open(settings.SPREAD_NAME)
-work_sheet = sheet.worksheet(settings.MONEY_TRANSFER_LIST)
+try:
+    service_acc = gspread.service_account(filename=settings.GSPREAD_CONFIG)
+    sheet = service_acc.open(settings.SPREAD_NAME)
+    work_sheet = sheet.worksheet(settings.MONEY_TRANSFER_LIST)
+except:
+    service_acc = None
+    sheet = None
+    work_sheet = None
 
 
 def reoptimize_plan():
