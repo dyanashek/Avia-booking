@@ -5,7 +5,7 @@ import time
 from django.db.models import Q
 from celery import shared_task
 
-from core.models import UsersSim, TGText, Notification, OldSim, ImprovedNotification, TGUser
+from core.models import UsersSim, TGText, Notification, OldSim, ImprovedNotification, TGUser, Language
 from core.utils import send_message_on_telegram, send_improved_message_on_telegram
 from sim.models import SimCard
 
@@ -39,9 +39,12 @@ def search_users_to_notify():
     
 
 def notify_users(users_sims):
+    basic_language = Language.objects.get(slug='rus')
     for users_sim in users_sims:
         if users_sim.user:
             language = users_sim.user.language
+            if not language:
+                language = basic_language
             sim_debt = TGText.objects.get(slug='sim_debt', language=language).text
             fare_text = TGText.objects.get(slug='fare', language=language).text
             fare_price_text = TGText.objects.get(slug='fare_price', language=language).text
