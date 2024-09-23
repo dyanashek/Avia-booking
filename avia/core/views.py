@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.shortcuts import redirect, get_object_or_404
 
-from core.models import Flight, Parcel, UsersSim, TGText, Notification
+from core.models import Flight, Parcel, UsersSim, TGText, Notification, Language
 from core.utils import (send_pickup_address_sync, send_sim_delivery_address_sync, 
                         create_icount_client_sync, send_sim_money_collect_address_sync,
                         create_icount_invoice_sync)
@@ -90,6 +90,8 @@ def sim_resend_collect_icount(request, pk):
 
             sim_user = sim.user
             user_language = sim_user.language
+            if not user_language:
+                user_language = Language.objects.get(slug='rus')
             invoice_text = TGText.objects.get(slug='invoice_url', language=user_language)
             reply_text = f'{invoice_text.text} {doc_url}'
             Notification.objects.create(
