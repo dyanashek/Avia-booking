@@ -102,6 +102,8 @@ class TGUser(models.Model):
     family_name = models.CharField(verbose_name='Фамилия', max_length=100, null=True, blank=True)
     phone = models.CharField(verbose_name='Номер телефона', max_length=25, null=True, blank=True)
     addresses = models.CharField(verbose_name='Адреса', max_length=4096, null=True, blank=True)
+    lat = models.FloatField(verbose_name='Широта', null=True, blank=True, default=None)
+    lon = models.FloatField(verbose_name='Долгота', null=True, blank=True, default=None)
     sex = models.CharField(verbose_name='Пол', choices=SEX_CHOICES, max_length=4096, null=True, blank=True)
     birth_date = models.DateField(verbose_name='Дата рождения', null=True, blank=True)
     start_date = models.DateField(verbose_name='Дата выдачи паспорта', null=True, blank=True)
@@ -112,7 +114,6 @@ class TGUser(models.Model):
     curr_input = models.CharField(verbose_name='Текущий ввод', max_length=100, null=True, blank=True, default=None)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
     active = models.BooleanField(verbose_name='Пользователь активен?', default=True)
-
 
     class Meta:
         verbose_name = 'клиент'
@@ -145,6 +146,8 @@ class Parcel(models.Model):
     family_name = models.CharField(verbose_name='Фамилия', max_length=100, null=True, blank=True)
     phone = models.CharField(verbose_name='Номер телефона отправителя', max_length=25, null=True, blank=True)
     address = models.CharField(verbose_name='Адрес отправителя', max_length=4096, null=True, blank=True)
+    lat = models.FloatField(verbose_name='Широта', null=True, blank=True, default=None)
+    lon = models.FloatField(verbose_name='Долгота', null=True, blank=True, default=None)
     sex = models.CharField(verbose_name='Пол', choices=SEX_CHOICES, max_length=4096, null=True, blank=True)
     birth_date = models.DateField(verbose_name='Дата рождения', null=True, blank=True)
     start_date = models.DateField(verbose_name='Дата выдачи паспорта', null=True, blank=True)
@@ -186,6 +189,8 @@ class Flight(models.Model):
     name = models.CharField(verbose_name='Имя', max_length=100, null=True, blank=True)
     family_name = models.CharField(verbose_name='Фамилия', max_length=100, null=True, blank=True)
     address = models.CharField(verbose_name='Адрес', max_length=4096, null=True, blank=True)
+    lat = models.FloatField(verbose_name='Широта', null=True, blank=True, default=None)
+    lon = models.FloatField(verbose_name='Долгота', null=True, blank=True, default=None)
     sex = models.CharField(verbose_name='Пол', choices=SEX_CHOICES, max_length=4096, null=True, blank=True)
     birth_date = models.DateField(verbose_name='Дата рождения', null=True, blank=True)
     start_date = models.DateField(verbose_name='Дата выдачи паспорта', null=True, blank=True)
@@ -381,6 +386,18 @@ class ImprovedNotification(models.Model):
         super().save(*args, **kwargs)
 
 
+class Receipt(models.Model):
+    user = models.ForeignKey(TGUser, verbose_name='Пользователь', related_name='receipts', on_delete=models.CASCADE)
+    link = models.URLField(verbose_name='Ссылка')
+    notify_time = models.DateTimeField(verbose_name='Время отправки', help_text='Указывается в UTC (-3 от МСК).')
+    success = models.BooleanField(verbose_name='Успешно?', null=True, blank=True, default=None)
+
+    class Meta:
+        verbose_name = 'квитанция'
+        verbose_name_plural = 'квитанции'
+        ordering = ('-notify_time',)
+
+
 @receiver(post_save, sender=Notification)
 def handle_notification(sender, instance, **kwargs):
     if instance.notify_now and instance.notified is None:
@@ -390,10 +407,27 @@ def handle_notification(sender, instance, **kwargs):
             }
 
         try:
-            send_message_on_telegram(params)
+            response = send_message_on_telegram(params)
             instance.notified = True
         except:
+            response = None
             instance.notified = False
         
         instance.notify_time = datetime.datetime.utcnow()
         instance.save()
+
+        if 'https:' in instance.text:
+            success = False
+            try:
+                if response.json().get('ok'):
+                    success = True
+            except:
+                pass
+            
+            link = 'https:' + instance.text.split('https:')[-1]
+            Receipt.objects.create(
+                user=instance.user,
+                link=link,
+                notify_time=instance.notify_time,
+                success=success,
+            )

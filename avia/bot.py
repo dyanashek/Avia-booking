@@ -21,7 +21,7 @@ from django.db.models import Q
 
 from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, UsersSim
 from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address,
-                        create_icount_client)
+                        create_icount_client, get_address)
 from sim.models import SimCard
 
 import config
@@ -884,6 +884,8 @@ async def callback_query(call: types.CallbackQuery):
                     user.passport_photo_id = flight.passport_photo_id
                     user.phone = flight.phone
                     user.addresses = flight.address
+                    user.lat = flight.lat
+                    user.lon = flight.lon
                     await sync_to_async(flight.save)()
 
                 elif parcel:
@@ -899,6 +901,8 @@ async def callback_query(call: types.CallbackQuery):
                     user.passport_photo_id =  parcel.passport_photo_id
                     user.phone = parcel.phone
                     user.addresses = parcel.address
+                    user.lat = parcel.lat
+                    user.lon = parcel.lon
                     await sync_to_async(parcel.save)()
 
                 await sync_to_async(user.save)()
@@ -1692,12 +1696,15 @@ async def callback_query(call: types.CallbackQuery):
                             )
 
         elif info == 'address':
+            user.lat = None
+            user.lon = None
             user.curr_input = 'sim_collect_money_address'
             await sync_to_async(user.save)()
 
             address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
             await bot.send_message(chat_id=user_id,
                             text=address_question.text,
+                            reply_markup= await keyboards.request_location_keyboard(user_language),
                             parse_mode='Markdown',
                             )
 
@@ -1853,6 +1860,8 @@ async def callback_query(call: types.CallbackQuery):
             sim_user_id = int(call_data[1])
             fare_id = int(call_data[2])
 
+            user.lat = None
+            user.lon = None
             user.curr_input = f'manager-sim_{sim_user_id}_{fare_id}'
             await sync_to_async(user.save)()
 
@@ -2030,6 +2039,7 @@ async def callback_query(call: types.CallbackQuery):
             address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
             await bot.send_message(chat_id=user_id,
                             text=address_question.text,
+                            reply_markup= await keyboards.request_location_keyboard(user_language),
                             parse_mode='Markdown',
                             )
 
@@ -2210,7 +2220,7 @@ async def handle_photo(message: types.Message):
             question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
             await bot.send_message(chat_id=user_id,
                             text=question.text,
-                            reply_markup=types.ReplyKeyboardRemove(),
+                            reply_markup=await keyboards.request_location_keyboard(user_language),
                             parse_mode='Markdown',
                             disable_notification=True,
                             )
@@ -2269,7 +2279,7 @@ async def handle_contact(message: types.Message):
             question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
             await bot.send_message(chat_id=chat_id,
                             text=question.text,
-                            reply_markup=types.ReplyKeyboardRemove(),
+                            reply_markup=await keyboards.request_location_keyboard(user_language),
                             parse_mode='Markdown',
                             disable_notification=True,
                             )
@@ -2356,6 +2366,17 @@ async def handle_text(message):
             confirm_text = await sync_to_async(TGText.objects.get)(slug='name_correct_question', language=user_language)
             reply_text = f'{confirm_text.text} *{user.name}*?'
 
+            try:
+                question = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+                await bot.send_message(chat_id=user_id,
+                                text=f'{question.text} *{input_info}*',
+                                reply_markup=types.ReplyKeyboardRemove(),
+                                parse_mode='Markdown',
+                                disable_notification=True,
+                                )
+            except:
+                pass
+
             await bot.send_message(chat_id=chat_id,
                             text=reply_text,
                             reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
@@ -2365,6 +2386,7 @@ async def handle_text(message):
             question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
             await bot.send_message(chat_id=chat_id,
                             text=question.text,
+                            reply_markup=types.ReplyKeyboardRemove(),
                             parse_mode='Markdown',
                             )
     
@@ -2401,7 +2423,6 @@ async def handle_text(message):
                         parse_mode='Markdown',
                         )
 
-
     elif curr_input and curr_input == 'sim_collect_money_address':
         user.curr_input = None
         user.addresses = input_info
@@ -2409,6 +2430,17 @@ async def handle_text(message):
 
         address_question = await sync_to_async(TGText.objects.get)(slug='address_correct_question', language=user_language)
         reply_text = f'{address_question.text}\n*{input_info}*'
+
+        try:
+            question = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=f'{question.text} *{input_info}*',
+                            reply_markup=types.ReplyKeyboardRemove(),
+                            parse_mode='Markdown',
+                            disable_notification=True,
+                            )
+        except:
+            pass
 
         await bot.send_message(chat_id=chat_id,
                                 text=reply_text,
@@ -2675,7 +2707,7 @@ async def handle_text(message):
                     question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
                     await bot.send_message(chat_id=chat_id,
                             text=question.text,
-                            reply_markup=types.ReplyKeyboardRemove(),
+                            reply_markup=await keyboards.request_location_keyboard(user_language),
                             parse_mode='Markdown',
                             )
                 
@@ -2690,6 +2722,17 @@ async def handle_text(message):
                             )
 
             elif curr_input == 'address':
+                try:
+                    question = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+                    await bot.send_message(chat_id=user_id,
+                                    text=f'{question.text} *{input_info}*',
+                                    reply_markup=types.ReplyKeyboardRemove(),
+                                    parse_mode='Markdown',
+                                    disable_notification=True,
+                                    )
+                except:
+                    pass
+                
                 confirm_application = await sync_to_async(TGText.objects.get)(slug='confirm_application', language=user_language)
                 name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                 family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
@@ -2866,6 +2909,224 @@ async def handle_text(message):
                             parse_mode='Markdown',
                             )
 
+
+@dp.message(F.location)
+async def handle_location(message: types.Message):
+    user_id = str(message.from_user.id)
+    username = message.from_user.username
+    chat_id = message.chat.id
+
+    user = await sync_to_async(TGUser.objects.get)(user_id=user_id)
+    if username:
+        user.username = username
+        await sync_to_async(user.save)()
+
+    user_language = await sync_to_async(lambda: user.language)()
+    if not user_language:
+        user_language = await sync_to_async(Language.objects.get)(slug='rus')
+
+    curr_input = user.curr_input
+
+    if curr_input and curr_input == 's-address':
+        lat = message.location.latitude
+        lon = message.location.longitude
+        try:
+            address = await get_address(lat, lon)
+        except:
+            address = 'Israel'
+
+        try:
+            question = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=f'{question.text} *{address}*',
+                            reply_markup=types.ReplyKeyboardRemove(),
+                            parse_mode='Markdown',
+                            disable_notification=True,
+                            )
+        except:
+            pass
+
+        user.lat = lat
+        user.lon = lon
+        user.addresses = address
+        user.curr_input = 's-name'
+        await sync_to_async(user.save)()
+
+        if user.name:
+            confirm_text = await sync_to_async(TGText.objects.get)(slug='name_correct_question', language=user_language)
+            reply_text = f'{confirm_text.text} *{user.name}*?'
+
+            await bot.send_message(chat_id=chat_id,
+                            text=reply_text,
+                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
+                            parse_mode='Markdown',
+                            )
+        else:
+            question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
+            await bot.send_message(chat_id=chat_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+
+    elif curr_input and curr_input == 'sim_collect_money_address':
+        lat = message.location.latitude
+        lon = message.location.longitude
+        try:
+            address = await get_address(lat, lon)
+        except:
+            address = 'Israel'
+
+        try:
+            question = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=f'{question.text} *{address}*',
+                            reply_markup=types.ReplyKeyboardRemove(),
+                            parse_mode='Markdown',
+                            disable_notification=True,
+                            )
+        except:
+            pass
+
+        user.lat = lat
+        user.lon = lon
+        user.addresses = address
+        user.curr_input = None
+        await sync_to_async(user.save)()
+
+        address_question = await sync_to_async(TGText.objects.get)(slug='address_correct_question', language=user_language)
+        reply_text = f'{address_question.text}\n*{address}*'
+
+        await bot.send_message(chat_id=chat_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
+                                parse_mode='Markdown',
+                                )
+    
+    elif curr_input:
+        flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
+        parcel = await sync_to_async(Parcel.objects.filter(user=user, complete__isnull=True).first)()
+        if (flight and parcel) or (not flight and not parcel):
+            await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).update)(complete=False)
+            await sync_to_async(Parcel.objects.filter(user=user, complete__isnull=True).update)(complete=False)
+            user.curr_input = None
+            await sync_to_async(user.save)()
+
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            await bot.send_message(chat_id=user_id,
+                            text=error.text,
+                            reply_markup=types.ReplyKeyboardRemove(),
+                            parse_mode='Markdown',
+                            )
+
+        else:
+            if curr_input == 'address':
+                confirm_application = await sync_to_async(TGText.objects.get)(slug='confirm_application', language=user_language)
+                name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
+                family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
+                passport = await sync_to_async(TGText.objects.get)(slug='passport', language=user_language)
+                sex = await sync_to_async(TGText.objects.get)(slug='sex', language=user_language)
+                birth_date = await sync_to_async(TGText.objects.get)(slug='birth', language=user_language)
+                start_date = await sync_to_async(TGText.objects.get)(slug='start', language=user_language)
+                end_date = await sync_to_async(TGText.objects.get)(slug='end', language=user_language)
+                phone = await sync_to_async(TGText.objects.get)(slug='phone', language=user_language)
+                address = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+
+                lat = message.location.latitude
+                lon = message.location.longitude
+                try:
+                    location_address = await get_address(lat, lon)
+                except:
+                    location_address = 'Israel'
+
+                try:
+                    question = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
+                    await bot.send_message(chat_id=user_id,
+                                    text=f'{question.text} *{location_address}*',
+                                    reply_markup=types.ReplyKeyboardRemove(),
+                                    parse_mode='Markdown',
+                                    disable_notification=True,
+                                    )
+                except:
+                    pass
+
+                if flight:
+                    flight.address = location_address
+                    await sync_to_async(flight.save)()
+
+                    route = await sync_to_async(TGText.objects.get)(slug='route', language=user_language)
+                    flight_type = await sync_to_async(TGText.objects.get)(slug='type_flight', language=user_language)
+                    departure_date = await sync_to_async(TGText.objects.get)(slug='departure', language=user_language)
+                    arrival_date = await sync_to_async(TGText.objects.get)(slug='arrival', language=user_language)
+
+                    photo_id = flight.passport_photo_id
+
+                    if flight.type == 'oneway':
+                        flight_type_text = await sync_to_async(TGText.objects.get)(slug='oneway_button', language=user_language)
+                    else:
+                        flight_type_text = await sync_to_async(TGText.objects.get)(slug='roundtrip_button', language=user_language)
+
+                    reply_text = f'{confirm_application.text}\n'
+
+                    flight_route_db = await sync_to_async(lambda: flight.route.route)()
+
+                    reply_text += f'\n*{route.text}* {flight_route_db}'
+                    reply_text += f'\n*{flight_type.text.lower()}* {flight_type_text}'
+                    reply_text += f'\n*{departure_date.text}* {flight.departure_date.strftime("%d.%m.%Y")}'
+                    if flight.arrival_date:
+                        reply_text += f'\n*{arrival_date.text}* {flight.arrival_date.strftime("%d.%m.%Y")}\n'
+                    else:
+                        reply_text += '\n'
+                    
+                    reply_text += f'\n*{name.text}* {flight.name}'
+                    reply_text += f'\n*{family_name.text}* {flight.family_name}'
+                    reply_text += f'\n*{passport.text}* {flight.passport_number}'
+                    reply_text += f'\n*{sex.text}* {flight.sex}'
+                    reply_text += f'\n*{birth_date.text}* {flight.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {flight.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {flight.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {flight.phone}'
+                    reply_text += f'\n*{address.text}* {flight.address}'
+
+                elif parcel:
+                    parcel.address = location_address
+                    await sync_to_async(parcel.save)()
+
+                    parcel_type = await sync_to_async(TGText.objects.get)(slug='type_parcel', language=user_language)
+                    items_list = await sync_to_async(TGText.objects.get)(slug='contains', language=user_language)
+                    fio_receiver = await sync_to_async(TGText.objects.get)(slug='fio_receiver', language=user_language)
+                    phone_receiver = await sync_to_async(TGText.objects.get)(slug='receiver_phone', language=user_language)
+
+                    photo_id = parcel.passport_photo_id
+
+                    reply_text = f'{confirm_application.text}\n'
+
+                    parcel_variation_name_db = await sync_to_async(lambda: parcel.variation.name)()
+
+                    reply_text += f'\n*{parcel_type.text}* {parcel_variation_name_db}'
+                    reply_text += f'\n*{items_list.text}* {parcel.items_list}'
+                    reply_text += f'\n*{fio_receiver.text}* {parcel.fio_receiver}'
+                    reply_text += f'\n*{phone_receiver.text}* {parcel.phone_receiver}\n'
+
+                    reply_text += f'\n*{name.text}* {parcel.name}'
+                    reply_text += f'\n*{family_name.text}* {parcel.family_name}'
+                    reply_text += f'\n*{passport.text}* {parcel.passport_number}'
+                    reply_text += f'\n*{sex.text}* {parcel.sex}'
+                    reply_text += f'\n*{birth_date.text}* {parcel.birth_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{start_date.text}* {parcel.start_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{end_date.text}* {parcel.end_date.strftime("%d.%m.%Y")}'
+                    reply_text += f'\n*{phone.text}* {parcel.phone}'
+                    reply_text += f'\n*{address.text}* {parcel.address}'
+
+                user.curr_input = 'confirmation'
+                await sync_to_async(user.save)()
+
+                await bot.send_photo(chat_id=user_id,
+                               caption=reply_text,
+                               photo=photo_id,
+                               reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
+                               parse_mode='Markdown',
+                               disable_notification=False,
+                               )
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)

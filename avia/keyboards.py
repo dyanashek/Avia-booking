@@ -146,6 +146,14 @@ async def request_phone_keyboard(language):
     return keyboard.as_markup(resize_keyboard=True, one_time_keyboard=True,)
 
 
+async def request_location_keyboard(language):
+    keyboard = ReplyKeyboardBuilder()
+    button = await sync_to_async(TGText.objects.get)(slug='request_location_button', language=language)
+    keyboard.row(types.KeyboardButton(text=button.text, request_location=True))
+
+    return keyboard.as_markup(resize_keyboard=True, one_time_keyboard=True,)
+
+
 async def parcel_types_keyboard(language):
     keyboard = InlineKeyboardBuilder()
     variations = await sync_to_async(ParcelVariation.objects.filter(language=language).all)()

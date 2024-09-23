@@ -189,6 +189,8 @@ GSPREAD_CONFIG = 'service_account.json'
 SPREAD_NAME = 'Israel'
 MONEY_TRANSFER_LIST = 'money_transfer'
 
+
+GEOCODE_KEY  = 'cf4bac8a-016d-4a31-9126-4007a744049c'
 #Celery
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'UTC'

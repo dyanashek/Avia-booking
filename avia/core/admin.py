@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
-                         UsersSim, Notification, OldSim, ImprovedNotification, LinkButton)
+                         UsersSim, Notification, OldSim, ImprovedNotification, LinkButton, Receipt)
 from core.utils import create_excel_file
 
 @admin.register(Language)
@@ -124,7 +124,7 @@ class FlightAdmin(admin.ModelAdmin):
     fields = ('route', 'type', 'departure_date', 'arrival_date', 'phone', 'name', 
               'family_name', 'address', 'sex', 'birth_date', 'start_date', 'end_date', 
               'passport_number', 'passport_photo_flight', 'complete', 'confirmed', 'price',
-              'user', 'created_at')
+              'user', 'created_at',)
     
     def get_readonly_fields(self, request, obj=None):
         if obj:
@@ -341,3 +341,12 @@ class ImprovedNotificationAdmin(admin.ModelAdmin):
         return '-/-/-'
     
     curr_status.short_description = 'Успешно/Отправлено/Всего'
+
+
+@admin.register(Receipt)
+class ReceiptNotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'link', 'notify_time', 'success',)
+    list_filter = ('success',)
+
+    def has_module_permission(self, request):
+        return False

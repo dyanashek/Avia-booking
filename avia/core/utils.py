@@ -49,22 +49,40 @@ async def send_pickup_address(application, application_type):
         notes = f'Посылка, {variation.name}: {application.items_list}'
         activity = 'pickup'
 
-    data = {
-        'address': {
-            'addressLineOne': application.address,
-            'country': 'Israel',
-        },
-        'recipient': {
-            'name': f'{application.name} {application.family_name}',
-            'phone': application.phone,
-        },
-        'orderInfo': {
-            'products': [f'{application.price} ₪'],
-            'sellerOrderId': order_id,
-        },
-        'activity': activity,
-        'notes': notes,
-    }
+    if not application.lat or not application.lon:
+        data = {
+            'address': {
+                'addressLineOne': application.address,
+                'country': 'Israel',
+            },
+            'recipient': {
+                'name': f'{application.name} {application.family_name}',
+                'phone': application.phone,
+            },
+            'orderInfo': {
+                'products': [f'{application.price} ₪'],
+                'sellerOrderId': order_id,
+            },
+            'activity': activity,
+            'notes': notes,
+        }
+    else:
+        data = {
+            'address': {
+                'latitude': application.lat,
+                'longitude': application.lon,
+            },
+            'recipient': {
+                'name': f'{application.name} {application.family_name}',
+                'phone': application.phone,
+            },
+            'orderInfo': {
+                'products': [f'{application.price} ₪'],
+                'sellerOrderId': order_id,
+            },
+            'activity': activity,
+            'notes': notes,
+        }
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -91,22 +109,40 @@ async def send_pickup_address(application, application_type):
 async def send_sim_delivery_address(phone, user, fare):
     notes = f'Симка, {fare.title}, {phone}, за тариф(первый месяц) + подключение: {fare.price + 50} ₪'
 
-    data = {
-        'address': {
-            'addressLineOne': user.addresses,
-            'country': 'Israel',
-        },
-        'recipient': {
-            'name': f'{user.name} {user.family_name}',
-            'phone': phone,
-        },
-        'orderInfo': {
-            'products': [fare.title],
-            'sellerOrderId': '4',
-        },
-        'activity': 'delivery',
-        'notes': notes,
-    }
+    if not user.lat or not user.lon:
+        data = {
+            'address': {
+                'addressLineOne': user.addresses,
+                'country': 'Israel',
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'products': [fare.title],
+                'sellerOrderId': '4',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
+    else:
+        data = {
+            'address': {
+                'latitude': user.lat,
+                'longitude': user.lon,
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'products': [fare.title],
+                'sellerOrderId': '4',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -133,21 +169,38 @@ async def send_sim_delivery_address(phone, user, fare):
 async def send_sim_money_collect_address(phone, user, debt):
     notes = f'Симка - сбор денег, {phone}, {debt} ₪'
 
-    data = {
-        'address': {
-            'addressLineOne': user.addresses,
-            'country': 'Israel',
-        },
-        'recipient': {
-            'name': f'{user.name} {user.family_name}',
-            'phone': phone,
-        },
-        'orderInfo': {
-            'sellerOrderId': '5',
-        },
-        'activity': 'delivery',
-        'notes': notes,
-    }
+    if not user.lat or not user.lon:
+        data = {
+            'address': {
+                'addressLineOne': user.addresses,
+                'country': 'Israel',
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'sellerOrderId': '5',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
+    else:
+        data = {
+            'address': {
+                'latitude': user.lat,
+                'longitude': user.lon,
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'sellerOrderId': '5',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -244,11 +297,28 @@ async def create_icount_invoice(user_id, amount, is_old_sim=False):
     return doc_url
 
 
+async def get_address(lat, lon):
+    async with aiohttp.ClientSession() as session:
+        try:
+            ssl_context = ssl.create_default_context()
+            ssl_context.load_verify_locations(certifi.where())
+            async with session.get(f'https://geocode-maps.yandex.ru/1.x/?apikey={settings.GEOCODE_KEY}&geocode={lon},{lat}&format=json', ssl=ssl_context) as response:
+                response_data = await response.json()
+                address = response_data.get('response').get('GeoObjectCollection').get('featureMember')[0].get('GeoObject').get('metaDataProperty').get('GeocoderMetaData').get('Address').get('formatted')
+        except:
+            address = 'Israel'
+
+    return address
+
+
 def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
     """Отправка сообщения в телеграм."""
     endpoint = f'https://api.telegram.org/bot{token}/sendMessage'
-    requests.post(endpoint, params=params)
-    return HttpResponse()
+    try:
+        response = requests.post(endpoint, params=params)
+    except:
+        response = None
+    return response
 
 
 def send_improved_message_on_telegram(params, files=False, token=TELEGRAM_TOKEN):
@@ -282,22 +352,40 @@ def send_pickup_address_sync(application, application_type):
         notes = f'Посылка, {variation.name}: {application.items_list}'
         activity = 'pickup'
 
-    data = {
-        'address': {
-            'addressLineOne': application.address,
-            'country': 'Israel',
-        },
-        'recipient': {
-            'name': f'{application.name} {application.family_name}',
-            'phone': application.phone,
-        },
-        'orderInfo': {
-            'products': [f'{application.price} ₪'],
-            'sellerOrderId': order_id,
-        },
-        'activity': activity,
-        'notes': notes,
-    }
+    if not application.lat or not application.lon:
+        data = {
+            'address': {
+                'addressLineOne': application.address,
+                'country': 'Israel',
+            },
+            'recipient': {
+                'name': f'{application.name} {application.family_name}',
+                'phone': application.phone,
+            },
+            'orderInfo': {
+                'products': [f'{application.price} ₪'],
+                'sellerOrderId': order_id,
+            },
+            'activity': activity,
+            'notes': notes,
+        }
+    else:
+        data = {
+            'address': {
+                'latitude': application.lat,
+                'longitude': application.lon,
+            },
+            'recipient': {
+                'name': f'{application.name} {application.family_name}',
+                'phone': application.phone,
+            },
+            'orderInfo': {
+                'products': [f'{application.price} ₪'],
+                'sellerOrderId': order_id,
+            },
+            'activity': activity,
+            'notes': notes,
+        }
 
     try:
         response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
@@ -324,22 +412,40 @@ def send_pickup_address_sync(application, application_type):
 def send_sim_delivery_address_sync(phone, user, fare):
     notes = f'Симка, {fare.title}, {phone}, за тариф(первый месяц) + подключение: {fare.price + 50} ₪'
 
-    data = {
-        'address': {
-            'addressLineOne': user.addresses,
-            'country': 'Israel',
-        },
-        'recipient': {
-            'name': f'{user.name} {user.family_name}',
-            'phone': phone,
-        },
-        'orderInfo': {
-            'products': [fare.title],
-            'sellerOrderId': '4',
-        },
-        'activity': 'delivery',
-        'notes': notes,
-    }
+    if not user.lat or user.lon:
+        data = {
+            'address': {
+                'addressLineOne': user.addresses,
+                'country': 'Israel',
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'products': [fare.title],
+                'sellerOrderId': '4',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
+    else:
+        data = {
+            'address': {
+                'latitude': user.lat,
+                'longitude': user.lon,
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'products': [fare.title],
+                'sellerOrderId': '4',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
 
     try:
         response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
@@ -398,21 +504,38 @@ def create_icount_client_sync(user, phone):
 def send_sim_money_collect_address_sync(phone, user, debt):
     notes = f'Симка - сбор денег, {phone}, {debt} ₪'
 
-    data = {
-        'address': {
-            'addressLineOne': user.addresses,
-            'country': 'Israel',
-        },
-        'recipient': {
-            'name': f'{user.name} {user.family_name}',
-            'phone': phone,
-        },
-        'orderInfo': {
-            'sellerOrderId': '5',
-        },
-        'activity': 'delivery',
-        'notes': notes,
-    }
+    if not user.lat or not user.lon:
+        data = {
+            'address': {
+                'addressLineOne': user.addresses,
+                'country': 'Israel',
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'sellerOrderId': '5',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
+    else:
+        data = {
+            'address': {
+                'latitude': user.lat,
+                'longitude': user.lon,
+            },
+            'recipient': {
+                'name': f'{user.name} {user.family_name}',
+                'phone': phone,
+            },
+            'orderInfo': {
+                'sellerOrderId': '5',
+            },
+            'activity': 'delivery',
+            'notes': notes,
+        }
 
     try:
         response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
