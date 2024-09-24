@@ -161,7 +161,7 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 class UsersSimAdmin(admin.ModelAdmin):
     change_list_template = "admin/sims_change_list.html"
     list_filter = ('ready_to_pay', 'is_old_sim', 'is_stopped',)
-    fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver', 'circuit_id_collect', 'icount_id')
+    fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
     readonly_fields = ('driver', 'is_old_sim',)
     autocomplete_fields = ('user',)
 
