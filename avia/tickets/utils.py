@@ -76,3 +76,4 @@ def create_excel_file(data, date_from, date_to):
         data_frame.to_excel(temp_file.name, index=False, sheet_name=f'{date_from} - {date_to}')
         
         return temp_file.name
+        

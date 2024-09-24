@@ -53,3 +53,4 @@ def construct_collect_sim_money_message(sim, driver_id):
         }
 
         return params
+        

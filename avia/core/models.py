@@ -284,6 +284,7 @@ class UsersSim(models.Model):
     def aggregate_report(self):
         return UsersSim.objects.values('sim_phone', 'debt')
 
+
 class Notification(models.Model):
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
     text = models.TextField(verbose_name='Текст уведомления')

@@ -238,19 +238,19 @@ async def create_icount_client(user, phone):
         'last_name': user.family_name,
         'mobile': phone
     }
+    try:
+        response = requests.post(ICOUNT_CREATE_USER_ENDPOINT, data=data)
+    except:
+        icount_client_id = False
+        response = None
 
-    async with aiohttp.ClientSession() as session:
+    if response:
         try:
-            ssl_context = ssl.create_default_context()
-            ssl_context.load_verify_locations(certifi.where())
-            async with session.post(ICOUNT_CREATE_USER_ENDPOINT, data=data, ssl=ssl_context) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-                        icount_client_id = response_data.get('client_id')
-                    else:
-                        icount_client_id = False
-        except Exception as ex:
+            icount_client_id = response.json().get('client_id')
+        except:
             icount_client_id = False
+    else:
+        icount_client_id = False
 
     return icount_client_id
 
@@ -281,18 +281,19 @@ async def create_icount_invoice(user_id, amount, is_old_sim=False):
         'cash': {'sum': float(amount)},        
     }
 
-    async with aiohttp.ClientSession() as session:
+    try:
+        response = requests.post(ICOUNT_CREATE_INVOICE_ENDPOINT, json=data)
+    except:
+        doc_url = False
+        response = None
+    
+    if response:
         try:
-            ssl_context = ssl.create_default_context()
-            ssl_context.load_verify_locations(certifi.where())
-            async with session.post(ICOUNT_CREATE_INVOICE_ENDPOINT, json=data, ssl=ssl_context) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-                        doc_url = response_data.get('doc_url')
-                    else:
-                        doc_url = False
-        except Exception as ex:
+            doc_url = response.json().get('doc_url')
+        except:
             doc_url = False
+    else:
+        doc_url = False
 
     return doc_url
 
