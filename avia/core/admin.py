@@ -161,6 +161,7 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 class UsersSimAdmin(admin.ModelAdmin):
     change_list_template = "admin/sims_change_list.html"
     list_filter = ('ready_to_pay', 'is_old_sim', 'is_stopped',)
+    search_fields = ('sim_phone',)
     fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
     readonly_fields = ('driver', 'is_old_sim',)
     autocomplete_fields = ('user',)
@@ -347,6 +348,3 @@ class ImprovedNotificationAdmin(admin.ModelAdmin):
 class ReceiptNotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'link', 'notify_time', 'success',)
     list_filter = ('success',)
-
-    def has_module_permission(self, request):
-        return False
