@@ -77,7 +77,7 @@ class RouteAdmin(SortableAdminMixin, admin.ModelAdmin):
 @admin.register(TGUser)
 class TGUserAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'username', 'active', 'name', 'family_name', 'get_thumbnail')
-    search_fields = ('user_id', 'username', 'name', 'family_name')
+    search_fields = ('user_id', 'username', 'name', 'family_name', 'sim_cards__sim_phone',)
     readonly_fields = ('created_at', 'active',)
     list_filter = ('active',)
     fields = ('user_id', 'language', 'username', 'active', 'name', 'family_name',
@@ -359,4 +359,3 @@ class UserMessageAdmin(admin.ModelAdmin):
 
     def has_module_permission(self, request):
         return False
-        
