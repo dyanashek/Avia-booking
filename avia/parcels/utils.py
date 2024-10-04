@@ -3,6 +3,7 @@ import tempfile
 
 import pandas
 
+from errors.models import AppError
 from django.conf import settings
 
 def reoptimize_plan():
@@ -45,17 +46,51 @@ def send_parcel_pickup_address(application):
     except:
         stop_id = False
         response = None
+
+        try:
+            AppError.objects.create(
+                source='5',
+                error_type='3',
+                main_user=application.user.user_id,
+                description=f'Не удалось создать остановку в circuit (отправка посылки). {application.id}. {ex}',
+            )
+        except:
+            pass
     
-    if response:
+    if response is None:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
                 redistribute_plan()
-            except:
-                pass
+            except Exception as ex:
+                try:
+                    AppError.objects.create(
+                        source='5',
+                        error_type='3',
+                        main_user=application.user.user_id,
+                        description=f'Не удалось оптимизировать план в circuit (отправка посылки). {application.id}. {ex}',
+                    )
+                except:
+                    pass
         else:
             stop_id = False
+
+            try:
+                error_info = response.json()
+            except:
+                error_info = ''
+
+            try:
+                AppError.objects.create(
+                    source='5',
+                    error_type='3',
+                    main_user=application.user.user_id,
+                    description=f'Не удалось создать остановку в circuit (отправка посылки). {response.status_code}. {error_info}',
+                )
+            except:
+                pass
+
     else:
         stop_id = False
 

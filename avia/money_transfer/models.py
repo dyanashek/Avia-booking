@@ -6,6 +6,7 @@ from django.db.models import Count, Sum, Q, Case, When, F, Value, ExpressionWrap
 from django.db.models.functions import Coalesce
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspread, get_delivery_ids, update_delivery_buy_rate
+from errors.models import AppError
 
 User = get_user_model()
 
@@ -503,6 +504,15 @@ def update_delivery_valid(sender, instance, **kwargs):
                 except Exception as ex:
                     gspread = False
 
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='6',
+                            description=f'Не удалось перенести данные в гугл таблицу (отправка денег, создание). {instance.delivery.id}. {ex}',
+                        )
+                    except:
+                        pass
+
                 codes = codes.rstrip(', ')
                 stop_id = send_pickup_address(instance.delivery.sender, instance.delivery, codes)
                 if stop_id:
@@ -541,5 +551,13 @@ def update_gspread_buy_rate(sender, instance, created, **kwargs):
                 try:
                     if int(delivery_id) in ids:
                         update_delivery_buy_rate(instance.rate, num + 1)        
-                except:
-                    pass
+                except Exception as ex:
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='6',
+                            description=f'Не удалось перенести данные в гугл таблицу (курс покупки). {delivery_id}. {ex}',
+                        )
+                    except:
+                        pass
+                    

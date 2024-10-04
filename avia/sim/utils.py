@@ -4,6 +4,7 @@ import re
 
 import pandas
 
+from errors.models import AppError
 from config import (OLD_ICOUNT_COMPANY_ID, 
                     OLD_ICOUNT_USERNAME, 
                     OLD_ICOUNT_PASSWORD,
@@ -23,15 +24,33 @@ def create_icount_client(name, phone):
 
     try:
         response = requests.post(ICOUNT_CREATE_USER_ENDPOINT, data=data)
-    except:
+    except Exception as ex:
         icount_client_id = False
         response = None
 
-    if response:
+        try:
+            AppError.objects.create(
+                source='5',
+                error_type='4',
+                description=f'Не удалось создать пользователя iCount {phone}. {ex}',
+            )
+        except:
+            pass
+
+    if response is None:
         try:
             icount_client_id = response.json().get('client_id')
-        except:
+        except Exception as ex:
             icount_client_id = False
+
+            try:
+                AppError.objects.create(
+                    source='5',
+                    error_type='4',
+                    description=f'Не удалось создать пользователя iCount {phone}. {ex}',
+                )
+            except:
+                pass
     else:
         icount_client_id = False
 

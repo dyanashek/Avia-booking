@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'parcels.apps.ParcelsConfig',
     'sim.apps.SimConfig',
     'drivers.apps.DriversConfig',
+    'errors.apps.ErrorsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

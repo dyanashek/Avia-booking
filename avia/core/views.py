@@ -100,3 +100,4 @@ def sim_resend_collect_icount(request, pk):
             )
 
     return redirect('/admin/core/userssim/')
+    

@@ -7,6 +7,7 @@ import pandas
 import gspread
 from django.conf import settings
 
+from errors.models import AppError
 
 try:
     service_acc = gspread.service_account(filename=settings.GSPREAD_CONFIG)
@@ -56,20 +57,52 @@ def send_pickup_address(sender, delivery, codes):
 
     try:
         response = requests.post(settings.ADD_STOP_ENDPOINT, headers=settings.CURCUIT_HEADER, json=data)
-    except:
+    except Exception as ex:
         stop_id = False
         response = None
+
+        try:
+            AppError.objects.create(
+                source='5',
+                error_type='3',
+                description=f'Не удалось создать остановку в circuit (отправка денег). {delivery.id}. {ex}',
+            )
+        except:
+            pass
+
+        
     
-    if response:
+    if response is not None:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
                 redistribute_plan()
-            except:
-                pass
+            except Exception as ex:
+                try:
+                    AppError.objects.create(
+                        source='5',
+                        error_type='3',
+                        description=f'Не удалось оптимизировать план в circuit (отправка денег). {delivery.id}. {ex}',
+                    )
+                except:
+                    pass
         else:
             stop_id = False
+
+            try:
+                error_info = response.json()
+            except:
+                error_info = ''
+
+            try:
+                AppError.objects.create(
+                    source='5',
+                    error_type='3',
+                    description=f'Не удалось создать остановку в circuit (отправка денег). {delivery.id}. {response.status_code} {error_info}',
+                )
+            except:
+                pass
     else:
         stop_id = False
 

@@ -17,6 +17,7 @@ django.setup()
 
 from money_transfer.models import Manager, Transfer, Delivery, Status, Balance
 from money_transfer.utils import update_transfer_pass_status
+from errors.models import AppError
 
 import config
 import keyboards
@@ -32,13 +33,36 @@ async def start_message(message: types.Message):
     user_id = str(message.from_user.id)
     user = await sync_to_async(Manager.objects.filter(telegram_id=user_id).first)()
     if user:
-        await bot.send_message(chat_id=user_id,
-                         text='Привет.\nЗдесь можно контролировать выдачу денежных средств.\nОтправьте код получателя для вывода информации и внесения изменений.',
-                         )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Привет.\nЗдесь можно контролировать выдачу денежных средств.\nОтправьте код получателя для вывода информации и внесения изменений.',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='3',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
+
     else:
-        await bot.send_message(chat_id=user_id,
-                         text='Доступ закрыт.\nОбратитесь к администратору.',
-                         )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Доступ закрыт.\nОбратитесь к администратору.',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='3',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.message(Command("delivery"))
@@ -59,14 +83,38 @@ async def delivery_message(message: types.Message):
             Q(delivery__valid=True) &
             Q(delivery__status__slug='api')).all()))()
         credit_transfers_ids = ', '.join([str(transfer.id) for transfer in credit_transfers])
-        await bot.send_message(chat_id=user_id,
-                         text=f'*Требуется доставка:*\n*Можно выдать:* {transfers_ids}\n*Можно выдать в кредит:* {credit_transfers_ids}',
-                         parse_mode='Markdown',
-                         )
+
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text=f'*Требуется доставка:*\n*Можно выдать:* {transfers_ids}\n*Можно выдать в кредит:* {credit_transfers_ids}',
+                            parse_mode='Markdown',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='3',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
+
     else:
-        await bot.send_message(chat_id=user_id,
-                         text='Доступ закрыт.\nОбратитесь к администратору.',
-                         )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Доступ закрыт.\nОбратитесь к администратору.',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='3',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.callback_query()
@@ -83,17 +131,40 @@ async def callback_query(call: types.CallbackQuery):
         query = call_data[0]
 
         if query == 'cancel':
-            await bot.edit_message_reply_markup(message_id=message_id,
-                                                chat_id=chat_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+            try:
+                await bot.edit_message_reply_markup(message_id=message_id,
+                                                    chat_id=chat_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='3',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
         elif query == 'pass' or query == 'credit':
             transfer_id = int(call_data[1])
-            await bot.edit_message_reply_markup(message_id=message_id,
-                                                chat_id=chat_id,
-                                                reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                )
+
+            try:
+                await bot.edit_message_reply_markup(message_id=message_id,
+                                                    chat_id=chat_id,
+                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='3',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             transfer = await sync_to_async(Transfer.objects.filter(id=transfer_id).first)()
             if transfer:
@@ -119,16 +190,46 @@ async def callback_query(call: types.CallbackQuery):
 
                 try:
                     await update_transfer_pass_status(transfer_id, curr_date, credit)
+                except Exception as ex:
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='6',
+                            description=f'Не удалось обновить статус кредита в гугл таблицах (отправка денег, замена на "в кредит") {transfer_id}. {ex}',
+                        )
+                    except:
+                        pass
+                
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text='Перевод помечен как выданный.',
+                            )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='3',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
-                await bot.send_message(chat_id=user_id,
-                         text='Перевод помечен как выданный.',
-                         )
             else:
-                await bot.send_message(chat_id=user_id,
-                         text='Данные устарели.',
-                         )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text='Данные устарели.',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='3',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
 
 @dp.message(F.text)
@@ -197,20 +298,54 @@ async def handle_text(message):
                 else:
                     keyboard = InlineKeyboardBuilder().as_markup()
 
-                await bot.send_message(chat_id=user_id,
-                         text=reply_text,
-                         reply_markup=keyboard,
-                         parse_mode='Markdown',
-                         )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=reply_text,
+                            reply_markup=keyboard,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='3',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
             else:
-                await bot.send_message(chat_id=user_id,
-                         text='Перевода с таким кодом не найдено.',
-                         )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text='Перевода с таким кодом не найдено.',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='3',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
+
         else:
-            await bot.send_message(chat_id=user_id,
-                         text='Не похоже на код получателя, должно быть целое число.',
-                         )
+            try:
+                await bot.send_message(chat_id=user_id,
+                            text='Не похоже на код получателя, должно быть целое число.',
+                            )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='3',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
                 
 async def main():

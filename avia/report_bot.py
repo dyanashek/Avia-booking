@@ -18,6 +18,7 @@ django.setup()
 from money_transfer.models import (Delivery, Transfer, Manager, BuyRate, 
                                    DebitCredit, Balance, Operation_types, Report,
                                    Rate)
+from errors.models import AppError
 
 import config
 import keyboards
@@ -37,14 +38,37 @@ async def start_message(message: types.Message):
             user.curr_input = None
             await sync_to_async(user.save)()
 
-        await bot.send_message(chat_id=user_id,
-                        text='Выберите один из вариантов:',
-                        reply_markup=await keyboards.data_or_report_keyboard(),
-                        )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Выберите один из вариантов:',
+                            reply_markup=await keyboards.data_or_report_keyboard(),
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='4',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
+
     else:
-        await bot.send_message(chat_id=user_id,
-                        text='Нет доступа, обратитесь к администратору.',
-                        )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Нет доступа, обратитесь к администратору.',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='4',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.message(Command("report"))
@@ -97,14 +121,37 @@ async def report_message(message: types.Message):
                      \n*В долларах:* {uncollected_total} $\
                      '''
 
-        await bot.send_message(chat_id=user_id,
-                        text=reply_text,
-                        parse_mode='Markdown',
-                        )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text=reply_text,
+                            parse_mode='Markdown',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='4',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
+
     else:
-        await bot.send_message(chat_id=user_id,
-                        text='Нет доступа, обратитесь к администратору.',
-                        )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Нет доступа, обратитесь к администратору.',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='4',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.message(Command("cancel"))
@@ -115,9 +162,20 @@ async def cancel_message(message: types.Message):
         user.curr_input = None
         await sync_to_async(user.save)()
 
-        await bot.send_message(chat_id=user_id,
-                        text='Ввод отменен.',
-                        )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text='Ввод отменен.',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='4',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.callback_query()
@@ -137,30 +195,69 @@ async def callback_query(call: types.CallbackQuery):
         if query == 'report':
             report_type = call_data[1]
             if report_type == 'choose':
-                await bot.edit_message_text(chat_id=chat_id,
-                                                message_id=message_id,
-                                                text='Выберите вариант отчета:',
-                                                reply_markup=await keyboards.report_type_keyboard(),
-                                                )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                                    message_id=message_id,
+                                                    text='Выберите вариант отчета:',
+                                                    reply_markup=await keyboards.report_type_keyboard(),
+                                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
+
             elif report_type == 'input':
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 user.curr_input = 'report-date'
                 await sync_to_async(user.save)()
 
-                await bot.send_message(
-                                chat_id=user_id,
-                                text='Введите дату начала формирования отчета в формате дд.мм.гггг',
-                                )
+                try:
+                    await bot.send_message(
+                                    chat_id=user_id,
+                                    text='Введите дату начала формирования отчета в формате дд.мм.гггг',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
             elif report_type == 'balance':
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 balance = await sync_to_async(Balance.objects.get)(id=1)
 
@@ -171,17 +268,36 @@ async def callback_query(call: types.CallbackQuery):
                             \nОстаток в Самарканде: *{balance.balance} $*\
                             '''
                 
-                await bot.send_message(
-                                chat_id=user_id,
-                                text=reply_text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(
+                                    chat_id=user_id,
+                                    text=reply_text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 curr_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()
                 balance = await sync_to_async(Balance.objects.get)(id=1)
@@ -203,10 +319,21 @@ async def callback_query(call: types.CallbackQuery):
                     start = curr_date
                     end = curr_date
 
-                await bot.send_message(
-                                chat_id=user_id,
-                                text='Отчет формируется...',
-                                )
+                try:
+                    await bot.send_message(
+                                    chat_id=user_id,
+                                    text='Отчет формируется...',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
                 report_data = await sync_to_async(Delivery.calculate_params)(start, end)
                 
@@ -231,21 +358,44 @@ async def callback_query(call: types.CallbackQuery):
                             \nНевыданные: *{report_data[4]} $*\
                             '''
                 
-                await bot.send_message(
-                                chat_id=user_id,
-                                text=reply_text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(
+                                    chat_id=user_id,
+                                    text=reply_text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif query == 'data':
             data_type = call_data[1]
 
             if data_type == 'choose':
-                await bot.edit_message_text(chat_id=chat_id,
-                                            message_id=message_id,
-                                            text='Выберите данные, которые хотите внести:',
-                                            reply_markup=await keyboards.data_type_keyboard(),
-                                            )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                                message_id=message_id,
+                                                text='Выберите данные, которые хотите внести:',
+                                                reply_markup=await keyboards.data_type_keyboard(),
+                                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
+
             else:
                 if data_type == 'all':
                     data_text = '(все данные)'
@@ -260,12 +410,23 @@ async def callback_query(call: types.CallbackQuery):
                 elif data_type == 'rate':
                     data_text = '(курс покупки)'
                 
-                await bot.edit_message_text(chat_id=chat_id,
-                                            message_id=message_id,
-                                            text=f'Выберите дату, за которую вносятся данные *{data_text}*:',
-                                            parse_mode='Markdown',
-                                            reply_markup=await keyboards.data_date_keyboard(data_type),
-                                            )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                                message_id=message_id,
+                                                text=f'Выберите дату, за которую вносятся данные *{data_text}*:',
+                                                parse_mode='Markdown',
+                                                reply_markup=await keyboards.data_date_keyboard(data_type),
+                                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
         
         elif query == 'date':
             data_type = call_data[1]
@@ -274,16 +435,35 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='4',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             if date_text == 'input':
                 user.curr_input = f'datefor_{data_type}'
                 await sync_to_async(user.save)()
 
-                await bot.send_message(chat_id=user_id,
-                        text=f'Введите дату в формате "дд.мм.гггг".',
-                        parse_mode="Markdown",
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=f'Введите дату в формате "дд.мм.гггг".',
+                            parse_mode="Markdown",
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             else:
                 date = datetime.datetime.strptime(date_text, '%d.%m.%Y').date()
@@ -292,10 +472,21 @@ async def callback_query(call: types.CallbackQuery):
                     buy_rate = await sync_to_async(BuyRate.objects.filter(date=date).first)()
                     debits_credits = await sync_to_async(lambda: list(DebitCredit.objects.filter(date=date)))()
                     
-                    await bot.send_message(chat_id=user_id,
-                        text=f'Введите сумму в $ за *{date_text}* "передано фирмам".',
-                        parse_mode="Markdown",
-                        )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                            text=f'Введите сумму в $ за *{date_text}* "передано фирмам".',
+                            parse_mode="Markdown",
+                            )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                     if buy_rate or debits_credits:
                         alert_text = f'{date_text}:'
@@ -312,26 +503,60 @@ async def callback_query(call: types.CallbackQuery):
                                 
                         alert_text += '\n\nПри продолжении данные будут перезаписаны. Для отмены /cancel.'
 
-                        await bot.answer_callback_query(
-                                callback_query_id=call.id,
-                                text=alert_text,
-                                show_alert=True,
+                        try:
+                            await bot.answer_callback_query(
+                                    callback_query_id=call.id,
+                                    text=alert_text,
+                                    show_alert=True,
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
 
                 elif data_type == 'rate':
                     buy_rate = await sync_to_async(BuyRate.objects.filter(date=date).first)()
 
-                    await bot.send_message(chat_id=user_id,
-                        text=f'Введите курс покупки за *{date_text}*.',
-                        parse_mode="Markdown",
-                        )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                            text=f'Введите курс покупки за *{date_text}*.',
+                            parse_mode="Markdown",
+                            )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                     if buy_rate:
-                        await bot.answer_callback_query(
-                                callback_query_id=call.id,
-                                text=f'За {date_text} ужe задан курс {buy_rate.rate}.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
-                                show_alert=True,
+                        try:
+                            await bot.answer_callback_query(
+                                    callback_query_id=call.id,
+                                    text=f'За {date_text} ужe задан курс {buy_rate.rate}.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
+                                    show_alert=True,
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
+
                     user.curr_input = f'rate_{date_text}'
                 else:
                     data_type = int(data_type)
@@ -344,17 +569,39 @@ async def callback_query(call: types.CallbackQuery):
 
                     debit_credit = await sync_to_async(DebitCredit.objects.filter(date=date, operation_type=data_type).first)()
 
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Введите сумму в $ за *{date_text}* "{data_type_text}".',
-                                            parse_mode="Markdown",
-                                            )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Введите сумму в $ за *{date_text}* "{data_type_text}".',
+                                                parse_mode="Markdown",
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                     if debit_credit:
-                        await bot.answer_callback_query(
-                                callback_query_id=call.id,
-                                text=f'За {date_text} ужe существует операция "{data_type_text}" со значением {int(debit_credit.amount)}$.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
-                                show_alert=True,
+                        try:
+                            await bot.answer_callback_query(
+                                    callback_query_id=call.id,
+                                    text=f'За {date_text} ужe существует операция "{data_type_text}" со значением {int(debit_credit.amount)}$.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
+                                    show_alert=True,
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
 
                     user.curr_input = f'{data_type}_{date_text}'
 
@@ -364,7 +611,15 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='4',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             debits_credits = await sync_to_async(lambda: list(DebitCredit.objects.all()))()
             debits_credits = debits_credits[:20]
@@ -389,10 +644,21 @@ async def callback_query(call: types.CallbackQuery):
                 date_text = buy_rate.date.strftime('%d.%m.%Y')
                 reply_text += f'*{date_text}:* {buy_rate.rate}\n'
 
-            await bot.send_message(chat_id=user_id,
-                        text=reply_text,
-                        parse_mode='Markdown',
-                        )
+            try:
+                await bot.send_message(chat_id=user_id,
+                            text=reply_text,
+                            parse_mode='Markdown',
+                            )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='4',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         elif query == 'missing':
             unique_dates = await sync_to_async(lambda: list(Delivery.objects.annotate(date=TruncDate('created_at')).values('date').distinct()))()
@@ -411,36 +677,88 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
-
-            await bot.send_message(chat_id=user_id,
-                        text=reply_text,
-                        parse_mode='Markdown',
-                        )
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='4',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+            
+            try:
+                await bot.send_message(chat_id=user_id,
+                            text=reply_text,
+                            parse_mode='Markdown',
+                            )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='4',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         elif query == 'back':
             destination = call_data[1]
 
             if destination == 'main':
-                await bot.edit_message_text(chat_id=user_id,
-                                            message_id=message_id,
-                                            text='Выберите один из вариантов:',
-                                            reply_markup=await keyboards.data_or_report_keyboard(),
-                                            )         
+                try:
+                    await bot.edit_message_text(chat_id=user_id,
+                                                message_id=message_id,
+                                                text='Выберите один из вариантов:',
+                                                reply_markup=await keyboards.data_or_report_keyboard(),
+                                                )    
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass     
 
             elif destination == 'data':
-                await bot.edit_message_text(chat_id=chat_id,
-                                            message_id=message_id,
-                                            text='Выберите данные, которые хотите внести:',
-                                            reply_markup=await keyboards.data_type_keyboard(),
-                                            )
-            
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                                message_id=message_id,
+                                                text='Выберите данные, которые хотите внести:',
+                                                reply_markup=await keyboards.data_type_keyboard(),
+                                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
+
             elif destination == 'report':
-                await bot.edit_message_text(chat_id=chat_id,
-                                            message_id=message_id,
-                                            text='Выберите вариант отчета:',
-                                            reply_markup=await keyboards.report_type_keyboard(),
-                                            )
+                try:
+                    await bot.edit_message_text(chat_id=chat_id,
+                                                message_id=message_id,
+                                                text='Выберите вариант отчета:',
+                                                reply_markup=await keyboards.report_type_keyboard(),
+                                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
 
 @dp.message(F.text)
@@ -464,15 +782,38 @@ async def handle_text(message):
                     user.curr_input += f'_{date_start_text}'
                     await sync_to_async(user.save)()
 
-                    await bot.send_message(
-                                chat_id=user_id,
-                                text='Введите дату окончания формирования отчета в формате дд.мм.гггг',
-                                )
+                    try:
+                        await bot.send_message(
+                                    chat_id=user_id,
+                                    text='Введите дату окончания формирования отчета в формате дд.мм.гггг',
+                                    )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
+
                 else:
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Не похоже на дату, попробуйте еще раз.\nВведите дату в формате "дд.мм.гггг"',
-                                            parse_mode="Markdown",
-                                            )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Не похоже на дату, попробуйте еще раз.\nВведите дату в формате "дд.мм.гггг"',
+                                                parse_mode="Markdown",
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
             
             elif len(input_data) == 2:
                 end = await utils.validate_date(input_info)
@@ -483,10 +824,21 @@ async def handle_text(message):
                     start = datetime.datetime.strptime(input_data[1], '%d.%m.%Y')
                     balance = await sync_to_async(Balance.objects.get)(id=1)
 
-                    await bot.send_message(
-                                chat_id=user_id,
-                                text='Отчет формируется...',
-                                )
+                    try:
+                        await bot.send_message(
+                                    chat_id=user_id,
+                                    text='Отчет формируется...',
+                                    )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                     report_data = await sync_to_async(Delivery.calculate_params)(start, end)
                 
@@ -511,21 +863,40 @@ async def handle_text(message):
                                 \nНевыданные: *{report_data[4]} $*\
                                 '''
                     
-                    await bot.send_message(
-                                    chat_id=user_id,
-                                    text=reply_text,
-                                    parse_mode='Markdown',
-                                    )
+                    try:
+                        await bot.send_message(
+                                        chat_id=user_id,
+                                        text=reply_text,
+                                        parse_mode='Markdown',
+                                        )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Не похоже на дату, попробуйте еще раз.\nВведите дату в формате "дд.мм.гггг"',
-                                            parse_mode="Markdown",
-                                            )
-            
-           
-                
-            
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Не похоже на дату, попробуйте еще раз.\nВведите дату в формате "дд.мм.гггг"',
+                                                parse_mode="Markdown",
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
+             
         elif curr_input and 'datefor' in curr_input:
             date = await utils.validate_date(input_info)
             if date:
@@ -552,29 +923,73 @@ async def handle_text(message):
                         
                         alert_text += '\n\nПри продолжении данные будут перезаписаны. Для отмены /cancel.'
 
-                        await bot.send_message(
-                                chat_id=user_id,
-                                text=alert_text,
+                        try:
+                            await bot.send_message(
+                                    chat_id=user_id,
+                                    text=alert_text,
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
                     
-                    await bot.send_message(chat_id=user_id,
-                        text=f'Введите сумму в $ за *{date_text}* "передано фирмам".',
-                        parse_mode="Markdown",
-                        )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                            text=f'Введите сумму в $ за *{date_text}* "передано фирмам".',
+                            parse_mode="Markdown",
+                            )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                 elif data_type == 'rate':
                     buy_rate = await sync_to_async(BuyRate.objects.filter(date=date).first)()
 
                     if buy_rate:
-                        await bot.send_message(
-                                chat_id=user_id,
-                                text=f'За {date_text} ужe задан курс {buy_rate.rate}.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
+                        try:
+                            await bot.send_message(
+                                    chat_id=user_id,
+                                    text=f'За {date_text} ужe задан курс {buy_rate.rate}.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
                     
-                    await bot.send_message(chat_id=user_id,
-                        text=f'Введите курс покупки за *{date_text}*.',
-                        parse_mode="Markdown",
-                        )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                            text=f'Введите курс покупки за *{date_text}*.',
+                            parse_mode="Markdown",
+                            )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                     user.curr_input = f'rate_{date_text}'
 
@@ -590,25 +1005,58 @@ async def handle_text(message):
                     debit_credit = await sync_to_async(DebitCredit.objects.filter(date=date, operation_type=data_type).first)()
 
                     if debit_credit:
-                        await bot.send_message(
-                                chat_id=user_id,
-                                text=f'За {date_text} ужe существует операция "{data_type_text}" со значением {int(debit_credit.amount)}$.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
+                        try:
+                            await bot.send_message(
+                                    chat_id=user_id,
+                                    text=f'За {date_text} ужe существует операция "{data_type_text}" со значением {int(debit_credit.amount)}$.\n\nПри продолжении данные будут перезаписаны.\n\nДля отмены воспользуйтесь командой /cancel.',
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
                     
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Введите сумму в $ за *{date_text}* "{data_type_text}".',
-                                            parse_mode="Markdown",
-                                            )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Введите сумму в $ за *{date_text}* "{data_type_text}".',
+                                                parse_mode="Markdown",
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                     user.curr_input = f'{data_type}_{date_text}'
                     
                 await sync_to_async(user.save)()
 
             else:
-                await bot.send_message(chat_id=user_id,
-                                        text=f'Не похоже на дату, попробуйте еще раз.\nВведите дату в формате "дд.мм.гггг"',
-                                        parse_mode="Markdown",
-                                        )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                            text=f'Не похоже на дату, попробуйте еще раз.\nВведите дату в формате "дд.мм.гггг"',
+                                            parse_mode="Markdown",
+                                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif curr_input and 'all' in curr_input:
             data_input_info = curr_input.split('_')
@@ -627,14 +1075,37 @@ async def handle_text(message):
                     buy_rate.rate = curr_rate
                     await sync_to_async(buy_rate.save)()
 
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Данные сохранены',
-                                            )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Данные сохранены',
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
+
                 else:
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Не похоже на курс, введите еще раз.\nДолжен быть дробным числом, например 3.7.',
-                                            parse_mode="Markdown",
-                                            )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Не похоже на курс, введите еще раз.\nДолжен быть дробным числом, например 3.7.',
+                                                parse_mode="Markdown",
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
             else:
                 curr_amount = await utils.validate_price(input_info)
@@ -659,10 +1130,21 @@ async def handle_text(message):
                         user.curr_input = f'all_2_{date_text}'
                         balance.debt_firms -= curr_amount
 
-                        await bot.send_message(chat_id=user_id,
-                                            text=f'Введите сумму в $ за *{date_text}* "передано Равшану".',
-                                            parse_mode="Markdown",
-                                            )
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                                text=f'Введите сумму в $ за *{date_text}* "передано Равшану".',
+                                                parse_mode="Markdown",
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
 
                     elif data_type == 2:
                         if not created:
@@ -671,10 +1153,21 @@ async def handle_text(message):
                         user.curr_input = f'all_3_{date_text}'
                         balance.debt_ravshan -= curr_amount
 
-                        await bot.send_message(chat_id=user_id,
-                                            text=f'Введите сумму в $ за *{date_text}* "получено от фирм".',
-                                            parse_mode="Markdown",
-                                            )
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                                text=f'Введите сумму в $ за *{date_text}* "получено от фирм".',
+                                                parse_mode="Markdown",
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
 
                     elif data_type == 3:
                         if not created:
@@ -685,10 +1178,21 @@ async def handle_text(message):
                         balance.debt_firms += curr_amount
                         balance.balance += curr_amount
 
-                        await bot.send_message(chat_id=user_id,
-                                            text=f'Введите сумму в $ за *{date_text}* "получено от Равшана".',
-                                            parse_mode="Markdown",
-                                            )
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                                text=f'Введите сумму в $ за *{date_text}* "получено от Равшана".',
+                                                parse_mode="Markdown",
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
 
                     elif data_type == 4:
                         if not created:
@@ -699,18 +1203,40 @@ async def handle_text(message):
                         balance.debt_ravshan += curr_amount
                         balance.balance += curr_amount
 
-                        await bot.send_message(chat_id=user_id,
-                                            text=f'Введите курс покупки за *{date_text}*.',
-                                            parse_mode="Markdown",
-                                            )
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                                text=f'Введите курс покупки за *{date_text}*.',
+                                                parse_mode="Markdown",
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='4',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
                     
                     await sync_to_async(user.save)()
                     await sync_to_async(balance.save)()
 
                 else:
-                    await bot.send_message(chat_id=user_id,
-                                            text=f'Не похоже на корректную сумму, введите еще раз.\nДолжна быть дробным или целым числом, например: 1000.',
-                                            )
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                                text=f'Не похоже на корректную сумму, введите еще раз.\nДолжна быть дробным или целым числом, например: 1000.',
+                                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='4',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
         elif curr_input and 'rate' in curr_input:
             curr_rate = await utils.validate_rate(input_info)
@@ -725,14 +1251,36 @@ async def handle_text(message):
                 buy_rate.rate = curr_rate
                 await sync_to_async(buy_rate.save)()
 
-                await bot.send_message(chat_id=user_id,
-                                        text=f'Данные сохранены.',
-                                        )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                            text=f'Данные сохранены.',
+                                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
             else:
-                await bot.send_message(chat_id=user_id,
-                                        text=f'Не похоже на курс, введите еще раз.\nДолжен быть дробным числом, например 3.7.',
-                                        parse_mode="Markdown",
-                                        )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                            text=f'Не похоже на курс, введите еще раз.\nДолжен быть дробным числом, например 3.7.',
+                                            parse_mode="Markdown",
+                                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif curr_input:
             curr_amount = await utils.validate_price(input_info)
@@ -752,9 +1300,20 @@ async def handle_text(message):
                 debit_credit.amount = curr_amount
                 await sync_to_async(debit_credit.save)()
 
-                await bot.send_message(chat_id=user_id,
-                                        text=f'Данные сохранены',
-                                        )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                            text=f'Данные сохранены',
+                                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
                 balance = await sync_to_async(Balance.objects.get)(id=1)
                 if data_type == 1:
@@ -785,9 +1344,20 @@ async def handle_text(message):
                 await sync_to_async(balance.save)()
 
             else:
-                await bot.send_message(chat_id=user_id,
-                                        text=f'Не похоже на корректную сумму, введите еще раз.\nДолжна быть дробным или целым числом, например: 1000.',
-                                        )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                            text=f'Не похоже на корректную сумму, введите еще раз.\nДолжна быть дробным или целым числом, например: 1000.',
+                                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='4',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
 
 async def main():

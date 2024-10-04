@@ -19,7 +19,9 @@ from django.core.files.base import ContentFile
 from filer.models import Image, Folder
 from django.db.models import Q
 
-from core.models import TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, UsersSim
+from core.models import (TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, 
+                         UsersSim, UserMessage)
+from errors.models import AppError
 from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address,
                         create_icount_client, get_address)
 from sim.models import SimCard
@@ -111,7 +113,15 @@ async def start_message(message: types.Message, command: CommandObject):
                             return
 
                         except:
-                            pass
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение о готовности оплаты пользователю {user_id} после перехода по ссылке для привязки номера телефона.)',
+                                )
+                            except:
+                                pass
 
     await sync_to_async(Parcel.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
     await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
@@ -119,20 +129,41 @@ async def start_message(message: types.Message, command: CommandObject):
     user_language = await sync_to_async(lambda: user.language)()
     if user_language:
         reply_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=user_language)
-        await bot.send_message(chat_id=user_id,
-                            text=reply_text.text,
-                            reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
-                            parse_mode='Markdown',
-                            )
-
+        try:
+            await bot.send_message(chat_id=user_id,
+                                text=reply_text.text,
+                                reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение c выбором опций пользователю {user_id}.)',
+                )
+            except:
+                pass
     else:
         choose_language = await sync_to_async(TGText.objects.get)(slug='choose_language')
 
-        await bot.send_message(chat_id=user_id,
-                         text=choose_language.text,
-                         reply_markup=await keyboards.choose_language_keyboard(),
-                         parse_mode='Markdown',
-                         )
+        try:
+            await bot.send_message(chat_id=user_id,
+                            text=choose_language.text,
+                            reply_markup=await keyboards.choose_language_keyboard(),
+                            parse_mode='Markdown',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение с выбором языка пользователю {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.message(Command("language"))
@@ -152,11 +183,22 @@ async def language_message(message: types.Message):
 
     choose_language = await sync_to_async(TGText.objects.get)(slug='choose_language')
 
-    await bot.send_message(chat_id=user_id,
-                        text=choose_language.text,
-                        reply_markup=await keyboards.choose_language_keyboard(),
-                        parse_mode='Markdown',
-                        )
+    try:
+        await bot.send_message(chat_id=user_id,
+                            text=choose_language.text,
+                            reply_markup=await keyboards.choose_language_keyboard(),
+                            parse_mode='Markdown',
+                            )
+    except:
+        try:
+            await sync_to_async(AppError.objects.create)(
+                source='1',
+                error_type='2',
+                main_user=user_id,
+                description=f'Не удалось отправить сообщение с выбором языка пользователю {user_id}.',
+            )
+        except:
+            pass
 
 
 @dp.callback_query()
@@ -193,10 +235,21 @@ async def callback_query(call: types.CallbackQuery):
 
         welcome_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=language)
 
-        await call.message.edit_text(text=welcome_text.text,
-                                    reply_markup=await keyboards.flight_or_parcel_keyboard(language),
-                                    parse_mode='Markdown',
-                                    )
+        try:
+            await call.message.edit_text(text=welcome_text.text,
+                                        reply_markup=await keyboards.flight_or_parcel_keyboard(language),
+                                        parse_mode='Markdown',
+                                        )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
     
     elif query == 'flight':
         await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
@@ -209,10 +262,21 @@ async def callback_query(call: types.CallbackQuery):
 
         choose_route = await sync_to_async(TGText.objects.get)(slug='choose_route', language=user_language)
 
-        await call.message.edit_text(text=choose_route.text,
-                                     reply_markup=await keyboards.route_keyboard(),
-                                     parse_mode='Markdown',
-                                     )
+        try:
+            await call.message.edit_text(text=choose_route.text,
+                                        reply_markup=await keyboards.route_keyboard(),
+                                        parse_mode='Markdown',
+                                        )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
     elif query == 'route':
         route_id = int(call_data[1])
@@ -238,19 +302,46 @@ async def callback_query(call: types.CallbackQuery):
                                                 reply_markup=await keyboards.flight_type_keyboard(user_language),
                                                 )
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            bot.send_message(chat_id=chat_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 'flighttype':
         flight_type = call_data[1]
@@ -274,19 +365,46 @@ async def callback_query(call: types.CallbackQuery):
                                                 reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language),
                                                 )
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
     
     elif query == 'month':
         direction = call_data[1]
@@ -310,15 +428,34 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=await keyboards.choose_day_keyboard(departure_days, user_language),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
             else:
                 no_flight = await sync_to_async(TGText.objects.get)(slug='no_flights', language=user_language)
-                await bot.answer_callback_query(
-                                callback_query_id=call.id,
-                                text=no_flight.text,
-                                show_alert=True,
-                                )
+                try:
+                    await bot.answer_callback_query(
+                                    callback_query_id=call.id,
+                                    text=no_flight.text,
+                                    show_alert=True,
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif flight and direction == 'arrival' and curr_input and curr_input == 'flight_arrival':
             arrival_days = await sync_to_async(lambda: list(flight.route.opposite.days.filter(Q(day__year=year) & Q(day__month=month) & Q(day__gte=datetime.date.today()))))()
@@ -336,7 +473,15 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=await keyboards.choose_day_keyboard(arrival_days, user_language, 'arrival'),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
             else:
                 no_flight = await sync_to_async(TGText.objects.get)(slug='no_flights', language=user_language)
@@ -347,19 +492,46 @@ async def callback_query(call: types.CallbackQuery):
                                     show_alert=True,
                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 'day':
         direction = call_data[1]
@@ -386,7 +558,15 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language, 'arrival'),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
             elif flight.type == 'oneway':
                 user.curr_input = 'passport'
@@ -395,7 +575,15 @@ async def callback_query(call: types.CallbackQuery):
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 if user.name and user.family_name and user.sex and user.birth_date and user.start_date and\
                 user.end_date and user.passport_number and user.passport_photo_id and user.phone and user.addresses:
@@ -422,21 +610,43 @@ async def callback_query(call: types.CallbackQuery):
                     reply_text += f'\n*{phone.text}* {user.phone}'
                     reply_text += f'\n*{address.text}* {user.addresses}'
 
-                    await bot.send_photo(chat_id=user_id,
-                            caption=reply_text,
-                            photo=user.passport_photo_id,
-                            reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
-                            parse_mode='Markdown',
-                            disable_notification=False,
+                    try:
+                        await bot.send_photo(chat_id=user_id,
+                                caption=reply_text,
+                                photo=user.passport_photo_id,
+                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
                 else:
                     passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=passport_request.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=passport_request.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
                 
         elif flight and direction == 'arrival' and curr_input and curr_input == 'flight_arrival':
             day = await sync_to_async(Day.objects.filter(id=date_id).first)()
@@ -448,7 +658,15 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             if user.name and user.family_name and user.sex and user.birth_date and user.start_date and\
                 user.end_date and user.passport_number and user.passport_photo_id and user.phone and user.addresses:
@@ -475,33 +693,74 @@ async def callback_query(call: types.CallbackQuery):
                 reply_text += f'\n*{phone.text}* {user.phone}'
                 reply_text += f'\n*{address.text}* {user.addresses}'
 
-                await bot.send_photo(chat_id=user_id,
-                        caption=reply_text,
-                        photo=user.passport_photo_id,
-                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
-                        parse_mode='Markdown',
-                        disable_notification=False,
+                try:
+                    await bot.send_photo(chat_id=user_id,
+                            caption=reply_text,
+                            photo=user.passport_photo_id,
+                            reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
+                            parse_mode='Markdown',
+                            disable_notification=False,
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             else:
                 passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=passport_request.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=passport_request.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
     
     elif query == 'curryear':
         direction = call_data[1]
@@ -511,7 +770,15 @@ async def callback_query(call: types.CallbackQuery):
                                         reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year, user_language, direction),
                                         )
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
     
     elif query == 'nextyear':
         direction = call_data[1]
@@ -521,7 +788,15 @@ async def callback_query(call: types.CallbackQuery):
                                         reply_markup=await keyboards.choose_month_keyboard(datetime.date.today().year + 1, user_language, direction),
                                         )
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
     elif query == 'parcel':
         await sync_to_async(Flight.objects.filter(Q(user=user) & Q(complete__isnull=True)).update)(complete=False)
@@ -546,7 +821,15 @@ async def callback_query(call: types.CallbackQuery):
                                             reply_markup=await keyboards.parcel_types_keyboard(user_language),
                                             )
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
     
     elif query == 'parceltype':
         parcel_type_id = int(call_data[1])
@@ -561,25 +844,63 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             question = await sync_to_async(TGText.objects.get)(slug='fio_receiver_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
             
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 'confirm':
         info = call_data[1]
@@ -596,13 +917,32 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
         
         else:
             if info == 'name':
@@ -630,20 +970,47 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('familyname', user_language),
                                                         )
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                     question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif info == 'familyname':
                 user.curr_input = 'passportnum'
@@ -670,20 +1037,47 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('passportnum', user_language),
                                                         )
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                     question = await sync_to_async(TGText.objects.get)(slug='passport_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif info == 'passportnum':
                 user.curr_input = 'sex'
@@ -710,21 +1104,48 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('sex', user_language),
                                                         )
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                     question = await sync_to_async(TGText.objects.get)(slug='sex_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            reply_markup=await keyboards.sex_keyboard(user_language),
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                reply_markup=await keyboards.sex_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif info == 'sex':
                 user.curr_input = 'birthdate'
@@ -753,20 +1174,47 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('birthdate', user_language),
                                                         )
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                     question = await sync_to_async(TGText.objects.get)(slug='birth_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif info == 'birthdate':
                 user.curr_input = 'startdate'
@@ -795,20 +1243,47 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('startdate', user_language),
                                                         )
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                     question = await sync_to_async(TGText.objects.get)(slug='start_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif info == 'startdate':
                 user.curr_input = 'enddate'
@@ -837,20 +1312,47 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.confirm_or_hand_write_keyboard('enddate', user_language),
                                                         )
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
 
                     question = await sync_to_async(TGText.objects.get)(slug='end_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif info == 'enddate':
                 user.curr_input = 'phone'
@@ -859,14 +1361,33 @@ async def callback_query(call: types.CallbackQuery):
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 phone_question = await sync_to_async(TGText.objects.get)(slug='phone_question', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                        text=phone_question.text,
-                        parse_mode='Markdown',
-                        reply_markup=await keyboards.request_phone_keyboard(user_language),
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                            text=phone_question.text,
+                            parse_mode='Markdown',
+                            reply_markup=await keyboards.request_phone_keyboard(user_language),
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
             
             elif info == 'confirmation':
                 user.curr_input = None
@@ -913,13 +1434,32 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=InlineKeyboardBuilder().as_markup(),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
                 
                 reply_text = await sync_to_async(TGText.objects.get)(slug='contact_soon', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                        text=reply_text.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                            text=reply_text.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
                 
                 name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                 family_name = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
@@ -1008,7 +1548,15 @@ async def callback_query(call: types.CallbackQuery):
                                disable_notification=False,
                                )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=config.MANAGER_ID,
+                            description=f'Не удалось отправить сообщение пользователю {config.MANAGER_ID} (менеджер). {info_type}, {info_id}',
+                        )
+                    except:
+                        pass
 
             elif info == 'passport':
                 confirm_application = await sync_to_async(TGText.objects.get)(slug='confirm_application', language=user_language)
@@ -1117,15 +1665,34 @@ async def callback_query(call: types.CallbackQuery):
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
-
-                await bot.send_photo(chat_id=user_id,
-                               caption=reply_text,
-                               photo=photo_id,
-                               reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
-                               parse_mode='Markdown',
-                               disable_notification=False,
-                               )
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
+                
+                try:
+                    await bot.send_photo(chat_id=user_id,
+                                caption=reply_text,
+                                photo=photo_id,
+                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
         
     elif query == 'hand':
         info = call_data[1]
@@ -1142,83 +1709,198 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
         
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             if info == 'name':
                 question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             elif info == 'familyname':
                 question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             elif info == 'passportnum':
                 question = await sync_to_async(TGText.objects.get)(slug='passport_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             elif info == 'sex':
                 question = await sync_to_async(TGText.objects.get)(slug='sex_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        reply_markup=await keyboards.sex_keyboard(user_language),
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            reply_markup=await keyboards.sex_keyboard(user_language),
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             elif info == 'birthdate':
                 question = await sync_to_async(TGText.objects.get)(slug='birth_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             elif info == 'startdate':
                 question = await sync_to_async(TGText.objects.get)(slug='start_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
             elif info == 'enddate':
                 question = await sync_to_async(TGText.objects.get)(slug='end_question', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
             
             elif info == 'passport':
                 passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=passport_request.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=passport_request.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
     elif query == 'sex':
         sex = call_data[1]
@@ -1235,13 +1917,33 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+
         else:
             user.curr_input = 'birthdate'
             await sync_to_async(user.save)()
@@ -1273,20 +1975,47 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=await keyboards.confirm_or_hand_write_keyboard('birthdate', user_language),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
                 
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 question = await sync_to_async(TGText.objects.get)(slug='birth_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=question.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=question.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
             
     elif query == 'cancel':
         user.curr_input = None
@@ -1296,15 +2025,34 @@ async def callback_query(call: types.CallbackQuery):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=message_id)
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
         reply_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=user_language)
 
-        await bot.send_message(chat_id=chat_id,
-                            text=reply_text.text,
-                            reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
-                            parse_mode='Markdown',
-                            )
+        try:
+            await bot.send_message(chat_id=chat_id,
+                                text=reply_text.text,
+                                reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
     elif query == 'price':
         info_type = call_data[1]
@@ -1319,12 +2067,31 @@ async def callback_query(call: types.CallbackQuery):
                                                 reply_markup=InlineKeyboardBuilder().as_markup(),
                                                 )
         except:
-            pass
-
-        await bot.send_message(chat_id=chat_id,
-                               text='Введите стоимость в шекелях',
-                               parse_mode='Markdown',
-                               )
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
+        
+        try:
+            await bot.send_message(chat_id=chat_id,
+                                text='Введите стоимость в шекелях',
+                                parse_mode='Markdown',
+                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
     elif query == 'refuse':
         info_type = call_data[1]
@@ -1348,12 +2115,31 @@ async def callback_query(call: types.CallbackQuery):
                                                 reply_markup=InlineKeyboardBuilder().as_markup(),
                                                 )
         except:
-            pass
-
-        await bot.send_message(chat_id=chat_id,
-                               text='Заявка отклонена.',
-                               parse_mode='Markdown',
-                               )
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
+        
+        try:
+            await bot.send_message(chat_id=chat_id,
+                                text='Заявка отклонена.',
+                                parse_mode='Markdown',
+                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
     
     elif query == 'complete':
         if user_id == config.MANAGER_ID:
@@ -1382,12 +2168,31 @@ async def callback_query(call: types.CallbackQuery):
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
                 
-                await bot.send_message(chat_id=chat_id,
-                               text=f'Заявка подтверждена. Стоимость *{info_price} ₪*.',
-                               parse_mode='Markdown',
-                               )
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                text=f'Заявка подтверждена. Стоимость *{info_price} ₪*.',
+                                parse_mode='Markdown',
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
     elif query == 'sim':
         users_sim = await sync_to_async(user.sim_cards.first)()
@@ -1411,12 +2216,31 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
-            
-            await bot.send_message(chat_id=chat_id,
-                                    text=reply_text,
-                                    parse_mode='Markdown',
-                                    )
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                        text=reply_text,
+                                        parse_mode='Markdown',
+                                        )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             user.curr_input = 'user_passport'
@@ -1426,7 +2250,15 @@ async def callback_query(call: types.CallbackQuery):
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
                 address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
@@ -1437,26 +2269,56 @@ async def callback_query(call: types.CallbackQuery):
                 reply_text += f'\n*{familyname_text.text}* {user.family_name}'
                 reply_text += f'\n*{address_text.text}* {user.addresses}'
 
-                await bot.send_photo(chat_id=user_id,
-                            caption=reply_text,
-                            photo=user.passport_photo_id,
-                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('s-confirmation', user_language),
-                            parse_mode='Markdown',
-                            disable_notification=False,
-                            )
+                try:
+                    await bot.send_photo(chat_id=user_id,
+                                caption=reply_text,
+                                photo=user.passport_photo_id,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('s-confirmation', user_language),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
             
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=passport_request.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=passport_request.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
     elif query == 's-confirm':
         info = call_data[1]
@@ -1465,25 +2327,55 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             if info == 's-confirmation':
                 user.curr_input = 'sim-fare'
                 await sync_to_async(user.save)()
 
                 choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                               text=choose_fare.text,
-                               reply_markup=await keyboards.sim_fares_keyboard(),
-                               parse_mode='Markdown',
-                               )
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                text=choose_fare.text,
+                                reply_markup=await keyboards.sim_fares_keyboard(),
+                                parse_mode='Markdown',
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
             
             else:
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-                await bot.send_message(chat_id=user_id,
-                                text=error.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=error.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif curr_input and curr_input == 'sim-confirmation':
             try:
@@ -1520,13 +2412,24 @@ async def callback_query(call: types.CallbackQuery):
                 else:
                     reply_text += f'\n\nПользователь без валидного никнейма. Telegram id: {user.user_id} (для связи через админку).'
 
-                await bot.send_photo(chat_id=config.SIM_MANAGER_ID,
-                                caption=reply_text,
-                                photo=user.passport_photo_id,
-                                reply_markup=await keyboards.sim_confirm_application_keyboard(user.pk, fare.pk),
-                                parse_mode='Markdown',
-                                disable_notification=False,
-                                ) 
+                try:
+                    await bot.send_photo(chat_id=config.SIM_MANAGER_ID,
+                                    caption=reply_text,
+                                    photo=user.passport_photo_id,
+                                    reply_markup=await keyboards.sim_confirm_application_keyboard(user.pk, fare.pk),
+                                    parse_mode='Markdown',
+                                    disable_notification=False,
+                                    ) 
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=config.SIM_MANAGER_ID,
+                            description=f'Не удалось отправить сообщение пользователю {config.SIM_MANAGER_ID} (менеджеру по симкартам). Запрос на создание симки от {user_id}, тариф {fare.title}',
+                        )
+                    except:
+                        pass
 
                 try:
                     await bot.edit_message_reply_markup(chat_id=chat_id,
@@ -1534,29 +2437,68 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=InlineKeyboardBuilder().as_markup(),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 if user.username:
                     reply_text = await sync_to_async(TGText.objects.get)(slug='contact_soon', language=user_language)
                 else:
                     reply_text = await sync_to_async(TGText.objects.get)(slug='sim_application_accepted', language=user_language)
 
-                await bot.send_message(chat_id=chat_id,
-                        text=reply_text.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                            text=reply_text.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
                 
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-                await bot.send_message(chat_id=user_id,
-                                text=error.text,
-                                parse_mode='Markdown',
-                                )
+
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=error.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif curr_input and curr_input == 's-name' and info == 'name':
             user.curr_input = 's-familyname'
@@ -1577,19 +2519,46 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
                                                         )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                                text=question.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                    text=question.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         elif curr_input and curr_input == 's-familyname' and info == 'familyname':
             user.curr_input = 'sim-fare'
@@ -1608,7 +2577,15 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=await keyboards.sim_fares_keyboard(),
                                                     )
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
         elif info == 'address':
             sim_card = await sync_to_async(user.sim_cards.first)()
@@ -1622,12 +2599,31 @@ async def callback_query(call: types.CallbackQuery):
                                                         reply_markup=InlineKeyboardBuilder().as_markup(),
                                                         )
                 except:
-                    pass
-            
-                await bot.send_message(chat_id=chat_id,
-                                    text=reply.text,
-                                    parse_mode='Markdown',
-                                    )
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
+                
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                        text=reply.text,
+                                        parse_mode='Markdown',
+                                        )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
                 stop_id = await send_sim_money_collect_address(sim_card.sim_phone, user, sim_card.debt)
 
@@ -1644,25 +2640,63 @@ async def callback_query(call: types.CallbackQuery):
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-                await bot.send_message(chat_id=user_id,
-                                text=error.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=error.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 's-hand':
         info = call_data[1]
@@ -1670,30 +2704,71 @@ async def callback_query(call: types.CallbackQuery):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=message_id)
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
         if curr_input and curr_input == 'user_passport':
             if info == 's-confirmation':
                 passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
-                await bot.send_message(chat_id=user_id,
-                        text=passport_request.text,
-                        parse_mode='Markdown',
+                try:
+                    await bot.send_message(chat_id=user_id,
+                            text=passport_request.text,
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
                         )
+                    except:
+                        pass
 
         elif curr_input and curr_input == 's-name' and info == 'name':
             question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         elif curr_input and curr_input == 's-familyname' and info == 'familyname':
             question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         elif info == 'address':
             user.lat = None
@@ -1702,18 +2777,40 @@ async def callback_query(call: types.CallbackQuery):
             await sync_to_async(user.save)()
 
             address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=address_question.text,
-                            reply_markup= await keyboards.request_location_keyboard(user_language),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=address_question.text,
+                                reply_markup= await keyboards.request_location_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 'fare':
         fare_id = int(call_data[1])
@@ -1722,7 +2819,15 @@ async def callback_query(call: types.CallbackQuery):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=message_id)
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
         if curr_input and curr_input == 'sim-fare' and user.addresses and user.passport_photo_id and fare and user.name and user.family_name:
             user.curr_input = 'sim-confirmation'
@@ -1751,26 +2856,56 @@ async def callback_query(call: types.CallbackQuery):
                         \n*{fare_price.text}* {fare.price}₪/{short_month.text} {new_sim_tax.text}\
                         '''
 
-            await bot.send_photo(chat_id=user_id,
-                               caption=reply_text,
-                               photo=user.passport_photo_id,
-                               reply_markup=await keyboards.sim_confirmation_keyboard(fare_id, user_language),
-                               parse_mode='Markdown',
-                               disable_notification=False,
-                               )
+            try:
+                await bot.send_photo(chat_id=user_id,
+                                caption=reply_text,
+                                photo=user.passport_photo_id,
+                                reply_markup=await keyboards.sim_confirmation_keyboard(fare_id, user_language),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else: 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
     
     elif query == 's-cancel':
         try:
             await bot.delete_message(chat_id=chat_id, message_id=message_id)
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
         if curr_input and curr_input == 'sim-confirmation':
             user.curr_input = None
@@ -1778,17 +2913,40 @@ async def callback_query(call: types.CallbackQuery):
 
             reply_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=user_language)
 
-            await bot.send_message(chat_id=chat_id,
-                                text=reply_text.text,
-                                reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
-                                parse_mode='Markdown',
-                                )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                    text=reply_text.text,
+                                    reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
+                                    parse_mode='Markdown',
+                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+
         else:
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 'back':
         destination = call_data[1]
@@ -1797,25 +2955,55 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             if curr_input and curr_input == 'sim-confirmation':
                 user.curr_input = 'sim-fare'
                 await sync_to_async(user.save)()
 
                 choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                               text=choose_fare.text,
-                               reply_markup=await keyboards.sim_fares_keyboard(),
-                               parse_mode='Markdown',
-                               )
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                text=choose_fare.text,
+                                reply_markup=await keyboards.sim_fares_keyboard(),
+                                parse_mode='Markdown',
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
             else:
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-                await bot.send_message(chat_id=user_id,
-                                text=error.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=error.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
     elif query == 's-refuse':
         user.curr_input = None
@@ -1827,12 +3015,31 @@ async def callback_query(call: types.CallbackQuery):
                                                 reply_markup=InlineKeyboardBuilder().as_markup(),
                                                 )
         except:
-            pass
-
-        await bot.send_message(chat_id=chat_id,
-                               text='Заявка отклонена.',
-                               parse_mode='Markdown',
-                               )
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
+        
+        try:
+            await bot.send_message(chat_id=chat_id,
+                                text='Заявка отклонена.',
+                                parse_mode='Markdown',
+                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
     
     elif query == 'm-sim':
         if user_id == config.SIM_MANAGER_ID:
@@ -1848,12 +3055,31 @@ async def callback_query(call: types.CallbackQuery):
                                                 reply_markup=InlineKeyboardBuilder().as_markup(),
                                                 )
             except:
-                pass
-
-            await bot.send_message(chat_id=chat_id,
-                                text='Введите номер выдаваемой симки',
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+            
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                    text='Введите номер выдаваемой симки',
+                                    parse_mode='Markdown',
+                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
     
     elif query == 's-retype':
         if user_id == config.SIM_MANAGER_ID:
@@ -1868,12 +3094,31 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
-
-            await bot.send_message(chat_id=chat_id,
-                                text='Введите номер выдаваемой симки (должен начинаться с 972)',
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+            
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                    text='Введите номер выдаваемой симки (должен начинаться с 972)',
+                                    parse_mode='Markdown',
+                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
     
     elif query == 's-complete':
 
@@ -1891,7 +3136,15 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=InlineKeyboardBuilder().as_markup(),
                                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
                 
                 sim_user = await sync_to_async(TGUser.objects.filter(id=sim_user_id).first)()
                 fare = await sync_to_async(SimFare.objects.filter(id=fare_id).first)()
@@ -1932,29 +3185,78 @@ async def callback_query(call: types.CallbackQuery):
                     try:
                         await bot.delete_message(chat_id=chat_id, message_id=message_id)
                     except:
-                        pass
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
                     
-                    await bot.send_message(chat_id=chat_id,
-                                text=f'Заявка подтверждена. Номер симки *{phone}*.',
-                                parse_mode='Markdown',
-                                )
+                    try:
+                        await bot.send_message(chat_id=chat_id,
+                                    text=f'Заявка подтверждена. Номер симки *{phone}*.',
+                                    parse_mode='Markdown',
+                                    )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
                 else:
-                    await bot.send_message(chat_id=chat_id,
-                                text=f'Ошибка при отправке в circuit или icount, воспользуйтесь админ панелью.',
-                                parse_mode='Markdown',
-                                )
+                    try:
+                        await bot.send_message(chat_id=chat_id,
+                                    text=f'Ошибка при отправке в circuit или icount, воспользуйтесь админ панелью.',
+                                    parse_mode='Markdown',
+                                    )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
             else:
                 try:
                     await bot.delete_message(chat_id=chat_id, message_id=message_id)
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-                await bot.send_message(chat_id=user_id,
-                                text=error.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=error.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
     elif query == 'later':
         sim_card = await sync_to_async(user.sim_cards.first)()
@@ -1989,24 +3291,63 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=InlineKeyboardBuilder().as_markup(),
                                                     )
             except:
-                pass
-
-            await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
-                            )
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+            
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+
 
     elif query == 'readypay':
         if user.addresses:
@@ -2019,13 +3360,33 @@ async def callback_query(call: types.CallbackQuery):
                                                     reply_markup=InlineKeyboardBuilder().as_markup(),
                                                     )
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+            
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
-            await bot.send_message(chat_id=chat_id,
-                            text=reply_text,
-                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
-                            parse_mode='Markdown',
-                            )
 
         else:
             user.curr_input = 'sim_collect_money_address'
@@ -2034,14 +3395,33 @@ async def callback_query(call: types.CallbackQuery):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
             address_question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=address_question.text,
-                            reply_markup= await keyboards.request_location_keyboard(user_language),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=address_question.text,
+                                reply_markup= await keyboards.request_location_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
 
 @dp.message(F.photo)
@@ -2070,10 +3450,21 @@ async def handle_photo(message: types.Message):
             await sync_to_async(user.save)()
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             counter = 0
@@ -2085,6 +3476,16 @@ async def handle_photo(message: types.Message):
             except Exception as ex:
                 counter = config.PARSE_COUNT
                 photo_info = [None, None, None, None, None, None, None]
+
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='7',
+                        main_user=user_id,
+                        description=f'Не удалось обработать фото пользователя {user_id}. {ex}',
+                    )
+                except:
+                    pass
 
 
             for info in photo_info:
@@ -2110,7 +3511,16 @@ async def handle_photo(message: types.Message):
                     await sync_to_async(passport.save)()
                 except Exception as ex:
                     passport = None
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='7',
+                            main_user=user_id,
+                            description=f'Не удалось сохранить фото пользователя {user_id}. {ex}',
+                        )
+                    except:
+                        pass
+
 
                 name, family_name, passport_number, sex, birth_date, start_date, end_date = photo_info
 
@@ -2145,26 +3555,59 @@ async def handle_photo(message: types.Message):
                     name_confirm = await sync_to_async(TGText.objects.get)(slug='name_correct_question', language=user_language)
                     reply_text = f'{name_confirm.text} *{name}*?'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            reply_markup=await keyboards.confirm_or_hand_write_keyboard('name', user_language),
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('name', user_language),
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
                 else:
                     name_question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=name_question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=name_question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             else:
                 wrong_passport = await sync_to_async(TGText.objects.get)(slug='wrong_passport', language=user_language)
-                await bot.send_message(chat_id=user_id,
-                                text=wrong_passport.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=wrong_passport.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
     elif curr_input and curr_input == 'user_passport':
         counter = 0
@@ -2176,6 +3619,16 @@ async def handle_photo(message: types.Message):
         except Exception as ex:
             counter = config.PARSE_COUNT
             photo_info = [None, None, None, None, None, None, None]
+
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='7',
+                    main_user=user_id,
+                    description=f'Не удалось обработать фото пользователя {user_id}. {ex}',
+                )
+            except:
+                pass
 
 
         for info in photo_info:
@@ -2194,7 +3647,16 @@ async def handle_photo(message: types.Message):
                 await sync_to_async(passport.save)()
             except Exception as ex:
                 passport = None
-                pass
+                
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='7',
+                        main_user=user_id,
+                        description=f'Не удалось сохранить фото пользователя {user_id}. {ex}',
+                    )
+                except:
+                    pass
 
             name, family_name, passport_number, sex, birth_date, start_date, end_date = photo_info
 
@@ -2218,19 +3680,41 @@ async def handle_photo(message: types.Message):
             await sync_to_async(user.save)()
 
             question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            reply_markup=await keyboards.request_location_keyboard(user_language),
-                            parse_mode='Markdown',
-                            disable_notification=True,
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                reply_markup=await keyboards.request_location_keyboard(user_language),
+                                parse_mode='Markdown',
+                                disable_notification=True,
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             wrong_passport = await sync_to_async(TGText.objects.get)(slug='wrong_passport', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=wrong_passport.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=wrong_passport.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
 
 @dp.message(F.contact)
@@ -2260,11 +3744,22 @@ async def handle_contact(message: types.Message):
             await sync_to_async(user.save)()
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error,
-                            reply_markup=types.ReplyKeyboardRemove(),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error,
+                                reply_markup=types.ReplyKeyboardRemove(),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
         else:
             user.curr_input = 'address'
             await sync_to_async(user.save)()
@@ -2277,12 +3772,23 @@ async def handle_contact(message: types.Message):
                 await sync_to_async(parcel.save)()
 
             question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            reply_markup=await keyboards.request_location_keyboard(user_language),
-                            parse_mode='Markdown',
-                            disable_notification=True,
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                reply_markup=await keyboards.request_location_keyboard(user_language),
+                                parse_mode='Markdown',
+                                disable_notification=True,
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
 
 @dp.message(F.text)
@@ -2311,15 +3817,38 @@ async def handle_text(message):
         price = round(await utils.validate_price(input_info), 2)
 
         if price:
-            await bot.send_message(chat_id=user_id,
-                            text=f'Стоимость *{price} ₪*?',
-                            reply_markup=await keyboards.confirm_price_keyboard('flight', flight_id, price),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=f'Стоимость *{price} ₪*?',
+                                reply_markup=await keyboards.confirm_price_keyboard('flight', flight_id, price),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+
         else:
-            await bot.send_message(chat_id=user_id,
-                            text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif curr_input and 'parcelprice' in curr_input and user_id == config.MANAGER_ID:
         data = curr_input.split('_')
@@ -2327,16 +3856,38 @@ async def handle_text(message):
         price = await utils.validate_price(input_info)
 
         if price:
-            await bot.send_message(chat_id=user_id,
-                            text=f'Стоимость *{price} ₪*?',
-                            reply_markup=await keyboards.confirm_price_keyboard('parcel', parcel_id, price),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=f'Стоимость *{price} ₪*?',
+                                reply_markup=await keyboards.confirm_price_keyboard('parcel', parcel_id, price),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
-            await bot.send_message(chat_id=user_id,
-                            text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text='Не похоже на корректную стоимость, введите еще раз стоимость в шекелях.',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif curr_input and 'manager-sim' in curr_input and user_id == config.SIM_MANAGER_ID:
         data = curr_input.split('_')
@@ -2347,15 +3898,37 @@ async def handle_text(message):
             user.curr_input = f'manager-sim_{phone}'
             await sync_to_async(user.save)()
 
-            await bot.send_message(chat_id=user_id,
-                            text=f'Номер телефона выдаваемой симки: *{phone}*?',
-                            reply_markup=await keyboards.sim_confirm_phone_keyboard(sim_user_id, fare_id),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=f'Номер телефона выдаваемой симки: *{phone}*?',
+                                reply_markup=await keyboards.sim_confirm_phone_keyboard(sim_user_id, fare_id),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
         else:
-            await bot.send_message(chat_id=user_id,
-                            text='Не похоже на корректный номер телефона, введите еще раз (должен начинаться с 972).',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text='Не похоже на корректный номер телефона, введите еще раз (должен начинаться с 972).',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif curr_input and curr_input == 's-address':
         user.addresses = input_info 
@@ -2375,20 +3948,51 @@ async def handle_text(message):
                                 disable_notification=True,
                                 )
             except:
-                pass
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+            
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
-            await bot.send_message(chat_id=chat_id,
-                            text=reply_text,
-                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
-                            parse_mode='Markdown',
-                            )
         else:
             question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            reply_markup=types.ReplyKeyboardRemove(),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                reply_markup=types.ReplyKeyboardRemove(),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
     
     elif curr_input and curr_input == 's-name':
         user.name = input_info 
@@ -2399,17 +4003,31 @@ async def handle_text(message):
             confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
             reply_text = f'{confirm_text.text} *{user.family_name}*?'
 
-            await bot.send_message(chat_id=chat_id,
-                            text=reply_text,
-                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('familyname', user_language),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
         else:
             question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                pass
 
     elif curr_input and curr_input == 's-familyname':
         user.family_name = input_info 
@@ -2417,11 +4035,22 @@ async def handle_text(message):
         await sync_to_async(user.save)()
 
         choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
-        await bot.send_message(chat_id=chat_id,
-                        text=choose_fare.text,
-                        reply_markup=await keyboards.sim_fares_keyboard(),
-                        parse_mode='Markdown',
-                        )
+        try:
+            await bot.send_message(chat_id=chat_id,
+                            text=choose_fare.text,
+                            reply_markup=await keyboards.sim_fares_keyboard(),
+                            parse_mode='Markdown',
+                            )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
     elif curr_input and curr_input == 'sim_collect_money_address':
         user.curr_input = None
@@ -2440,13 +4069,32 @@ async def handle_text(message):
                             disable_notification=True,
                             )
         except:
-            pass
-
-        await bot.send_message(chat_id=chat_id,
-                                text=reply_text,
-                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
-                                parse_mode='Markdown',
-                                )
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
+        
+        try:
+            await bot.send_message(chat_id=chat_id,
+                                    text=reply_text,
+                                    reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
+                                    parse_mode='Markdown',
+                                    )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
     elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
@@ -2458,11 +4106,22 @@ async def handle_text(message):
             await sync_to_async(user.save)()
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            reply_markup=types.ReplyKeyboardRemove(),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                reply_markup=types.ReplyKeyboardRemove(),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             if curr_input == 'name':
@@ -2482,19 +4141,41 @@ async def handle_text(message):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='familyname_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{family_name}*?'
 
-                    await bot.send_message(chat_id=chat_id,
-                                    text=reply_text,
-                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('familyname', user_language),
-                                    parse_mode='Markdown',
-                                    )
+                    try:
+                        await bot.send_message(chat_id=chat_id,
+                                        text=reply_text,
+                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('familyname', user_language),
+                                        parse_mode='Markdown',
+                                        )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     question = await sync_to_async(TGText.objects.get)(slug='familyname_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'familyname':
                 if flight:
@@ -2513,19 +4194,41 @@ async def handle_text(message):
                     confirm_text = await sync_to_async(TGText.objects.get)(slug='passport_correct_question', language=user_language)
                     reply_text = f'{confirm_text.text} *{passport_num}*?'
 
-                    await bot.send_message(chat_id=chat_id,
-                                    text=reply_text,
-                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('passportnum', user_language),
-                                    parse_mode='Markdown',
-                                    )
+                    try:
+                        await bot.send_message(chat_id=chat_id,
+                                        text=reply_text,
+                                        reply_markup=await keyboards.confirm_or_hand_write_keyboard('passportnum', user_language),
+                                        parse_mode='Markdown',
+                                        )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            )
+                        except:
+                            pass
 
                 else:
                     question = await sync_to_async(TGText.objects.get)(slug='passport_question', language=user_language)
 
-                    await bot.send_message(chat_id=user_id,
-                            text=question.text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'passportnum':
                 passport_num = await utils.validate_passport(input_info)
@@ -2546,30 +4249,63 @@ async def handle_text(message):
                         confirm_text = await sync_to_async(TGText.objects.get)(slug='sex_correct_question', language=user_language)
                         reply_text = f'{confirm_text.text} *{sex}*?'
 
-                        await bot.send_message(chat_id=chat_id,
-                                            text=reply_text,
-                                            reply_markup=await keyboards.confirm_or_hand_write_keyboard('sex', user_language),
-                                            parse_mode='Markdown',
-                                            )
+                        try:
+                            await bot.send_message(chat_id=chat_id,
+                                                text=reply_text,
+                                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('sex', user_language),
+                                                parse_mode='Markdown',
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
 
                     else:
                         question = await sync_to_async(TGText.objects.get)(slug='sex_question', language=user_language)
 
-                        await bot.send_message(chat_id=user_id,
-                                text=question.text,
-                                reply_markup=await keyboards.sex_keyboard(user_language),
-                                parse_mode='Markdown',
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                    text=question.text,
+                                    reply_markup=await keyboards.sex_keyboard(user_language),
+                                    parse_mode='Markdown',
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
 
                 else:
                     error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
                     question = await sync_to_async(TGText.objects.get)(slug='passport_question', language=user_language)
                     reply_text = f'{error.text}\n{question.text}'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'birthdate':
                 birth_date = await utils.validate_date(input_info)
@@ -2592,29 +4328,62 @@ async def handle_text(message):
                         confirm_text = await sync_to_async(TGText.objects.get)(slug='start_correct_question', language=user_language)
                         reply_text = f'{confirm_text.text} *{start_date}*?'
 
-                        await bot.send_message(chat_id=chat_id,
-                                            text=reply_text,
-                                            reply_markup=await keyboards.confirm_or_hand_write_keyboard('startdate', user_language),
-                                            parse_mode='Markdown',
-                                            )
+                        try:
+                            await bot.send_message(chat_id=chat_id,
+                                                text=reply_text,
+                                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('startdate', user_language),
+                                                parse_mode='Markdown',
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
 
                     else:
                         question = await sync_to_async(TGText.objects.get)(slug='start_question', language=user_language)
 
-                        await bot.send_message(chat_id=user_id,
-                                text=question.text,
-                                parse_mode='Markdown',
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                    text=question.text,
+                                    parse_mode='Markdown',
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
 
                 else:
                     error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
                     question = await sync_to_async(TGText.objects.get)(slug='birth_question', language=user_language)
                     reply_text = f'{error.text}\n{question.text}'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'startdate':
                 start_date = await utils.validate_date(input_info)
@@ -2637,29 +4406,62 @@ async def handle_text(message):
                         confirm_text = await sync_to_async(TGText.objects.get)(slug='end_correct_question', language=user_language)
                         reply_text = f'{confirm_text.text} *{end_date}*?'
 
-                        await bot.send_message(chat_id=chat_id,
-                                            text=reply_text,
-                                            reply_markup=await keyboards.confirm_or_hand_write_keyboard('enddate', user_language),
-                                            parse_mode='Markdown',
-                                            )
+                        try:
+                            await bot.send_message(chat_id=chat_id,
+                                                text=reply_text,
+                                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('enddate', user_language),
+                                                parse_mode='Markdown',
+                                                )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                )
+                            except:
+                                pass
 
                     else:
                         question = await sync_to_async(TGText.objects.get)(slug='end_question', language=user_language)
 
-                        await bot.send_message(chat_id=user_id,
-                                text=question.text,
-                                parse_mode='Markdown',
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                    text=question.text,
+                                    parse_mode='Markdown',
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
                 
                 else:
                     error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
                     question = await sync_to_async(TGText.objects.get)(slug='start_question', language=user_language)
                     reply_text = f'{error.text}\n{question.text}'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'enddate':
                 end_date = await utils.validate_date(input_info)
@@ -2675,21 +4477,44 @@ async def handle_text(message):
                     await sync_to_async(user.save)()
 
                     phone_question = await sync_to_async(TGText.objects.get)(slug='phone_question', language=user_language)
-                    await bot.send_message(chat_id=chat_id,
-                            text=phone_question.text,
-                            parse_mode='Markdown',
-                            reply_markup=await keyboards.request_phone_keyboard(user_language),
+
+                    try:
+                        await bot.send_message(chat_id=chat_id,
+                                text=phone_question.text,
+                                parse_mode='Markdown',
+                                reply_markup=await keyboards.request_phone_keyboard(user_language),
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
                 else:
                     error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
                     question = await sync_to_async(TGText.objects.get)(slug='end_question', language=user_language)
                     reply_text = f'{error.text}\n{question.text}'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'phone':
                 phone = await utils.validate_phone(input_info)
@@ -2705,21 +4530,43 @@ async def handle_text(message):
                     await sync_to_async(user.save)()
 
                     question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
-                    await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            reply_markup=await keyboards.request_location_keyboard(user_language),
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                reply_markup=await keyboards.request_location_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
                 
                 else:
                     error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
                     question = await sync_to_async(TGText.objects.get)(slug='phone_question', language=user_language)
                     reply_text = f'{error.text}\n{question.text}'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
+                        except:
+                            pass
 
             elif curr_input == 'address':
                 try:
@@ -2731,7 +4578,15 @@ async def handle_text(message):
                                     disable_notification=True,
                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
                 
                 confirm_application = await sync_to_async(TGText.objects.get)(slug='confirm_application', language=user_language)
                 name = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
@@ -2815,13 +4670,24 @@ async def handle_text(message):
                 user.curr_input = 'confirmation'
                 await sync_to_async(user.save)()
 
-                await bot.send_photo(chat_id=user_id,
-                               caption=reply_text,
-                               photo=photo_id,
-                               reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
-                               parse_mode='Markdown',
-                               disable_notification=False,
-                               )
+                try:
+                    await bot.send_photo(chat_id=user_id,
+                                caption=reply_text,
+                                photo=photo_id,
+                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
         
             elif parcel and curr_input == 'fio_receiver':
                 parcel.fio_receiver = input_info
@@ -2831,10 +4697,21 @@ async def handle_text(message):
                 await sync_to_async(user.save)()
 
                 question = await sync_to_async(TGText.objects.get)(slug='contains_question', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                                text=question.text,
-                                parse_mode='Markdown',
-                                )
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                    text=question.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
             
             elif parcel and curr_input == 'contains':
                 parcel.items_list = input_info
@@ -2844,10 +4721,22 @@ async def handle_text(message):
                 await sync_to_async(user.save)()
 
                 question = await sync_to_async(TGText.objects.get)(slug='phone_receiver_question', language=user_language)
-                await bot.send_message(chat_id=chat_id,
-                                text=question.text,
-                                parse_mode='Markdown',
-                                )
+
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                    text=question.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
             elif parcel and curr_input == 'phone_receiver':
                 phone_receiver = await utils.validate_phone(input_info)
@@ -2883,32 +4772,70 @@ async def handle_text(message):
                         reply_text += f'\n*{phone.text}* {user.phone}'
                         reply_text += f'\n*{address.text}* {user.addresses}'
 
-                        await bot.send_photo(chat_id=user_id,
-                                caption=reply_text,
-                                photo=user.passport_photo_id,
-                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
-                                parse_mode='Markdown',
-                                disable_notification=False,
+                        try:
+                            await bot.send_photo(chat_id=user_id,
+                                    caption=reply_text,
+                                    photo=user.passport_photo_id,
+                                    reply_markup=await keyboards.confirm_or_hand_write_keyboard('passport', user_language),
+                                    parse_mode='Markdown',
+                                    disable_notification=False,
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
 
                     else:
                         passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
 
-                        await bot.send_message(chat_id=user_id,
-                                text=passport_request.text,
-                                parse_mode='Markdown',
+                        try:
+                            await bot.send_message(chat_id=user_id,
+                                    text=passport_request.text,
+                                    parse_mode='Markdown',
+                                    )
+                        except:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='1',
+                                    error_type='2',
+                                    main_user=user_id,
+                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
                                 )
+                            except:
+                                pass
 
                 else:
                     error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
                     question = await sync_to_async(TGText.objects.get)(slug='phone_receiver_question', language=user_language)
                     reply_text = f'{error.text}\n{question.text}'
 
-                    await bot.send_message(chat_id=user_id,
-                            text=reply_text,
-                            parse_mode='Markdown',
+                    try:
+                        await bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='1',
+                                error_type='2',
+                                main_user=user_id,
+                                description=f'Не удалось отправить сообщение пользователю {user_id}.',
                             )
-
+                        except:
+                            pass
+    
+    else:
+        await sync_to_async(UserMessage.objects.create)(
+            user=user,
+            message=input_info,
+        )
 
 @dp.message(F.location)
 async def handle_location(message: types.Message):
@@ -2944,7 +4871,15 @@ async def handle_location(message: types.Message):
                             disable_notification=True,
                             )
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
         user.lat = lat
         user.lon = lon
@@ -2956,17 +4891,40 @@ async def handle_location(message: types.Message):
             confirm_text = await sync_to_async(TGText.objects.get)(slug='name_correct_question', language=user_language)
             reply_text = f'{confirm_text.text} *{user.name}*?'
 
-            await bot.send_message(chat_id=chat_id,
-                            text=reply_text,
-                            reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=reply_text,
+                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('name', user_language),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+
         else:
             question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
-            await bot.send_message(chat_id=chat_id,
-                            text=question.text,
-                            parse_mode='Markdown',
-                            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=question.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif curr_input and curr_input == 'sim_collect_money_address':
         lat = message.location.latitude
@@ -2985,7 +4943,15 @@ async def handle_location(message: types.Message):
                             disable_notification=True,
                             )
         except:
-            pass
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
         user.lat = lat
         user.lon = lon
@@ -2996,11 +4962,22 @@ async def handle_location(message: types.Message):
         address_question = await sync_to_async(TGText.objects.get)(slug='address_correct_question', language=user_language)
         reply_text = f'{address_question.text}\n*{address}*'
 
-        await bot.send_message(chat_id=chat_id,
-                                text=reply_text,
-                                reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
-                                parse_mode='Markdown',
-                                )
+        try:
+            await bot.send_message(chat_id=chat_id,
+                                    text=reply_text,
+                                    reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('address', user_language),
+                                    parse_mode='Markdown',
+                                    )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
     
     elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
@@ -3012,11 +4989,23 @@ async def handle_location(message: types.Message):
             await sync_to_async(user.save)()
 
             error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
-            await bot.send_message(chat_id=user_id,
-                            text=error.text,
-                            reply_markup=types.ReplyKeyboardRemove(),
-                            parse_mode='Markdown',
-                            )
+
+            try:
+                await bot.send_message(chat_id=user_id,
+                                text=error.text,
+                                reply_markup=types.ReplyKeyboardRemove(),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
         else:
             if curr_input == 'address':
@@ -3047,7 +5036,15 @@ async def handle_location(message: types.Message):
                                     disable_notification=True,
                                     )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
 
                 if flight:
                     flight.address = location_address
@@ -3120,13 +5117,25 @@ async def handle_location(message: types.Message):
                 user.curr_input = 'confirmation'
                 await sync_to_async(user.save)()
 
-                await bot.send_photo(chat_id=user_id,
-                               caption=reply_text,
-                               photo=photo_id,
-                               reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
-                               parse_mode='Markdown',
-                               disable_notification=False,
-                               )
+                try:
+                    await bot.send_photo(chat_id=user_id,
+                                caption=reply_text,
+                                photo=photo_id,
+                                reply_markup=await keyboards.confirm_or_hand_write_keyboard('confirmation', user_language),
+                                parse_mode='Markdown',
+                                disable_notification=False,
+                                )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
+
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)

@@ -10,7 +10,7 @@ from django_ckeditor_5.fields import CKEditor5Field
 
 from core.utils import send_message_on_telegram
 from drivers.models import Driver
-
+from config import MESSAGES_CHAT_ID
 
 SEX_CHOICES = (
     ('M', 'Мужской',),
@@ -122,11 +122,16 @@ class TGUser(models.Model):
     
     def __str__(self):
         if self.username:
-            return f'@{self.username} {self.user_id}'
+            result = f'@{self.username} {self.user_id}'
         elif self.name:
-            return f'{self.name} {self.user_id}'
+            result = f'{self.name} {self.user_id}'
         else:
-            return self.user_id
+            result = self.user_id
+        
+        if self.sim_cards.first():
+            result += f' ({self.sim_cards.first().sim_phone})'
+        
+        return result
     
     def get_thumbnail(self):
         image = '-'
@@ -397,6 +402,33 @@ class Receipt(models.Model):
         verbose_name = 'квитанция'
         verbose_name_plural = 'квитанции'
         ordering = ('-notify_time',)
+
+
+class UserMessage(models.Model):
+    user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='stupid_messages', null=True, blank=True)
+    message = models.TextField(verbose_name='Текст', null=True, blank=True)
+    created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'сообщение от пользователя'
+        verbose_name_plural = 'сообщения от пользователей'
+        ordering = ('-created_at',)
+    
+    def save(self, *args, **kwargs) -> None:
+        text = f'*TG id:* {self.user.user_id}'
+        if self.user.username:
+            text += f'\n*Имя пользователя:* @{self.user.username}'
+        
+        text += '\n\n'
+        text += f'*Сообщение:*\n{self.message}'
+
+        params = {
+                'chat_id': MESSAGES_CHAT_ID,
+                'text': text,
+                'parse_mode': "Markdown",
+            }
+        send_message_on_telegram(params)
+        super().save(*args, **kwargs)
 
 
 @receiver(post_save, sender=Notification)

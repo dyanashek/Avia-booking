@@ -10,6 +10,7 @@ from django.db.models import Q
 from django.shortcuts import redirect, get_object_or_404
 
 from core.models import UsersSim
+from errors.models import AppError
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission, Report
 from money_transfer.utils import (update_delivery_pickup_status, update_credit_status, send_pickup_address,
                                   delivery_to_gspread)
@@ -117,13 +118,27 @@ def stop_status(request):
                     transfer.save()
                     try:
                         update_credit_status(transfer.id)
-                    except:
-                        pass
+                    except Exception as ex:
+                        try:
+                            AppError.objects.create(
+                                source='5',
+                                error_type='6',
+                                description=f'Не удалось перенести данные в гугл таблицу (отправка денег, изменение статуса кредита на "не выдано в кредит"). {transfer.id}. {ex}',
+                            )
+                        except:
+                            pass
 
                 try:
                     update_delivery_pickup_status(delivery.pk, driver_comment)
-                except:
-                    pass
+                except Exception as ex:
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='6',
+                            description=f'Не удалось перенести данные в гугл таблицу (отправка денег, изменение статуса на "получено"). {delivery.id}. {ex}',
+                        )
+                    except:
+                        pass
             else:
                 attempted = Status.objects.get(slug='attempted')
                 delivery.status = attempted
@@ -210,8 +225,15 @@ def delivery_resend_gspread(request, pk):
                 delivery.status_message = delivery.status_message.replace('Ошибка при записи в гугл таблицу.', '')
 
             delivery.save()
-        except:
-            pass
+        except Exception as ex:
+            try:
+                AppError.objects.create(
+                    source='5',
+                    error_type='6',
+                    description=f'Не удалось перенести данные в гугл таблицу (отправка денег, создание через кнопку). {delivery.id}. {ex}',
+                )
+            except:
+                pass
 
 
     return redirect('/admin/money_transfer/delivery/')

@@ -8,7 +8,8 @@ from django.http import HttpResponse
 from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
-                         UsersSim, Notification, OldSim, ImprovedNotification, LinkButton, Receipt)
+                         UsersSim, Notification, OldSim, ImprovedNotification, LinkButton, Receipt,
+                         UserMessage,)
 from core.utils import create_excel_file
 
 @admin.register(Language)
@@ -80,9 +81,8 @@ class TGUserAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'active',)
     list_filter = ('active',)
     fields = ('user_id', 'language', 'username', 'active', 'name', 'family_name',
-              'phone', 'addresses', 'sex', 'birth_date', 'start_date',
+              'phone', 'addresses', 'lat', 'lon', 'sex', 'birth_date', 'start_date',
                'end_date', 'passport_number', 'passport_photo_user', 'created_at')
-
 
 
 @admin.register(Parcel)
@@ -348,3 +348,15 @@ class ImprovedNotificationAdmin(admin.ModelAdmin):
 class ReceiptNotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'link', 'notify_time', 'success',)
     list_filter = ('success',)
+    search_fields = ('user__user_id',)
+
+
+@admin.register(UserMessage)
+class UserMessageAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at',)
+    readonly_fields = ('user', 'message',)
+    date_hierarchy = 'created_at'
+
+    def has_module_permission(self, request):
+        return False
+        
