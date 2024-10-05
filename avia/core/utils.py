@@ -348,7 +348,7 @@ async def create_icount_client(user, phone):
         icount_client_id = False
         response = None
 
-    if response is None:
+    if response is not None:
         try:
             icount_client_id = response.json().get('client_id')
         except Exception as ex:
@@ -424,7 +424,7 @@ async def create_icount_invoice(user_id, amount, is_old_sim=False):
         except:
             pass
 
-    if response is None:
+    if response is not None:
         try:
             doc_url = response.json().get('doc_url')
         except Exception as ex:
@@ -589,7 +589,7 @@ def send_pickup_address_sync(application, application_type):
         except:
             pass
     
-    if response is None:
+    if response is not None:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
             try:
@@ -684,7 +684,7 @@ def send_sim_delivery_address_sync(phone, user, fare):
         except:
             pass
     
-    if response is None:
+    if response is not None:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
             try:
@@ -745,7 +745,7 @@ def create_icount_client_sync(user, phone):
         except:
             pass
 
-    if response is None:
+    if response is not None:
         try:
             icount_client_id = response.json().get('client_id')
         except Exception as ex:
@@ -823,7 +823,7 @@ def send_sim_money_collect_address_sync(phone, user, debt):
         except:
             pass
     
-    if response is None:
+    if response is not None:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
             try:
@@ -905,7 +905,7 @@ def create_icount_invoice_sync(user_id, amount, is_old_sim=False):
         except:
             pass
     
-    if response is None:
+    if response is not None:
         try:
             doc_url = response.json().get('doc_url')
         except:

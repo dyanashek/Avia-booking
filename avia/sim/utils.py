@@ -37,7 +37,7 @@ def create_icount_client(name, phone):
         except:
             pass
 
-    if response is None:
+    if response is not None:
         try:
             icount_client_id = response.json().get('client_id')
         except Exception as ex:

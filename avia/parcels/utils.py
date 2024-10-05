@@ -57,7 +57,7 @@ def send_parcel_pickup_address(application):
         except:
             pass
     
-    if response is None:
+    if response is not None:
         if response.status_code == 200:
             stop_id = response.json().get('stop').get('id')
             try:
