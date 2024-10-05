@@ -78,7 +78,7 @@ async def start_message(message: types.Message, command: CommandObject):
                     admin_sim.to_main_bot = True
                     await sync_to_async(admin_sim.save)()
 
-                    if users_sim.debt >= 200:
+                    if users_sim.debt >= config.SIM_DEBT_LIMIT:
                         users_sim.pay_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()
                         language = await sync_to_async(lambda: user.language)()
                         if not language:
@@ -2590,7 +2590,7 @@ async def callback_query(call: types.CallbackQuery):
         elif info == 'address':
             sim_card = await sync_to_async(user.sim_cards.first)()
 
-            if sim_card and sim_card.circuit_id_collect is None and sim_card.debt >= 200:
+            if sim_card and sim_card.circuit_id_collect is None and sim_card.debt >= config.SIM_DEBT_LIMIT:
                 reply = await sync_to_async(TGText.objects.get)(slug='collect_sim_money', language=user_language)
 
                 try:

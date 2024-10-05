@@ -9,6 +9,8 @@ from core.models import UsersSim, TGText, Notification, OldSim, ImprovedNotifica
 from core.utils import send_message_on_telegram, send_improved_message_on_telegram
 from sim.models import SimCard
 
+from config import SIM_DEBT_LIMIT
+
 
 def add_debt():
     users_sims = UsersSim.objects.filter(Q(next_payment=datetime.datetime.utcnow().date()) &
@@ -23,7 +25,7 @@ def add_debt():
 def add_pay_date():
     users_sims = UsersSim.objects.filter(Q(Q(pay_date__isnull=True) | Q(pay_date__lt=datetime.datetime.utcnow().date())) & 
                                          Q(ready_to_pay=False) & 
-                                         Q(debt__gte=200)).all()
+                                         Q(debt__gte=SIM_DEBT_LIMIT)).all()
     for users_sim in users_sims:
         users_sim.pay_date = datetime.datetime.utcnow().date()
         users_sim.notified = False

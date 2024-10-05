@@ -30,3 +30,5 @@ PARSE_COUNT = 2 # сколько параметров в паспорте алг
 
 ICOUNT_CREATE_USER_ENDPOINT = 'https://api.icount.co.il/api/v3.php/client/create'
 ICOUNT_CREATE_INVOICE_ENDPOINT = 'https://api.icount.co.il/api/v3.php/doc/create'
+
+SIM_DEBT_LIMIT = 300
