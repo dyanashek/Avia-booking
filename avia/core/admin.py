@@ -348,7 +348,7 @@ class ImprovedNotificationAdmin(admin.ModelAdmin):
 class ReceiptNotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'link', 'notify_time', 'success',)
     list_filter = ('success',)
-    search_fields = ('user__user_id',)
+    search_fields = ('user__user_id', 'user__sim_cards__sim_phone',)
 
 
 @admin.register(UserMessage)
