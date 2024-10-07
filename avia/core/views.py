@@ -22,10 +22,7 @@ from core.utils import (send_pickup_address_sync, send_sim_delivery_address_sync
 def send_message(request):
     tg_id = request.POST.get('tg_id')
     text = request.POST.get('message')
-    print(tg_id)
-    print(text)
     if tg_id and text:
-        print(2)
         user = get_object_or_404(TGUser, user_id=tg_id)
         Notification.objects.create(
                     user=user,
