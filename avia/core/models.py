@@ -141,6 +141,17 @@ class TGUser(models.Model):
     get_thumbnail.allow_tags = True
     get_thumbnail.short_description = u'Паспорт'
 
+    @property
+    def newest_message(self):
+        outbox = datetime.datetime.min
+        inbox = datetime.datetime.min
+        if self.stupid_messages.first():
+            outbox = self.stupid_messages.first().created_at
+        if self.notifications.first():
+            inbox = self.notifications.first().notify_time
+        
+        return max(outbox, inbox)
+
 
 class Parcel(models.Model):
     variation = models.ForeignKey(ParcelVariation, verbose_name='Вариант посылки', on_delete=models.SET_NULL, related_name='parcels', null=True)
@@ -417,7 +428,7 @@ class UserMessage(models.Model):
     def save(self, *args, **kwargs) -> None:
         text = f'*TG id:* {self.user.user_id}'
         if self.user.username:
-            text += f'\n*Имя пользователя:* @{self.user.username}'
+            text += f'\n*Имя пользователя: @{self.user.username}*'
         
         text += '\n\n'
         text += f'*Сообщение:*\n{self.message}'

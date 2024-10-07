@@ -197,6 +197,15 @@ async def ready_pay_keyboard(language):
     return keyboard.as_markup()
 
 
+async def ready_pay_only_keyboard(language):
+    keyboard = InlineKeyboardBuilder()
+
+    ready_pay_button = await sync_to_async(TGText.objects.get)(slug='ready_pay_button', language=language)
+
+    keyboard.row(types.InlineKeyboardButton(text=ready_pay_button.text, callback_data='readypay'))
+
+    return keyboard.as_markup()
+
 #* <------------------------------------------------->
 #! КЛАВИАТУРЫ ДЛЯ СИМОК
 #* <------------------------------------------------->

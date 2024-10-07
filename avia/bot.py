@@ -20,23 +20,24 @@ from filer.models import Image, Folder
 from django.db.models import Q
 
 from core.models import (TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, 
-                         UsersSim, UserMessage)
+                         UsersSim, UserMessage, Notification)
 from errors.models import AppError
 from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address,
-                        create_icount_client, get_address)
+                        create_icount_client, get_address,)
 from sim.models import SimCard
 
 import config
 import keyboards
 import functions
 import utils
+from filters import ChatTypeFilter
 
 
 bot = Bot(token=config.TELEGRAM_TOKEN)
 dp = Dispatcher()
 
 
-@dp.message(Command("start"))
+@dp.message(ChatTypeFilter(chat_type='private'), Command("start"))
 async def start_message(message: types.Message, command: CommandObject):
     '''Handles start command.'''
     user_id = str(message.from_user.id)
@@ -166,7 +167,7 @@ async def start_message(message: types.Message, command: CommandObject):
                 pass
 
 
-@dp.message(Command("language"))
+@dp.message(ChatTypeFilter(chat_type='private'), Command("language"))
 async def language_message(message: types.Message):
     user_id = str(message.from_user.id)
     username = message.from_user.username
@@ -2225,10 +2226,16 @@ async def callback_query(call: types.CallbackQuery):
                     )
                 except:
                     pass
+            
+            if users_sim.circuit_id_collect is None:
+                curr_keyboard = await keyboards.ready_pay_only_keyboard(user_language)
+            else:
+                curr_keyboard = InlineKeyboardBuilder().as_markup()
 
             try:
                 await bot.send_message(chat_id=chat_id,
                                         text=reply_text,
+                                        reply_markup=curr_keyboard,
                                         parse_mode='Markdown',
                                         )
             except:
@@ -2590,7 +2597,7 @@ async def callback_query(call: types.CallbackQuery):
         elif info == 'address':
             sim_card = await sync_to_async(user.sim_cards.first)()
 
-            if sim_card and sim_card.circuit_id_collect is None and sim_card.debt >= config.SIM_DEBT_LIMIT:
+            if sim_card and sim_card.circuit_id_collect is None: # and sim_card.debt >= config.SIM_DEBT_LIMIT
                 reply = await sync_to_async(TGText.objects.get)(slug='collect_sim_money', language=user_language)
 
                 try:
@@ -3424,7 +3431,7 @@ async def callback_query(call: types.CallbackQuery):
                     pass
 
 
-@dp.message(F.photo)
+@dp.message(ChatTypeFilter(chat_type='private'), F.photo)
 async def handle_photo(message: types.Message):
     user_id = str(message.from_user.id)
     username = message.from_user.username
@@ -3717,7 +3724,7 @@ async def handle_photo(message: types.Message):
                     pass
 
 
-@dp.message(F.contact)
+@dp.message(ChatTypeFilter(chat_type='private'), F.contact)
 async def handle_contact(message: types.Message):
     phone = message.contact.phone_number
     user_id = str(message.from_user.id)
@@ -3791,7 +3798,7 @@ async def handle_contact(message: types.Message):
                     pass
 
 
-@dp.message(F.text)
+@dp.message(ChatTypeFilter(chat_type='private'), F.text)
 async def handle_text(message):
     """Handles message with type text."""
 
@@ -4837,7 +4844,8 @@ async def handle_text(message):
             message=input_info,
         )
 
-@dp.message(F.location)
+
+@dp.message(ChatTypeFilter(chat_type='private'), F.location)
 async def handle_location(message: types.Message):
     user_id = str(message.from_user.id)
     username = message.from_user.username
@@ -5135,6 +5143,24 @@ async def handle_location(message: types.Message):
                         )
                     except:
                         pass
+
+
+@dp.message(ChatTypeFilter(chat_type='group'), F.text)
+async def handle_text(message):
+    reply_text = message.text
+    if message.reply_to_message:
+        text = message.reply_to_message.text
+
+        if 'TG id: ' in text:
+            tg_id = await utils.extract_tg_id(text)
+
+            if tg_id:
+                user = await sync_to_async(TGUser.objects.filter(user_id=tg_id).first)()
+                if user:
+                    await sync_to_async(Notification.objects.create)(
+                                user=user,
+                                text=reply_text,
+                            )
 
 
 async def main():

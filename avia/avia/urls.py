@@ -29,6 +29,7 @@ from sim import views as sim_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('send_message/', core_views.send_message, name='send_message'),
     path('get_sender_addresses/', money_transfer_views.get_sender_addresses, name='sender_addresses'),
     path('get_sender_receivers/', money_transfer_views.get_sender_receivers, name='sender_receivers'),
     path('get_receiver_addresses/', money_transfer_views.get_receiver_addresses, name='receiver_addresses'),
@@ -48,6 +49,8 @@ urlpatterns = [
     path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
     path('icount/admin-sim/<int:pk>/', sim_view.sim_resend_icount, name='sim_admin_icount'),
     path('money/report/', money_transfer_views.construct_report, name='money_transfer_report'),
+    path('dialog/<str:dialog>/', core_views.DialogView.as_view(), name='dialog'),
+    path('dialog/', core_views.DialogView.as_view(), name='dialogs'),
     path("ckeditor5/", include('django_ckeditor_5.urls')),
 ]
 

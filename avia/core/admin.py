@@ -353,6 +353,8 @@ class ReceiptNotificationAdmin(admin.ModelAdmin):
 
 @admin.register(UserMessage)
 class UserMessageAdmin(admin.ModelAdmin):
+    change_list_template = "admin/user_messages_list.html"
+
     list_display = ('user', 'created_at',)
     readonly_fields = ('user', 'message',)
     date_hierarchy = 'created_at'

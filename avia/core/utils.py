@@ -238,7 +238,13 @@ async def send_sim_delivery_address(phone, user, fare):
 
 
 async def send_sim_money_collect_address(phone, user, debt):
-    notes = f'Симка - сбор денег, {phone}, {debt} ₪'
+    notes = f'Симка, {phone},'
+    if user.name:
+        notes += f' {user.name}'
+    if user.family_name:
+        notes += f' {user.family_name}'
+
+    notes += f', {debt} ₪'
 
     if not user.lat or not user.lon:
         data = {
@@ -772,7 +778,13 @@ def create_icount_client_sync(user, phone):
 
 
 def send_sim_money_collect_address_sync(phone, user, debt):
-    notes = f'Симка - сбор денег, {phone}, {debt} ₪'
+    notes = f'Симка, {phone},'
+    if user.name:
+        notes += f' {user.name}'
+    if user.family_name:
+        notes += f' {user.family_name}'
+
+    notes += f', {debt} ₪'
 
     if not user.lat or not user.lon:
         data = {

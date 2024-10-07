@@ -6,6 +6,18 @@ async def extract_digits(input_string):
     return re.sub(r'\D', '', input_string)
 
 
+async def extract_tg_id(message):
+    pattern = r"TG id: (\d+)"
+
+    match = re.search(pattern, message)
+
+    tg_id = None
+    if match:
+        tg_id = match.group(1)
+
+    return tg_id
+
+
 async def validate_phone(phone):
     phone = await extract_digits(phone)
     if len(phone) > 6:
