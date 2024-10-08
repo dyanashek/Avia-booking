@@ -68,7 +68,7 @@ class ReceiverAdmin(VersionAdmin):
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
     change_list_template = "admin/delivery_change_list.html"
-    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver',)
+    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver', 'created_at',)
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status', 'created_by', 'driver')
     inlines = (TransferInline,)
