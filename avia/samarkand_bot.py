@@ -192,7 +192,7 @@ async def callback_query(call: types.CallbackQuery):
                     await update_transfer_pass_status(transfer_id, curr_date, credit)
                 except Exception as ex:
                     try:
-                        AppError.objects.create(
+                        await sync_to_async(AppError.objects.create)(
                             source='5',
                             error_type='6',
                             description=f'Не удалось обновить статус кредита в гугл таблицах (отправка денег, замена на "в кредит") {transfer_id}. {ex}',
