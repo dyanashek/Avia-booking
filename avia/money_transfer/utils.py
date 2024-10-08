@@ -201,7 +201,7 @@ def create_excel_file(data, date_from, date_to):
 
 async def get_transfer_row(transfer_id):
     try:
-        row = work_sheet.col_values(4)
+        row = work_sheet.col_values(5)
         row_num = row.index(transfer_id)
         return  row_num + 1
     except:
@@ -215,7 +215,7 @@ async def update_transfer_pass_status(transfer_id, date, credit):
 
 def update_credit_status(transfer_id):
     try:
-        row = work_sheet.col_values(4)
+        row = work_sheet.col_values(5)
         row_num = row.index(str(transfer_id))
         row_num += 1
     except:
