@@ -235,10 +235,10 @@ class Delivery(models.Model):
                                 Q(created_at__date__lte=end_date)).select_related('status').all()
 
         for delivery in deliveries:
-            brutto += delivery.usd_amount
+            brutto += delivery.total_usd
 
             if delivery.status.slug == 'api':
-                not_picked += delivery.usd_amount
+                not_picked += delivery.total_usd
 
             elif delivery.status.slug == 'finished':
                 profit += delivery.commission
