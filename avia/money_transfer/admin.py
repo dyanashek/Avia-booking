@@ -147,7 +147,7 @@ class DeliveryAdmin(VersionAdmin):
         return '-'
     
     def get_list_display(self, request, obj=None):
-        fields = ['pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes']
+        fields = ['pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes', 'created_at',]
         for delivery in super().get_queryset(request):
             if delivery.circuit_api is False:
                 if 'to_circuit_button' not in fields:
