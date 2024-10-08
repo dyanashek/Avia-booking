@@ -167,7 +167,7 @@ async def callback_query(call: types.CallbackQuery):
                     pass
 
             transfer = await sync_to_async(Transfer.objects.filter(id=transfer_id).first)()
-            if transfer:
+            if transfer and transfer.credit is None:
                 curr_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3))
                 transfer.pass_date = curr_date
                 curr_date = curr_date.strftime("%d.%m.%Y %H:%M")
