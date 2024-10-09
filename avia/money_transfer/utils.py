@@ -40,7 +40,7 @@ def send_pickup_address(sender, delivery, codes):
     if delivery.commission:
         items.append(f'+{int(delivery.commission)}₪')
 
-    notes = f'{codes}L {sender.phone} {sender.name} '
+    notes = f'{codes}| {sender.phone} {sender.name} '
     notes += ' '.join(items)
     
     data = {
