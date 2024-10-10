@@ -73,11 +73,17 @@ def stop_to_report(stop_id):
 def extract_driver(stop_id):
     response = requests.get(f'{settings.CURCUIT_END_POINT}/{stop_id}', headers=settings.CURCUIT_HEADER)
     stop = response.json()
-
+    order_code = False
     success = stop.get('deliveryInfo').get('succeeded')
-    order_code = stop.get('orderInfo').get('sellerOrderId')
 
-    if success and order_code in ['1', '2', '3']:
-        return order_code
+    if success:
+        state = stop.get('deliveryInfo').get('state')
+        if state == 'delivered_to_recipient':
+            order_code = '1'
+        elif state == 'delivered_to_third_party': 
+            order_code = '2'
+        elif state == 'delivered_to_mailbox':
+            order_code = '3'
     
-    return False
+    return order_code
+    
