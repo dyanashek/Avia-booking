@@ -74,3 +74,18 @@ def create_excel_file(data, date_from, date_to):
 
 def extract_digits(input_string):
     return re.sub(r'\D', '', input_string)
+
+
+def create_excel_file_drivers(data, date_from, date_to):
+    data_frame = pandas.DataFrame(list(data))
+    data_frame.columns = ['Водитель', 
+                          'Шекели', 
+                          'Кол-во адресов']
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+        date_from = date_from.strftime('%d.%m.%Y')
+        date_to = date_to.strftime('%d.%m.%Y')
+        data_frame.to_excel(temp_file.name, index=False, sheet_name=f'{date_from} - {date_to}')
+        
+        return temp_file.name
+        

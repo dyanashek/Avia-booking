@@ -1,5 +1,5 @@
 import os
-
+import datetime
 import django
 
 import asyncio
@@ -17,6 +17,7 @@ from core.models import UsersSim, Notification, TGText, Language
 from errors.models import AppError
 from core.utils import create_icount_invoice
 from drivers.models import Driver
+from sim.models import Collect, Report
 
 import config
 import keyboards
@@ -207,6 +208,37 @@ async def callback_query(call: types.CallbackQuery):
                             )
                         except:
                             pass
+                    
+                    try:
+                        collect = await sync_to_async(Collect.objects.filter(sim=sim, amount__isnull=True).first)()
+                        if collect:
+                            collect.amount = amount
+                            await sync_to_async(collect.save)()
+
+                            sim_collect_report = await sync_to_async(Report.objects.get_or_create)(created_at=datetime.datetime.utcnow().date())
+                            if collect.driver == '1':
+                                sim_collect_report.first_driver_ils += amount
+                                sim_collect_report.first_driver_points += 1
+                            elif collect.driver == '2':
+                                sim_collect_report.second_driver_ils += amount
+                                sim_collect_report.second_driver_points += 1
+                            elif collect.driver == '3':
+                                sim_collect_report.third_driver_ils += amount
+                                sim_collect_report.third_driver_points += 1
+                            
+                            await sync_to_async(sim_collect_report.save)()
+                        else:
+                            try:
+                                await sync_to_async(AppError.objects.create)(
+                                    source='2',
+                                    error_type='10',
+                                    main_user=user_id,
+                                    description=f'Не удалось внести сумму собранную за симкарту в сущность забора и отчет. Сумма {amount}, телефон {sim.sim_phone}.',
+                                )
+                            except:
+                                pass
+                    except:
+                        pass
 
                     invoice_url = await create_icount_invoice(sim.icount_id, amount, sim.is_old_sim)
                     if invoice_url:

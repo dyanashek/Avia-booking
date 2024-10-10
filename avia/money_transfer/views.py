@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.shortcuts import redirect, get_object_or_404
 
+from sim.models import Collect
 from core.models import UsersSim
 from errors.models import AppError
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission, Report
@@ -16,7 +17,7 @@ from money_transfer.utils import (update_delivery_pickup_status, update_credit_s
                                   delivery_to_gspread)
 from core.utils import send_message_on_telegram
 from drivers.utils import construct_collect_sim_money_message, construct_delivery_sim_message
-from money_transfer.additional_utils import report_to_db, stop_to_report
+from money_transfer.additional_utils import report_to_db, stop_to_report, extract_driver
 
 from config import TELEGRAM_DRIVERS_TOKEN
 
@@ -155,6 +156,32 @@ def stop_status(request):
 
         users_sim = UsersSim.objects.filter(circuit_id=stop_id).first()
         if users_sim:
+            try:
+                curr_driver = extract_driver(stop_id)
+                if curr_driver:
+                    Collect.objects.create(
+                        sim=users_sim,
+                        driver=curr_driver,
+                    )
+                else:
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='9',
+                            description=f'Не удалось выявить водителя и создать сущность забора денег за симкарту (вторичный). {users_sim.sim_phone}.',
+                        )
+                    except:
+                        pass
+            except Exception as ex:
+                try:
+                    AppError.objects.create(
+                        source='5',
+                        error_type='9',
+                        description=f'Не удалось выявить водителя и создать сущность забора денег за симкарту (первичный). {users_sim.sim_phone}. {ex}',
+                    )
+                except:
+                    pass
+
             params = construct_delivery_sim_message(users_sim, driver_id)
             if params:
                 try:
@@ -165,6 +192,32 @@ def stop_status(request):
     elif order_id and order_id == '5' and status:
         users_sim = UsersSim.objects.filter(circuit_id_collect=stop_id).first()
         if users_sim:
+            try:
+                curr_driver = extract_driver(stop_id)
+                if curr_driver:
+                    Collect.objects.create(
+                        sim=users_sim,
+                        driver=curr_driver,
+                    )
+                else:
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='9',
+                            description=f'Не удалось выявить водителя и создать сущность забора денег за симкарту (вторичный). {users_sim.sim_phone}.',
+                        )
+                    except:
+                        pass
+            except Exception as ex:
+                try:
+                    AppError.objects.create(
+                        source='5',
+                        error_type='9',
+                        description=f'Не удалось выявить водителя и создать сущность забора денег за симкарту (вторичный). {users_sim.sim_phone}. {ex}',
+                    )
+                except:
+                    pass
+
             users_sim.circuit_id_collect = None
             users_sim.ready_to_pay = False
             users_sim.pay_date = None

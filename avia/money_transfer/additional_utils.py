@@ -68,4 +68,16 @@ def stop_to_report(stop_id):
 
             curr_delivery.save()
             report.save()
-            
+
+
+def extract_driver(stop_id):
+    response = requests.get(f'{settings.CURCUIT_END_POINT}/{stop_id}', headers=settings.CURCUIT_HEADER)
+    stop = response.json()
+
+    success = stop.get('deliveryInfo').get('succeeded')
+    order_code = stop.get('orderInfo').get('sellerOrderId')
+
+    if success and order_code in ['1', '2', '3']:
+        return order_code
+    
+    return False
