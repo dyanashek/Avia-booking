@@ -215,7 +215,7 @@ async def callback_query(call: types.CallbackQuery):
                             collect.amount = amount
                             await sync_to_async(collect.save)()
 
-                            sim_collect_report = await sync_to_async(Report.objects.get_or_create)(report_date=datetime.datetime.utcnow().date())
+                            sim_collect_report, _ = await sync_to_async(Report.objects.get_or_create)(report_date=datetime.datetime.utcnow().date())
                             if collect.driver == '1':
                                 sim_collect_report.first_driver_ils += amount
                                 sim_collect_report.first_driver_points += 1
