@@ -5145,22 +5145,22 @@ async def handle_location(message: types.Message):
                         pass
 
 
-@dp.message(ChatTypeFilter(chat_type='group'), F.text)
-async def handle_text(message):
-    reply_text = message.text
-    if message.reply_to_message:
-        text = message.reply_to_message.text
+# @dp.message(ChatTypeFilter(chat_type='group'), F.text)
+# async def handle_text(message):
+#     reply_text = message.text
+#     if message.reply_to_message:
+#         text = message.reply_to_message.text
 
-        if 'TG id: ' in text:
-            tg_id = await utils.extract_tg_id(text)
+#         if 'TG id: ' in text:
+#             tg_id = await utils.extract_tg_id(text)
 
-            if tg_id:
-                user = await sync_to_async(TGUser.objects.filter(user_id=tg_id).first)()
-                if user:
-                    await sync_to_async(Notification.objects.create)(
-                                user=user,
-                                text=reply_text,
-                            )
+#             if tg_id:
+#                 user = await sync_to_async(TGUser.objects.filter(user_id=tg_id).first)()
+#                 if user:
+#                     await sync_to_async(Notification.objects.create)(
+#                                 user=user,
+#                                 text=reply_text,
+#                             )
 
 
 async def main():
