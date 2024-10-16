@@ -430,6 +430,18 @@ class UserMessage(models.Model):
         if self.user.username:
             text += f'\n*Имя пользователя: @{self.user.username}*'
         
+        try:
+            sim_card = self.user.sim_cards.first()
+            if sim_card:
+                phone = sim_card.sim_phone
+            else:
+                phone = None
+        except:
+            phone = None
+        
+        if phone:
+            text += f'\n*Номер сим карты*: {phone}'
+            
         text += '\n\n'
         text += f'*Сообщение:*\n{self.message}'
 
