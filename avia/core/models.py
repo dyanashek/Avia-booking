@@ -431,11 +431,7 @@ class UserMessage(models.Model):
             text += f'\n*Имя пользователя: @{self.user.username}*'
         
         try:
-            sim_card = self.user.sim_cards.objects.first()
-            if sim_card:
-                phone = sim_card.sim_phone
-            else:
-                phone = None
+            phone = self.user.sim_cards.first().sim_phone
         except:
             phone = None
         
