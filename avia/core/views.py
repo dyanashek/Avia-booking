@@ -128,9 +128,12 @@ class DialogView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        users_with_dialogs = TGUser.objects.filter(
-            Q(stupid_messages__isnull=False) | Q(notifications__isnull=False)
-        ).distinct()
+        inbox_filter = self.request.GET.get('inbox_filter')
+        if inbox_filter and inbox_filter == 'active':
+            users_with_dialogs = TGUser.objects.filter(stupid_messages__isnull=False).distinct()
+            context['inbox_filter'] = True
+        else:
+            users_with_dialogs = TGUser.objects.distinct()
 
         users_last_message = []
 

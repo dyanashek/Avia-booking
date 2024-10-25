@@ -22,9 +22,45 @@
             overflow-y: auto;
         }
 
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
         .sidebar h2 {
             font-size: 20px;
-            margin-bottom: 10px;
+            margin: 0;
+        }
+
+        .filter-outgoing {
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: #ddd;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;  /* Убирает подчеркивание */
+            color: inherit;
+        }
+
+        .filter-outgoing.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+        }
+
+        .search-box input {
+            width: 95%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
 
         .dialog-list {
@@ -138,11 +174,21 @@
 </head>
 <body>
     <div class="sidebar">
-        <h2>Диалоги</h2>
+        <div class="sidebar-header">
+            <h2>Диалоги</h2>
+            {% if inbox_filter %}
+                <a href="{% url 'dialogs' %}" id="filter-outgoing" class="filter-outgoing active">Есть входящие</a>
+            {% else %}
+                <a href="{% url 'dialogs' %}?inbox_filter=active" id="filter-outgoing" class="filter-outgoing">Есть входящие</a>
+            {% endif %}
+        </div>
+        <div class="search-box">
+            <input type="text" id="search-dialogs" placeholder="Поиск диалога... (по номеру/id/нику)">
+        </div>
         <ul class="dialog-list">
             {% for dialog in dialogs %}
             <a href="{% url 'dialog' dialog=dialog.user_id %}" style="text-decoration: none; color: inherit;">
-                <li class="dialog-item {% if dialog == curr_dialog %}active{% endif %}">
+                <li class="dialog-item {% if dialog == curr_dialog %}active{% endif %}" data-search="{{ dialog }}">
                     <span>{{ dialog.user_id }}{% if dialog.username %}<br>@{{ dialog.username }}{% endif %}</span>
                     <span class="dialog-date" {% if dialog == curr_dialog %}style="color: black;"{% endif %}>{{ dialog.newest_message }}</span>
                 </li>
@@ -182,4 +228,22 @@
         messages.scrollTop = messages.scrollHeight;
     }
     window.onload = scrollToBottom;
+</script>
+<script>
+    document.getElementById('search-dialogs').addEventListener('input', function() {
+        var filter = this.value.toLowerCase();
+        var dialogs = document.querySelectorAll('.dialog-item');
+        dialogs.forEach(function(dialog) {
+            var text = dialog.getAttribute('data-search').toLowerCase();
+            if (text.includes(filter)) {
+                dialog.style.display = '';
+            } else {
+                dialog.style.display = 'none';
+            }
+        });
+    });
+
+    document.getElementById('filter-outgoing').addEventListener('click', function() {
+        this.classList.toggle('active');
+    });
 </script>
