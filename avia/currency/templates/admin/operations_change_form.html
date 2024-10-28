@@ -1,0 +1,23 @@
+{% extends 'admin/change_form.html' %}
+{% block admin_change_form_document_ready %}
+  <script>
+    (function($) {
+        $(document).ready(function() {
+            $('#id_contractor').change(function() {
+                const contractorId = $(this).val();
+                const operationtype = $('#id_operation_type');
+
+                $.ajax({
+                    url: '/operation_type/',
+                    data: {
+                        'contractor_id': contractorId
+                    },
+                    success: function (data) {
+                        operationtype.html(data.options);
+                    }
+                });
+            });
+        });
+    })(django.jQuery);
+  </script>
+{% endblock %}

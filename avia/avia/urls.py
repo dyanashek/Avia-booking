@@ -25,6 +25,7 @@ from core import views as core_views
 from tickets import views as tickets_view
 from parcels import views as parcels_view
 from sim import views as sim_view
+from currency import views as currency_view
 
 
 urlpatterns = [
@@ -32,6 +33,7 @@ urlpatterns = [
     path('send_message/', core_views.send_message, name='send_message'),
     path('get_sender_addresses/', money_transfer_views.get_sender_addresses, name='sender_addresses'),
     path('get_sender_receivers/', money_transfer_views.get_sender_receivers, name='sender_receivers'),
+    path('operation_type/', currency_view.get_operation_types, name='operation_type'),
     path('get_receiver_addresses/', money_transfer_views.get_receiver_addresses, name='receiver_addresses'),
     path('calculate_commission/', money_transfer_views.calculate_commission, name='calculate_commission'),
     path('stop_status/', money_transfer_views.stop_status, name='stop_status'),

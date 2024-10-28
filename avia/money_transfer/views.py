@@ -168,7 +168,7 @@ def stop_status(request):
                         AppError.objects.create(
                             source='5',
                             error_type='9',
-                            description=f'Не удалось выявить водителя и создать сущность забора денег за симкарту (вторичный). {users_sim.sim_phone}.',
+                            description=f'Не удалось выявить водителя и создать сущность забора денег за симкарту (первичный). {users_sim.sim_phone}.',
                         )
                     except:
                         pass

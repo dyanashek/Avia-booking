@@ -341,7 +341,7 @@ Operation_types = (
     (4, 'получено от Равшана'),
 )
 
-
+operation_types_dict = dict(Operation_types)
 class DebitCredit(models.Model):
     amount = models.FloatField(verbose_name='Сумма в $', default=0)
     operation_type = models.IntegerField('Тип операции', choices=Operation_types)
@@ -351,6 +351,41 @@ class DebitCredit(models.Model):
         verbose_name = 'дебит-кредит'
         verbose_name_plural = 'дебит-кредит'
         ordering = ('-date',)
+
+    @classmethod
+    def aggregate_report(self, date_from, date_to):
+        data = DebitCredit.objects.filter(
+            Q(date__lte=date_to) & 
+            Q(date__gte=date_from)
+        ).values('date', 'operation_type', 'amount').order_by('date')
+
+        ravshan_balance = 0
+        companies_balance = 0
+        for item in data:
+            operation_type = int(item['operation_type'])
+            if operation_type == 1:
+                companies_balance -= item['amount']
+            elif operation_type == 2:
+                ravshan_balance -= item['amount']
+            elif operation_type == 3:
+                companies_balance += item['amount']
+            elif operation_type == 4:
+                ravshan_balance += item['amount']
+
+            item['operation_type'] = operation_types_dict.get(operation_type, 'Неизвестный тип')
+        
+        balance = Balance.objects.get(id=1)
+        ravshan_balance_all = balance.debt_ravshan
+        companies_balance_all = balance.debt_firms
+        data = list(data)
+        data.append({'date': '', 'operation_type': '', 'amount': ''})
+        data.append({'date': 'Задолженность перед Равшаном (за период)', 'operation_type': '', 'amount': ravshan_balance})
+        data.append({'date': 'Задолженность перед фирмами (за период)', 'operation_type': '', 'amount': companies_balance})
+        data.append({'date': '', 'operation_type': '', 'amount': ''})
+        data.append({'date': 'Задолженность перед Равшаном (текущая)', 'operation_type': '', 'amount': ravshan_balance_all})
+        data.append({'date': 'Задолженность перед фирмами (текущая)', 'operation_type': '', 'amount': companies_balance_all})
+
+        return data
 
 
 class Report(models.Model):

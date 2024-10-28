@@ -94,6 +94,10 @@ class CollectAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     list_display = ('sim', 'driver', 'created_at', 'amount',)
     list_filter = ('driver',)
+    autocomplete_fields = ('sim',)
+
+    def has_module_permission(self, request):
+        return False
 
 
 @admin.register(Report)
@@ -148,4 +152,7 @@ class ReportAdmin(VersionAdmin):
             path('sim-report-drivers/', self.admin_site.admin_view(self.download_report), name='sim_report_drivers'),
         ]
         return custom_urls + urls
+    
+    def has_module_permission(self, request):
+        return False
         

@@ -4839,6 +4839,7 @@ async def handle_text(message):
                             pass
     
     else:
+        print(123)
         await sync_to_async(UserMessage.objects.create)(
             user=user,
             message=input_info,

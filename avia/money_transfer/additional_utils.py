@@ -78,7 +78,8 @@ def extract_driver(stop_id):
 
     if success:
         state = stop.get('deliveryInfo').get('state')
-        if state == 'delivered_to_recipient':
+        if state in ['delivered_to_recipient', 'picked_up_from_customer', 
+        'picked_up_unmanned', 'picked_up_from_locker', 'picked_up_other']:
             order_code = '1'
         elif state == 'delivered_to_third_party': 
             order_code = '2'

@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.utils.html import format_html
 from reversion.admin import VersionAdmin
 
-from money_transfer.utils import create_excel_file, create_excel_file_drivers
+from money_transfer.utils import create_excel_file, create_excel_file_drivers, create_excel_file_debit_credit
 from money_transfer.models import (Manager, Sender, Receiver, Address, Transfer, 
                                    Delivery, Rate, Commission, Status, DebitCredit,
                                    Balance, BuyRate, Report)
@@ -233,11 +233,38 @@ class TransferAdmin(VersionAdmin):
 
 @admin.register(DebitCredit)
 class DebitCreditAdmin(VersionAdmin):
+    change_list_template = "admin/debit_credit_change_list.html"
     list_display = ('date', 'amount', 'operation_type')
     list_filter = ('operation_type',)
 
-    def has_module_permission(self, request):
-        return False
+    def download_report(self, request):
+        date_from = datetime.datetime.strptime(request.POST.get('date_from'), '%Y-%m-%d').date()
+        date_to = datetime.datetime.strptime(request.POST.get('date_to'), '%Y-%m-%d').date()
+        debit_credit = DebitCredit.aggregate_report(date_from, date_to)
+        if debit_credit:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, create_excel_file_debit_credit(debit_credit, date_from, date_to))
+
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(fh.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", status=200)
+                    response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                    return response
+            else:
+                return HttpResponse("Файл не найден", status=404)
+        else:
+            return HttpResponse("Данные за указанный период отсутствуют", status=400)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('debit-credit/', self.admin_site.admin_view(self.download_report), name='debit_credit'),
+        ]
+        return custom_urls + urls
 
 
 @admin.register(Balance)
@@ -249,7 +276,7 @@ class BalanceAdmin(VersionAdmin):
 
 
 @admin.register(BuyRate)
-class BuyTareAdmin(VersionAdmin):
+class BuyRateAdmin(VersionAdmin):
     list_display = ('date', 'rate',)
 
     def has_module_permission(self, request):
