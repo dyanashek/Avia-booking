@@ -28,13 +28,10 @@ class ContractorAdmin(VersionAdmin):
     readable_debt.short_description = 'задолженность перед контрагентом'
     readable_commission.short_description = 'комиссия'
 
-    def has_module_permission(self, request):
-        return False
-
 
 @admin.register(Operation)
 class OperationAdmin(VersionAdmin):
-    change_list_template = "admin/operations_change_list.html"
+    # change_list_template = "admin/operations_change_list.html"
     change_form_template = "admin/operations_change_form.html"
     date_hierarchy = 'date'
     list_filter = ('valid', 'operation_type',)
@@ -87,7 +84,3 @@ class OperationAdmin(VersionAdmin):
             path('currency-operations/', self.admin_site.admin_view(self.download_report), name='currency_operations'),
         ]
         return custom_urls + urls
-    
-    def has_module_permission(self, request):
-        return False
-        
