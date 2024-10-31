@@ -31,7 +31,7 @@ class ContractorAdmin(VersionAdmin):
 
 @admin.register(Operation)
 class OperationAdmin(VersionAdmin):
-    # change_list_template = "admin/operations_change_list.html"
+    change_list_template = "admin/operations_change_list.html"
     change_form_template = "admin/operations_change_form.html"
     date_hierarchy = 'date'
     list_filter = ('valid', 'operation_type',)
