@@ -9,6 +9,7 @@ from reversion.admin import VersionAdmin
 from currency.models import Contractor, Operation
 from currency.utils import create_excel_file
 
+
 @admin.register(Contractor)
 class ContractorAdmin(VersionAdmin):
     list_display = ('name', 'agent_type', 'readable_debt', 'readable_commission',)

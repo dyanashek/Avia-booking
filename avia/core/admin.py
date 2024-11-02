@@ -12,6 +12,7 @@ from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, 
                          UserMessage,)
 from core.utils import create_excel_file
 
+
 @admin.register(Language)
 class LanguageAdmin(SortableAdminMixin, admin.ModelAdmin):
     list_display = ('language', 'slug', 'my_order',)
@@ -76,6 +77,7 @@ class RouteAdmin(SortableAdminMixin, admin.ModelAdmin):
 
 @admin.register(TGUser)
 class TGUserAdmin(admin.ModelAdmin):
+    change_form_template = "admin/dialog_button.html"
     list_display = ('user_id', 'username', 'active', 'name', 'family_name', 'get_thumbnail')
     search_fields = ('user_id', 'username', 'name', 'family_name', 'sim_cards__sim_phone',)
     readonly_fields = ('created_at', 'active',)
@@ -159,6 +161,7 @@ class SimFareAdmin(SortableAdminMixin, admin.ModelAdmin):
 
 @admin.register(UsersSim)
 class UsersSimAdmin(admin.ModelAdmin):
+    change_form_template = "admin/dialog_button_sim.html"
     change_list_template = "admin/sims_change_list.html"
     list_filter = ('ready_to_pay', 'is_old_sim', 'is_stopped',)
     search_fields = ('sim_phone',)

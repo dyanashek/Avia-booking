@@ -187,7 +187,7 @@
         </div>
         <ul class="dialog-list">
             {% for dialog in dialogs %}
-            <a href="{% url 'dialog' dialog=dialog.user_id %}" style="text-decoration: none; color: inherit;">
+            <a {% if inbox_filter %}href="{% url 'dialog' dialog=dialog.user_id %}?inbox_filter=active"{% else %}href="{% url 'dialog' dialog=dialog.user_id %}"{% endif %} style="text-decoration: none; color: inherit;">
                 <li class="dialog-item {% if dialog == curr_dialog %}active{% endif %}" data-search="{{ dialog }}">
                     <span>{{ dialog.user_id }}{% if dialog.username %}<br>@{{ dialog.username }}{% endif %}</span>
                     <span class="dialog-date" {% if dialog == curr_dialog %}style="color: black;"{% endif %}>{{ dialog.newest_message }}</span>
