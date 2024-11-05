@@ -449,6 +449,22 @@ class UserMessage(models.Model):
         super().save(*args, **kwargs)
 
 
+class Question(models.Model):
+    question_rus = models.CharField(verbose_name='Текст вопроса (русский)', max_length=256)
+    question_uzb = models.CharField(verbose_name='Текст вопроса (узбекский)', max_length=256)
+    answer_rus = CKEditor5Field(verbose_name='Текст ответа (русский)')
+    answer_uzb = CKEditor5Field(verbose_name='Текст ответа (узбекский)')
+    order = models.PositiveIntegerField(verbose_name='Порядок', default=0, blank=False, null=False)
+
+    class Meta:
+        verbose_name = 'вопрос-ответ'
+        verbose_name_plural = 'FAQ'
+        ordering = ('order',)
+
+    def __str__(self):
+        return self.question_rus
+
+
 @receiver(post_save, sender=Notification)
 def handle_notification(sender, instance, **kwargs):
     if instance.notify_now and instance.notified is None:

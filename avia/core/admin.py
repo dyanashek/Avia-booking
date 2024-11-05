@@ -9,7 +9,7 @@ from adminsortable2.admin import SortableAdminMixin
 
 from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, Parcel, Flight, SimFare, 
                          UsersSim, Notification, OldSim, ImprovedNotification, LinkButton, Receipt,
-                         UserMessage,)
+                         UserMessage, Question)
 from core.utils import create_excel_file
 
 
@@ -362,3 +362,12 @@ class UserMessageAdmin(admin.ModelAdmin):
     readonly_fields = ('user', 'message',)
     date_hierarchy = 'created_at'
 
+
+@admin.register(Question)
+class QuestionAdmin(SortableAdminMixin, admin.ModelAdmin):
+    list_display = ('question_rus', 'order',)
+    search_fields = ('question_rus',)
+
+    def has_module_permission(self, request):
+        return False
+        

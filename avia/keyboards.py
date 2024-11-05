@@ -13,7 +13,7 @@ django.setup()
 
 from django.db.models import Q
 
-from core.models import TGText, Language, Route, ParcelVariation, SimFare
+from core.models import TGText, Language, Route, ParcelVariation, SimFare, Question
 
 #* <------------------------------------------------->
 #! КЛАВИАТУРЫ ДЛЯ БОТА КЛИЕНТОВ (АВИА, ПОСЫЛКИ, СИМКИ)
@@ -35,11 +35,13 @@ async def flight_or_parcel_keyboard(language):
     flight_button = await sync_to_async(TGText.objects.get)(slug='flight_button', language=language)
     parcel_button = await sync_to_async(TGText.objects.get)(slug='parcel_button', language=language)
     sim_button = await sync_to_async(TGText.objects.get)(slug='sim_button', language=language)
+    faq_button = await sync_to_async(TGText.objects.get)(slug='faq', language=language)
 
     # keyboard.add(types.InlineKeyboardButton(text=flight_button.text, callback_data = f'flight'))
     # keyboard.add(types.InlineKeyboardButton(text=parcel_button.text, callback_data = f'parcel'))
     transfer = types.InlineKeyboardButton(text='Перевод', url = 'https://t.me/Roma0927')
     keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'), transfer)
+    # keyboard.row(types.InlineKeyboardButton(text=faq_button.text, callback_data = f'faq'))
 
     return keyboard.as_markup()
 
@@ -205,6 +207,36 @@ async def ready_pay_only_keyboard(language):
     keyboard.row(types.InlineKeyboardButton(text=ready_pay_button.text, callback_data='readypay'))
 
     return keyboard.as_markup()
+
+
+async def questions_keyboard(language):
+    keyboard = InlineKeyboardBuilder()
+
+    buttons = []
+    questions = await sync_to_async(lambda: list(Question.objects.all()))()
+
+    for num, question in enumerate(questions):
+        buttons.append(types.InlineKeyboardButton(text=str(question.order), callback_data=f'question_{question.order}'))
+
+        if (num + 1) % 4 == 0 or len(questions) == num + 1:
+            keyboard.row(*buttons)
+            buttons = []
+
+
+    back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data='back_main'))
+
+    return keyboard.as_markup()
+
+
+async def back_faq_keyboard(language):
+    keyboard = InlineKeyboardBuilder()
+
+    back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
+    keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data='back_faq'))
+
+    return keyboard.as_markup()
+
 
 #* <------------------------------------------------->
 #! КЛАВИАТУРЫ ДЛЯ СИМОК

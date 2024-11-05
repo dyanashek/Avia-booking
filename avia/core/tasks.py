@@ -191,7 +191,7 @@ def construct_notification_params(notification: ImprovedNotification):
     if notification.image:
         image_path = notification.image.path
         params = {
-            'caption': notification.text.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('& nbsp;', ''),
+            'caption': notification.text.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', ''),
             'parse_mode': 'HTML',
             'disable_web_page_preview': True,
         }
@@ -199,7 +199,7 @@ def construct_notification_params(notification: ImprovedNotification):
     else:
         image_path = False
         params = {
-                'text': notification.text.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('& nbsp;', ''),
+                'text': notification.text.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', ''),
                 'parse_mode': 'HTML',
                 'disable_web_page_preview': True,
             }

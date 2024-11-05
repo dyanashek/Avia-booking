@@ -91,6 +91,7 @@ class Command(BaseCommand):
             ['receiver_phone', 'Номер телефона получателя:'],
             ['reuse', 'Использовать данные, введенные ранее:'],
             ['sex', 'Пол:'],
+            ['faq', 'Вопрос-ответ'],
         ]
         
         for item in texts:

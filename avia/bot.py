@@ -20,7 +20,7 @@ from filer.models import Image, Folder
 from django.db.models import Q
 
 from core.models import (TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, 
-                         UsersSim, UserMessage, Notification)
+                         UsersSim, UserMessage, Notification, Question)
 from errors.models import AppError
 from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim_money_collect_address,
                         create_icount_client, get_address,)
@@ -2954,6 +2954,78 @@ async def callback_query(call: types.CallbackQuery):
                     )
                 except:
                     pass
+    
+    elif query == 'faq':
+        questions = await sync_to_async(lambda: list(Question.objects.all()))()
+        questions_text = ''
+
+        for question in questions:
+            if user_language.slug == 'uzb':
+                questions_text += f'{question.order}. {question.question_uzb}\n\n'
+            else:
+                questions_text += f'{question.order}. {question.question_rus}\n\n'
+
+        try:
+            await bot.edit_message_text(chat_id=user_id,
+                                message_id=message_id,
+                                text=questions_text,
+                                parse_mode='Markdown',
+                                )
+
+            await bot.edit_message_reply_markup(chat_id=user_id,
+                                message_id=message_id,
+                                reply_markup=await keyboards.questions_keyboard(user_language),
+                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
+
+    elif query == 'question':
+        order_num = int(call_data[1])
+        try:
+            question = await sync_to_async(Question.objects.get)(order=order_num)
+        except:
+            question = None
+        
+        if question:
+
+            if user_language.slug == 'uzb':
+                answer = question.answer_uzb.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', '')
+                reply = f'<b>{question.question_uzb}</b>\n\n{answer}'
+            else:
+                print(question.answer_rus)
+                answer = question.answer_rus.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', '')
+                reply = f'<b>{question.question_rus}</b>\n\n{answer}'
+
+            try:
+                await bot.edit_message_text(chat_id=user_id,
+                                    message_id=message_id,
+                                    text=reply,
+                                    parse_mode='HTML',
+                                    )
+
+                await bot.edit_message_reply_markup(chat_id=user_id,
+                                    message_id=message_id,
+                                    reply_markup=await keyboards.back_faq_keyboard(user_language),
+                                    )
+            except Exception as ex:
+                print(ex)
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 'back':
         destination = call_data[1]
@@ -3011,6 +3083,62 @@ async def callback_query(call: types.CallbackQuery):
                         )
                     except:
                         pass
+        
+        elif destination == 'main':
+            reply_text = await sync_to_async(TGText.objects.get)(slug='welcome', language=user_language)
+            try:
+                await bot.edit_message_text(chat_id=user_id,
+                                    message_id=message_id,
+                                    text=reply_text.text,
+                                    parse_mode='Markdown',
+                                    )
+
+                await bot.edit_message_reply_markup(chat_id=user_id,
+                                    message_id=message_id,
+                                    reply_markup=await keyboards.flight_or_parcel_keyboard(user_language),
+                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
+
+        elif destination == 'faq':
+            questions = await sync_to_async(lambda: list(Question.objects.all()))()
+            questions_text = ''
+
+            for question in questions:
+                if user_language.slug == 'uzb':
+                    questions_text += f'{question.order}. {question.question_uzb}\n\n'
+                else:
+                    questions_text += f'{question.order}. {question.question_rus}\n\n'
+
+            try:
+                await bot.edit_message_text(chat_id=user_id,
+                                    message_id=message_id,
+                                    text=questions_text,
+                                    parse_mode='Markdown',
+                                    )
+
+                await bot.edit_message_reply_markup(chat_id=user_id,
+                                    message_id=message_id,
+                                    reply_markup=await keyboards.questions_keyboard(user_language),
+                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 's-refuse':
         user.curr_input = None
