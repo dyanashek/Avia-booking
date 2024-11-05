@@ -10,7 +10,7 @@ from django_ckeditor_5.fields import CKEditor5Field
 
 from core.utils import send_message_on_telegram
 from drivers.models import Driver
-from config import MESSAGES_CHAT_ID
+from config import MESSAGES_CHAT_ID, DOMAIN
 
 SEX_CHOICES = (
     ('M', 'Мужской',),
@@ -438,9 +438,8 @@ class UserMessage(models.Model):
         if phone:
             text += f'\n*Номер сим карты*: {phone}'
 
-        text += '\n\n'
-        text += f'*Сообщение:*\n{self.message}'
-
+        text += f'\n\n*Сообщение:*\n{self.message}'
+        text += f'\n\n[Диалог с пользователем]({DOMAIN}/dialog/{self.user.user_id})'
         params = {
                 'chat_id': MESSAGES_CHAT_ID,
                 'text': text,

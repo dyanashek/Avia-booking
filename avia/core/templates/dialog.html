@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Диалоги</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,6 +21,16 @@
             border-right: 1px solid #ddd;
             padding: 10px;
             overflow-y: auto;
+            position: fixed;
+            left: -100%;
+            top: 0;
+            bottom: 0;
+            transition: left 0.3s;
+            z-index: 1000;
+        }
+
+        .sidebar.open {
+            left: 0;
         }
 
         .sidebar-header {
@@ -27,6 +38,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
+            margin-left: 40px;
         }
 
         .sidebar h2 {
@@ -41,7 +53,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             cursor: pointer;
-            text-decoration: none;  /* Убирает подчеркивание */
+            text-decoration: none;
             color: inherit;
         }
 
@@ -56,7 +68,7 @@
         }
 
         .search-box input {
-            width: 95%;
+            width: 100%;
             padding: 10px;
             font-size: 14px;
             border: 1px solid #ddd;
@@ -92,6 +104,7 @@
             flex-grow: 1;
             display: flex;
             flex-direction: column;
+            margin-left: 30%;
         }
 
         .dialog-header {
@@ -170,10 +183,34 @@
         .input-area button:hover {
             background-color: #0056b3;
         }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 1100;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                width: 70%;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
+    <div class="sidebar-toggle d-md-none" onclick="toggleSidebar()">≡</div>
+
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>Диалоги</h2>
             {% if inbox_filter %}
@@ -195,7 +232,6 @@
             </a>
             {% endfor %}
         </ul>
-        
     </div>
 
     <div class="main-content">
@@ -209,7 +245,6 @@
                     </div>
                 </div>
             {% endfor %}
-
         </div>
         <form method="POST" action="{% url 'send_message' %}">
             {% csrf_token %}
@@ -221,29 +256,43 @@
         </form>
     </div>
 </body>
-</html>
 <script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
     function scrollToBottom() {
         var messages = document.getElementById('message-container');
         messages.scrollTop = messages.scrollHeight;
     }
+
     window.onload = scrollToBottom;
-</script>
-<script>
+
     document.getElementById('search-dialogs').addEventListener('input', function() {
         var filter = this.value.toLowerCase();
         var dialogs = document.querySelectorAll('.dialog-item');
         dialogs.forEach(function(dialog) {
             var text = dialog.getAttribute('data-search').toLowerCase();
-            if (text.includes(filter)) {
-                dialog.style.display = '';
-            } else {
-                dialog.style.display = 'none';
-            }
+            dialog.style.display = text.includes(filter) ? '' : 'none';
         });
     });
 
     document.getElementById('filter-outgoing').addEventListener('click', function() {
         this.classList.toggle('active');
     });
+    function adjustSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        if (window.innerWidth >= 768) {
+          sidebar.classList.add("open");
+        } else {
+          sidebar.classList.remove("open");
+        }
+      }
+    
+      // Вызов функции при загрузке страницы
+      document.addEventListener("DOMContentLoaded", adjustSidebar);
+    
+      // Вызов функции при изменении размера окна
+      window.addEventListener("resize", adjustSidebar);
 </script>
+</html>

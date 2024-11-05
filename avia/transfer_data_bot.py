@@ -14,6 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
 from core.models import UsersSim, TGUser, SimFare, OldSim
+from filters import ChatTypeFilter
 
 import config
 import text
@@ -49,8 +50,15 @@ async def start_message(message: types.Message):
                             text=text.SIM_PHONE,
                             )
 
+
+@dp.message(ChatTypeFilter(chat_type='group'), F.text)
+async def handle_text(message):
+    print(message)
+
+
 @dp.message(F.text)
 async def handle_text(message):
+    print(message)
     """Handles message with type text."""
 
     user_id = str(message.from_user.id)
@@ -129,7 +137,10 @@ async def handle_text(message):
         await bot.send_message(chat_id=user_id,
                         text=text.WRONG_TYPE,
                         )
-                
+
+
+
+
 
 async def main():
     await dp.start_polling(bot)
@@ -137,3 +148,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+    
