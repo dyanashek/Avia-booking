@@ -1,0 +1,196 @@
+{% load filters %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Дашборд симкарт</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <style>
+    /* Основной стиль для горизонтальной прокрутки */
+    .dashboard-container {
+      display: flex;
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+
+    /* Стиль колонок */
+    .task-column {
+      min-width: 400px;
+      padding: 15px;
+      border-right: 1px solid #dee2e6;
+    }
+
+    /* Выравнивание высоты заголовков */
+    .task-column h5 {
+      text-align: center;
+      font-weight: bold;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      min-height: 70px; /* Общая высота для выравнивания */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Стиль карточек задач */
+    .task-card {
+      border-radius: 10px;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+
+    .task-card .task-number {
+      font-weight: bold;
+      color: inherit;
+    }
+    .task-amount {
+        font-weight: bold;
+        color: inherit;
+      }
+
+    .task-card .task-info {
+      margin: 2px 0;
+      font-size: 0.8rem;
+    }
+
+    .small {
+        font-size: 0.5rem;
+      }
+
+    .column-received .task-card { background-color: rgba(23, 162, 184, 0.1); border: 1px solid #17a2b8; }
+    .column-loan .task-card { background-color: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; }
+    .column-delivered .task-card { background-color: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; }
+
+    /* Подзадачи */
+    .subtask {
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px solid #ccc;
+      font-size: 0.7rem;
+    }
+
+    .task-pdf {
+        margin-top: 10px; /* Отступ сверху */
+        margin-bottom: 10px; /* Отступ снизу */
+        overflow: hidden; /* Чтобы избежать вертикальной прокрутки */
+        text-align: center;
+    }
+    
+    .task-pdf iframe, .task-pdf embed {
+        max-height: 200px;
+        width: 100%; /* Заполнение доступной ширины */
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="container-fluid">
+  <!-- Фильтр по дате -->
+  <form method='GET'>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="dateFrom" class="form-label">Дата от:</label>
+            <input type="date" name="date-from" id="dateFrom" class="form-control" {% if date_from %}value="{{ date_from }}"{% endif %}>
+        </div>
+        <div class="col-md-3">
+            <label for="dateTo" class="form-label">Дата до:</label>
+            <input type="date" name="date-to" id="dateTo" class="form-control" {% if date_to %}value="{{ date_to }}"{% endif %}>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" id="applyFilter" class="btn btn-primary w-100">Применить фильтр</button>
+        </div>
+    </div>
+  </form>
+  <!-- Горизонтальная прокрутка с задачами -->
+  <div class="dashboard-container">
+    <!-- Колонка "Получено от отправителя" -->
+    <div class="task-column column-received">
+      <h5>Передано в Circuit</h5>
+      {% for sim in sims %}
+        <div class="task-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="task-number">{{ sim.sim_phone }}</div>
+                <div class="small text-muted ms-2">{% if sim.not_received %}Передача сим-карты{% else %}Сбор по тарифу{% endif %}</div>
+            </div>
+            {% if sim.user.name %}<div class="task-info">Имя: {{ sim.user.name }}</div>{% endif %}
+            <div class="task-info">Адрес: {{ sim.user.addresses }}</div>
+            <div class="task-info">Задолженность: {{ sim.debt|to_int }} ₪</div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="task-amount task-info text-muted">{{ sim.fare }}</div>
+            </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Колонка "Выдано получателю (в кредит)" -->
+    <div class="task-column column-loan">
+      <h5>Получено от клиента</h5>
+      {% for collect in collects %}
+        {% if collect.amount is None %}
+            <div class="task-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="task-number">{{ collect.sim.sim_phone }}</div>
+                    <div class="small text-muted ms-2">Сбор по тарифу</div>
+                    <div class="small text-muted ms-2">{{ collect.created_at }}</div>
+                </div>
+                {% if sim.user.name %}<div class="task-info">Имя: {{ collect.sim.user.name }}</div>{% endif %}
+                <div class="task-info">Адрес: {{ collect.sim.user.addresses }}</div>
+                <div class="task-info">Задолженность: {{ collect.sim.debt|to_int }} ₪</div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="task-amount task-info text-muted">{{ collect.sim.fare }}</div>
+                    <div class="task-amount task-info text-muted">{{ collect.driver|get_driver }}</div>
+                </div>
+            </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Колонка "Выдано получателю" -->
+    <div class="task-column column-delivered">
+      <h5>Сформирована квитанция</h5>
+      {% for collect in collects %}
+        {% if collect.amount is not None %}
+            <div class="task-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="task-number">{{ collect.sim.sim_phone }}</div>
+                    <div class="small text-muted ms-2">Сбор по тарифу</div>
+                    <div class="small text-muted ms-2">{{ collect.created_at }}</div>
+                </div>
+                {% if sim.user.name %}<div class="task-info">Имя: {{ collect.sim.user.name }}</div>{% endif %}
+                <div class="task-info">Адрес: {{ collect.sim.user.addresses }}</div>
+                <div class="task-info">Задолженность: {{ collect.sim.debt|to_int }} ₪</div>
+                <div class="task-info">Тариф: {{ collect.sim.fare }}</div>
+                {% if collect.receipt %}<iframe src="{{ collect.receipt }}" width="100%" height="100px" style="border:none; z-index: -1;" loading="lazy"></iframe>{% endif %}
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="task-amount task-info text-muted">{{ collect.amount|to_int }} ₪</div>
+                    <div class="task-amount task-info text-muted">{{ collect.driver|get_driver }}</div>
+                </div>
+            </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Скрипты -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // Пример обработки кнопки фильтрации
+    $('#applyFilter').on('click', function () {
+      const dateFrom = $('#dateFrom').val();
+      const dateTo = $('#dateTo').val();
+      // Логика фильтрации по датам
+      console.log('Фильтр по датам:', dateFrom, dateTo);
+    });
+  });
+</script>
+
+</body>
+</html>

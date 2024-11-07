@@ -33,5 +33,6 @@
     {% csrf_token %}
     <input type="submit" value="Выгрузить excel" />
   </form>
+  {% comment %} <a href="{% url 'sim_dashboard' %}" class='custom-button' style="margin-bottom: 10px; text-decoration: none; color: inherit;" target="_blank">Дашборд</a> {% endcomment %}
     {{ block.super }}
 {% endblock %}

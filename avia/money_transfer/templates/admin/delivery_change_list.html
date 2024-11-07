@@ -11,7 +11,25 @@
     label {
         margin-right: 5px;
     }
+    .custom-button {
+        background-color: #808080; /* Серый цвет фона */
+        color: white; /* Белый цвет текста */
+        border: none; /* Убираем рамку */
+        padding: 10px 15px; /* Внутренний отступ */
+        text-align: center; /* Выравнивание текста по центру */
+        text-decoration: none; /* Убираем подчеркивание текста */
+        display: inline-block; /* Для того, чтобы задать ширину и высоту */
+        font-size: 12px; /* Размер шрифта */
+        border-radius: 50px; /* Скругленные края */
+        cursor: pointer; /* Курсор при наведении */
+        transition: background-color 0.3s ease; /* Анимация при изменении фона */
+    }
+    
+    .custom-button:hover {
+        background-color: #696969; /* Темно-серый цвет при наведении */
+    }
   </style>
+  
   <form method="post" class="form-inline" action="{% url 'admin:report' %}" style="padding-bottom: 15px;" id="reportForm">
     {% csrf_token %}
     <div class="form-group">
@@ -26,7 +44,8 @@
     
   </form>
   <div id="error-message" style="color: red; padding-left: 10px; padding-bottom: 10px; display: none"></div>
-    {{ block.super }}
+  {% comment %} <a href="{% url 'transfer_dashboard' %}" class='custom-button' style="margin-bottom: 10px; text-decoration: none; color: inherit;" target="_blank">Дашборд</a> {% endcomment %}
+  {{ block.super }}
   <script>
     document.getElementById('reportForm').addEventListener('submit', function(event) {
         var dateFromValue = document.getElementById('date_from').value;

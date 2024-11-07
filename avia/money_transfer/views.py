@@ -2,6 +2,8 @@ import json
 import requests
 import datetime
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -357,3 +359,26 @@ def construct_report(request):
 
     report_to_db(report)
     return JsonResponse({'done': True})
+
+
+class TransferDashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'transfer_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        queryset = Delivery.objects.order_by('-created_at').all()
+        date_from = self.request.GET.get('date-from')
+        if date_from:
+            context['date_from'] = date_from
+            date_from = datetime.datetime.strptime(date_from, "%Y-%m-%d").date()
+            queryset = queryset.filter(created_at__date__gte=date_from)
+        date_to = self.request.GET.get('date-to')
+        if date_to:
+            context['date_to'] = date_to
+            date_to = datetime.datetime.strptime(date_to, "%Y-%m-%d").date()
+            queryset = queryset.filter(created_at__date__lte=date_to)
+
+        context["deliveries"] = queryset.distinct()
+
+        return context

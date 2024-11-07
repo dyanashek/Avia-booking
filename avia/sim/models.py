@@ -67,6 +67,7 @@ class Collect(models.Model):
     created_at = models.DateField(verbose_name='Дата приобретения', auto_now_add=True)
     amount = models.FloatField(verbose_name='Сумма', null=True, blank=True, default=None)
     driver = models.CharField(verbose_name='Водитель', max_length=50, choices=DRIVERS)
+    receipt = models.URLField(verbose_name='Ссылка', null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'сбор за симкарту'

@@ -3000,7 +3000,6 @@ async def callback_query(call: types.CallbackQuery):
                 answer = question.answer_uzb.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', '')
                 reply = f'<b>{question.question_uzb}</b>\n\n{answer}'
             else:
-                print(question.answer_rus)
                 answer = question.answer_rus.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', '')
                 reply = f'<b>{question.question_rus}</b>\n\n{answer}'
 
@@ -3016,7 +3015,6 @@ async def callback_query(call: types.CallbackQuery):
                                     reply_markup=await keyboards.back_faq_keyboard(user_language),
                                     )
             except Exception as ex:
-                print(ex)
                 try:
                     await sync_to_async(AppError.objects.create)(
                         source='1',

@@ -1,3 +1,4 @@
+{% load filters %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -227,7 +228,7 @@
             <a {% if inbox_filter %}href="{% url 'dialog' dialog=dialog.user_id %}?inbox_filter=active"{% else %}href="{% url 'dialog' dialog=dialog.user_id %}"{% endif %} style="text-decoration: none; color: inherit;">
                 <li class="dialog-item {% if dialog == curr_dialog %}active{% endif %}" data-search="{{ dialog }}">
                     <span>{{ dialog.user_id }}{% if dialog.username %}<br>@{{ dialog.username }}{% endif %}</span>
-                    <span class="dialog-date" {% if dialog == curr_dialog %}style="color: black;"{% endif %}>{{ dialog.newest_message }}</span>
+                    <span class="dialog-date" {% if dialog == curr_dialog %}style="color: black;"{% endif %}>{{ dialog.newest_message|israel_time }}</span>
                 </li>
             </a>
             {% endfor %}
@@ -241,7 +242,7 @@
                 <div class="message {% if message.outbox %}incoming{% else %}outgoing{% endif %}">
                     <div class="message-content">
                         {{ message.message }}
-                        <div class="message-time" {% if not message.outbox %}style="color: black;"{% endif %}>{{ message.date }}</div>
+                        <div class="message-time" {% if not message.outbox %}style="color: black;"{% endif %}>{{ message.date|israel_time }}</div>
                     </div>
                 </div>
             {% endfor %}

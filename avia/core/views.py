@@ -1,6 +1,7 @@
 import json
 import datetime
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -122,7 +123,7 @@ def sim_resend_collect_icount(request, pk):
     return redirect('/admin/core/userssim/')
 
 
-class DialogView(TemplateView):
+class DialogView(LoginRequiredMixin, TemplateView):
     template_name = 'dialog.html'
 
     def get_context_data(self, **kwargs):

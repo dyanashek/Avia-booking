@@ -300,6 +300,12 @@ class UsersSim(models.Model):
     def aggregate_report(self):
         return UsersSim.objects.values('sim_phone', 'debt')
 
+    @property
+    def not_received(self):
+        if self.circuit_id and self.collects.count() == 0:
+            return True
+        return False
+
 
 class Notification(models.Model):
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)

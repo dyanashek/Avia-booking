@@ -264,6 +264,42 @@ class Delivery(models.Model):
             total_usd=Sum('total_usd'),
         ))
 
+    @property
+    def is_error(self):
+        if self.status.slug in ['save_error', 'api_error',]:
+            return True
+        return False
+
+    @property
+    def is_circuit(self):
+        if self.status.slug == 'api':
+            for transfer in self.transfers.all():
+                if transfer.pass_date is None:
+                    return True
+        return False
+    
+    @property
+    def is_received(self):
+        if self.status.slug == 'finished':
+            for transfer in self.transfers.all():
+                if transfer.pass_date is None:
+                    return True
+        return False
+    
+    @property
+    def is_loan(self):
+        for transfer in self.transfers.all():
+            if transfer.pass_date and transfer.credit:
+                return True
+        return False
+    
+    @property
+    def is_finished(self):
+        for transfer in self.transfers.all():
+            if transfer.pass_date and (transfer.credit is False):
+                return True
+        return False
+
 
 class Rate(models.Model):
     slug = models.CharField(verbose_name='Валютная пара', max_length=10, unique=True)

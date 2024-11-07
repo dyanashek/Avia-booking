@@ -238,10 +238,17 @@ async def callback_query(call: types.CallbackQuery):
                             except:
                                 pass
                     except:
-                        pass
+                        collect = None
 
                     invoice_url = await create_icount_invoice(sim.icount_id, amount, sim.is_old_sim)
                     if invoice_url:
+                        if collect:
+                            try:
+                                collect.receipt = invoice_url
+                                await sync_to_async(collect.save)()
+                            except:
+                                pass
+                            
                         sim_user = await sync_to_async(lambda: sim.user)()
                         user_language = await sync_to_async(lambda: sim_user.language)()
                         if not user_language:
