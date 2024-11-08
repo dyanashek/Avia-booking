@@ -103,12 +103,10 @@ def stop_status(request):
     order_id = request.POST.get('order_id')
     driver_comment = request.POST.get('comment')
     driver_id = request.POST.get('driver')
-    try:
-        status = request.POST.get('status')
-    except:
-        status = False
+    status = request.POST.get('status', 'false')
+    status = status.lower()
 
-    if order_id and order_id == '3':
+    if order_id and order_id == '3' and status == 'true':
         delivery = Delivery.objects.filter(circuit_id=stop_id).first()
         if delivery:
             if status:
@@ -154,7 +152,7 @@ def stop_status(request):
             except:
                 pass
 
-    elif order_id and order_id == '4' and status:
+    elif order_id and order_id == '4' and status == 'true':
 
         users_sim = UsersSim.objects.filter(circuit_id=stop_id).first()
         if users_sim:
@@ -191,7 +189,7 @@ def stop_status(request):
                 except:
                     pass
 
-    elif order_id and order_id == '5' and status:
+    elif order_id and order_id == '5' and status == 'true':
         users_sim = UsersSim.objects.filter(circuit_id_collect=stop_id).first()
         if users_sim:
             try:
