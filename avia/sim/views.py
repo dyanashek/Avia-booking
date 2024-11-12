@@ -38,11 +38,13 @@ class SimDashboardView(LoginRequiredMixin, TemplateView):
             context['date_from'] = date_from
             date_from = datetime.datetime.strptime(date_from, "%Y-%m-%d").date()
             queryset = queryset.filter(created_at__gte=date_from)
+            sims = queryset.filter(pay_date__gte=date_from)
         date_to = self.request.GET.get('date-to')
         if date_to:
             context['date_to'] = date_to
             date_to = datetime.datetime.strptime(date_to, "%Y-%m-%d").date()
             queryset = queryset.filter(created_at__lte=date_to)
+            sims = queryset.filter(pay_date__lte=date_to)
 
         context['sims'] = sims
         context['collects'] = queryset

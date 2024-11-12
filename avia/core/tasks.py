@@ -55,6 +55,7 @@ def notify_users(users_sims):
             ready_pay_button = TGText.objects.get(slug='ready_pay_button', language=language).text
             week_later_button = TGText.objects.get(slug='later_week_button', language=language).text
             month_later_button = TGText.objects.get(slug='later_month_button', language=language).text
+            date_later_button = TGText.objects.get(slug='later_date_button', language=language).text
 
             message = f'''
                     {sim_debt} {users_sim.sim_phone}:\
@@ -76,7 +77,8 @@ def notify_users(users_sims):
                     'inline_keyboard': [
                         [{'text': ready_pay_button, 'callback_data': 'readypay'}],
                         [{'text': week_later_button, 'callback_data': 'later_week'}],
-                        [{'text': month_later_button, 'callback_data': 'later_month'}]
+                        [{'text': month_later_button, 'callback_data': 'later_month'}],
+                        [{'text': date_later_button, 'callback_data': 'later_date'}]
                     ]
                 })
             }

@@ -3137,6 +3137,23 @@ async def callback_query(call: types.CallbackQuery):
                     )
                 except:
                     pass
+        
+        elif destination == 'simpayoptions':
+            try:
+                await bot.edit_message_reply_markup(chat_id=user_id,
+                                    message_id=message_id,
+                                    reply_markup=await keyboards.sim_payment_options_keyboard(user_language),
+                                    )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='1',
+                        main_user=user_id,
+                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                    )
+                except:
+                    pass
 
     elif query == 's-refuse':
         user.curr_input = None
@@ -3396,59 +3413,86 @@ async def callback_query(call: types.CallbackQuery):
 
         if sim_card and not sim_card.ready_to_pay:
             period = call_data[1]
-            if period == 'week':
-                days = 7
-                debt = sim_card.debt
-            elif period == 'month':
-                days = 31
-                fare_price = await sync_to_async(lambda: sim_card.fare.price)()
-                debt = sim_card.debt + fare_price
+            if period != 'date':
+                if period == 'week':
+                    days = 7
+                    debt = sim_card.debt
+                elif period == 'month':
+                    days = 31
+                    fare_price = await sync_to_async(lambda: sim_card.fare.price)()
+                    debt = sim_card.debt + fare_price
+                else:
+                    planing_payment_date = datetime.datetime.strptime(period, '%d.%m.%Y').date()
+                    days = (planing_payment_date - (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()).days
+                    if sim_card.next_payment <= planing_payment_date:
+                        fare_price = await sync_to_async(lambda: sim_card.fare.price)()
+                        debt = sim_card.debt + fare_price
+                    else:
+                        debt = sim_card.debt
 
-            sim_card.pay_date = (datetime.datetime.utcnow() + datetime.timedelta(days=days)).date()
-            sim_card.notified = False
-            await sync_to_async(sim_card.save)()
 
-            pay_date_text = await sync_to_async(TGText.objects.get)(slug='pay_date', language=user_language)
-            sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt_future', language=user_language)
-            human_pay_date = sim_card.pay_date.strftime('%d.%m.%Y')
-            reply_text = f'''
-                    *{sim_card.sim_phone}*\
-                    \n{sim_debt.text}:\
-                    \n*{debt} ₪*\
-                    \n{pay_date_text.text} *{human_pay_date}*\
-                    '''
+                sim_card.pay_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3) + datetime.timedelta(days=days)).date()
+                sim_card.notified = False
+                await sync_to_async(sim_card.save)()
 
-            try:
-                await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                    message_id=message_id,
-                                                    reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                    )
-            except:
+                pay_date_text = await sync_to_async(TGText.objects.get)(slug='pay_date', language=user_language)
+                sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt_future', language=user_language)
+                human_pay_date = sim_card.pay_date.strftime('%d.%m.%Y')
+                reply_text = f'''
+                        *{sim_card.sim_phone}*\
+                        \n{sim_debt.text}:\
+                        \n*{debt} ₪*\
+                        \n{pay_date_text.text} *{human_pay_date}*\
+                        '''
+
                 try:
-                    await sync_to_async(AppError.objects.create)(
-                        source='1',
-                        error_type='1',
-                        main_user=user_id,
-                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
-                    )
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                        )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
+                
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=reply_text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
             
-            try:
-                await bot.send_message(chat_id=user_id,
-                                text=reply_text,
-                                parse_mode='Markdown',
-                                )
-            except:
+            else:
                 try:
-                    await sync_to_async(AppError.objects.create)(
-                        source='1',
-                        error_type='2',
-                        main_user=user_id,
-                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
-                    )
+                    await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=await keyboards.payments_dates_keyboards(user_language),
+                                                        )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='1',
+                            main_user=user_id,
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        )
+                    except:
+                        pass
 
         else:
             try:
@@ -3480,7 +3524,6 @@ async def callback_query(call: types.CallbackQuery):
                     )
                 except:
                     pass
-
 
     elif query == 'readypay':
         if user.addresses:
@@ -3555,6 +3598,33 @@ async def callback_query(call: types.CallbackQuery):
                     )
                 except:
                     pass
+    
+    elif query == 'sim-pay-handwrite':
+        try:
+            user.curr_input = f'sim-payment-date'
+            await sync_to_async(user.save)()
+
+            question = await sync_to_async(TGText.objects.get)(slug='sim_payment_date', language=user_language)
+            await bot.edit_message_text(chat_id=chat_id,
+                                        message_id=message_id,
+                                        text=question.text,
+                                        parse_mode='Markdown',
+                                        )
+
+            await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                message_id=message_id,
+                                                reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='1',
+                    main_user=user_id,
+                    description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                )
+            except:
+                pass
 
 
 @dp.message(ChatTypeFilter(chat_type='private'), F.photo)
@@ -4228,6 +4298,92 @@ async def handle_text(message):
                 )
             except:
                 pass
+
+    elif curr_input and curr_input == 'sim-payment-date':
+        sim_card = await sync_to_async(user.sim_cards.first)()
+
+        if sim_card and not sim_card.ready_to_pay:
+            payment_date = await utils.validate_date(input_info)
+            if (payment_date and (payment_date <= (datetime.datetime.utcnow() + datetime.timedelta(hours=3) + datetime.timedelta(days=31)).date()) and
+            payment_date > (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()):
+                if sim_card.next_payment <= payment_date:
+                    fare_price = await sync_to_async(lambda: sim_card.fare.price)()
+                    debt = sim_card.debt + fare_price
+                else:
+                    debt = sim_card.debt
+                
+                sim_card.pay_date = payment_date
+                sim_card.notified = False
+                await sync_to_async(sim_card.save)()
+
+                user.curr_input = None
+                await sync_to_async(user.save)()
+
+                pay_date_text = await sync_to_async(TGText.objects.get)(slug='pay_date', language=user_language)
+                sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_debt_future', language=user_language)
+                human_pay_date = sim_card.pay_date.strftime('%d.%m.%Y')
+                reply_text = f'''
+                        *{sim_card.sim_phone}*\
+                        \n{sim_debt.text}:\
+                        \n*{debt} ₪*\
+                        \n{pay_date_text.text} *{human_pay_date}*\
+                        '''
+
+                try:
+                    await bot.send_message(chat_id=user_id,
+                                    text=reply_text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
+
+            else:
+                error = await sync_to_async(TGText.objects.get)(slug='sim_payment_date_error', language=user_language)
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                                    text=error.text,
+                                    parse_mode='Markdown',
+                                    )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='1',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
+
+        else:
+            user.curr_input = None
+            await sync_to_async(user.save)()
+
+            error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+
 
     elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()

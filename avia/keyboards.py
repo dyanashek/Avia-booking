@@ -14,6 +14,8 @@ django.setup()
 from django.db.models import Q
 
 from core.models import TGText, Language, Route, ParcelVariation, SimFare, Question
+from utils import get_payment_dates
+
 
 #* <------------------------------------------------->
 #! КЛАВИАТУРЫ ДЛЯ БОТА КЛИЕНТОВ (АВИА, ПОСЫЛКИ, СИМКИ)
@@ -234,6 +236,38 @@ async def back_faq_keyboard(language):
 
     back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
     keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data='back_faq'))
+
+    return keyboard.as_markup()
+
+
+async def payments_dates_keyboards(language):
+    payment_dates = await get_payment_dates()
+    keyboard = InlineKeyboardBuilder()
+
+    for payment_day in payment_dates:
+        keyboard.row(types.InlineKeyboardButton(text=payment_day, callback_data=f'later_{payment_day}'))
+
+    handwrite_button = await sync_to_async(TGText.objects.get)(slug='hand_write_button', language=language)
+    back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
+
+    keyboard.row(types.InlineKeyboardButton(text=handwrite_button.text, callback_data=f'sim-pay-handwrite'))
+    keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data=f'back_simpayoptions'))
+
+    return keyboard.as_markup()
+
+
+async def sim_payment_options_keyboard(language):
+    keyboard = InlineKeyboardBuilder()
+
+    ready_pay_button = await sync_to_async(TGText.objects.get)(slug='ready_pay_button', language=language)
+    week_later_button = await sync_to_async(TGText.objects.get)(slug='later_week_button', language=language)
+    month_later_button = await sync_to_async(TGText.objects.get)(slug='later_month_button', language=language)
+    date_later_button = await sync_to_async(TGText.objects.get)(slug='later_date_button', language=language)
+
+    keyboard.row(types.InlineKeyboardButton(text=ready_pay_button.text, callback_data='readypay'))
+    keyboard.row(types.InlineKeyboardButton(text=week_later_button.text, callback_data='later_week'))
+    keyboard.row(types.InlineKeyboardButton(text=month_later_button.text, callback_data='later_month'))
+    keyboard.row(types.InlineKeyboardButton(text=date_later_button.text, callback_data='later_date'))
 
     return keyboard.as_markup()
 
