@@ -193,10 +193,12 @@ async def ready_pay_keyboard(language):
     ready_pay_button = await sync_to_async(TGText.objects.get)(slug='ready_pay_button', language=language)
     week_later_button = await sync_to_async(TGText.objects.get)(slug='later_week_button', language=language)
     month_later_button = await sync_to_async(TGText.objects.get)(slug='later_month_button', language=language)
+    date_later_button = await sync_to_async(TGText.objects.get)(slug='later_date_button', language=language)
 
     keyboard.row(types.InlineKeyboardButton(text=ready_pay_button.text, callback_data='readypay'))
     keyboard.row(types.InlineKeyboardButton(text=week_later_button.text, callback_data='later_week'))
     keyboard.row(types.InlineKeyboardButton(text=month_later_button.text, callback_data='later_month'))
+    keyboard.row(types.InlineKeyboardButton(text=date_later_button.text, callback_data='later_date'))
 
     return keyboard.as_markup()
 
