@@ -44,7 +44,7 @@
     
   </form>
   <div id="error-message" style="color: red; padding-left: 10px; padding-bottom: 10px; display: none"></div>
-  {% comment %} <a href="{% url 'transfer_dashboard' %}" class='custom-button' style="margin-bottom: 10px; text-decoration: none; color: inherit;" target="_blank">Дашборд</a> {% endcomment %}
+  <a href="{% url 'transfer_dashboard' %}" class='custom-button' style="margin-bottom: 10px; text-decoration: none; color: inherit;" target="_blank">Дашборд</a>
   {{ block.super }}
   <script>
     document.getElementById('reportForm').addEventListener('submit', function(event) {
