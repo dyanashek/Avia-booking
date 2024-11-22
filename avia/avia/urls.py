@@ -54,7 +54,7 @@ urlpatterns = [
     path('dialog/<str:dialog>/', core_views.DialogView.as_view(), name='dialog'),
     path('dialog/', core_views.DialogView.as_view(), name='dialogs'),
     path('transfer-dashboard/', money_transfer_views.TransferDashboardView.as_view(), name='transfer_dashboard'),
-    # path('sim-dashboard/', sim_view.SimDashboardView.as_view(), name='sim_dashboard'),
+    path('sim-dashboard/', sim_view.SimDashboardView.as_view(), name='sim_dashboard'),
     path("ckeditor5/", include('django_ckeditor_5.urls')),
 ]
 
