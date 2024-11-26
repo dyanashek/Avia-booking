@@ -461,6 +461,7 @@ class Question(models.Model):
     answer_rus = CKEditor5Field(verbose_name='Текст ответа (русский)')
     answer_uzb = CKEditor5Field(verbose_name='Текст ответа (узбекский)')
     order = models.PositiveIntegerField(verbose_name='Порядок', default=0, blank=False, null=False)
+    rate = models.BooleanField(verbose_name="Показать курс?", default=False)
 
     class Meta:
         verbose_name = 'вопрос-ответ'

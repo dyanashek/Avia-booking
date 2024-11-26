@@ -19,6 +19,7 @@ from django.core.files.base import ContentFile
 from filer.models import Image, Folder
 from django.db.models import Q
 
+from money_transfer.models import Rate
 from core.models import (TGUser, TGText, Language, Parcel, Flight, Route, Day, ParcelVariation, SimFare, 
                          UsersSim, UserMessage, Notification, Question)
 from errors.models import AppError
@@ -2995,7 +2996,6 @@ async def callback_query(call: types.CallbackQuery):
             question = None
         
         if question:
-
             if user_language.slug == 'uzb':
                 answer = question.answer_uzb.replace('<p>', '').replace('</p>', '').replace('<br>', '\n').replace('&nbsp;', '')
                 reply = f'<b>{question.question_uzb}</b>\n\n{answer}'
@@ -3012,7 +3012,7 @@ async def callback_query(call: types.CallbackQuery):
 
                 await bot.edit_message_reply_markup(chat_id=user_id,
                                     message_id=message_id,
-                                    reply_markup=await keyboards.back_faq_keyboard(user_language),
+                                    reply_markup=await keyboards.back_faq_keyboard(user_language, question.rate),
                                     )
             except Exception as ex:
                 try:
@@ -3024,6 +3024,26 @@ async def callback_query(call: types.CallbackQuery):
                     )
                 except:
                     pass
+    
+    elif query == 'currentrate':
+        current_rate_text = await sync_to_async(TGText.objects.get)(slug='current_rate', language=user_language)
+        ils_rate = await sync_to_async(Rate.objects.get)(slug='usd-ils')
+        
+        try:
+            await bot.send_message(chat_id=chat_id,
+                        text=f'{current_rate_text.text} {ils_rate.rate} ₪/$',
+                        parse_mode='Markdown',
+                        )
+        except:
+            try:
+                await sync_to_async(AppError.objects.create)(
+                    source='1',
+                    error_type='2',
+                    main_user=user_id,
+                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                )
+            except:
+                pass
 
     elif query == 'back':
         destination = call_data[1]

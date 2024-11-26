@@ -233,10 +233,14 @@ async def questions_keyboard(language):
     return keyboard.as_markup()
 
 
-async def back_faq_keyboard(language):
+async def back_faq_keyboard(language, rate=False):
     keyboard = InlineKeyboardBuilder()
 
     back_button = await sync_to_async(TGText.objects.get)(slug='back_button', language=language)
+    if rate:
+        rate_button = await sync_to_async(TGText.objects.get)(slug='rate_button', language=language)
+        keyboard.row(types.InlineKeyboardButton(text=rate_button.text, callback_data='currentrate'))
+
     keyboard.row(types.InlineKeyboardButton(text=back_button.text, callback_data='back_faq'))
 
     return keyboard.as_markup()
