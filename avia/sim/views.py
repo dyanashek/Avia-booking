@@ -48,5 +48,6 @@ class SimDashboardView(LoginRequiredMixin, TemplateView):
 
         context['sims'] = sims
         context['collects'] = queryset
+        context['page_active'] = 'sim'
 
         return context

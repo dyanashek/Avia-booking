@@ -76,12 +76,14 @@
     }
   </style>
 </head>
-<body>
+<body class="pb-3">
 
-<div class="container-fluid">
-  <!-- Фильтр по дате -->
+<div class="container-fluid pt-3">
   <form method='GET'>
     <div class="row mb-4">
+        <div class="col-md-1">
+          {% include 'menu.html' %}
+        </div>
         <div class="col-md-3">
             <label for="dateFrom" class="form-label">Дата от:</label>
             <input type="date" name="date-from" id="dateFrom" class="form-control" {% if date_from %}value="{{ date_from }}"{% endif %}>

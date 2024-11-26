@@ -129,6 +129,7 @@ class DialogView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        context['page_active'] = 'chat'
         inbox_filter = self.request.GET.get('inbox_filter')
         if inbox_filter and inbox_filter == 'active':
             users_with_dialogs = TGUser.objects.filter(stupid_messages__isnull=False).distinct()
@@ -177,5 +178,3 @@ class DialogView(LoginRequiredMixin, TemplateView):
             messages = sorted(messages, key=lambda x: x.get('date'))
             context['messages'] = messages
         return context
-
-

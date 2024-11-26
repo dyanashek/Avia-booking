@@ -378,5 +378,6 @@ class TransferDashboardView(LoginRequiredMixin, TemplateView):
             queryset = queryset.filter(created_at__date__lte=date_to)
 
         context["deliveries"] = queryset.distinct()
+        context['page_active'] = 'money'
 
         return context

@@ -1,0 +1,101 @@
+<style>
+    /* Основные стили */
+    body {
+      overflow-x: hidden;
+    }
+
+    /* Стили для бокового меню */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -250px; /* Скрываем меню за пределами экрана */
+      width: 250px;
+      height: 100%;
+      background-color: #343a40;
+      color: #fff;
+      transition: left 0.3s ease;
+      z-index: 1050;
+      padding: 20px;
+    }
+
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      display: block;
+      margin: 10px 0;
+    }
+
+    .sidebar a:hover {
+      color: #adb5bd;
+    }
+
+    /* Кнопка для открытия меню */
+    .menu-toggle {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: #343a40;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      z-index: 1100;
+    }
+
+    .menu-toggle:focus {
+      outline: none;
+    }
+
+    /* Открытое состояние меню */
+    .sidebar.open {
+      left: 0;
+    }
+
+    .menu-item {
+        text-decoration: none;
+        color: #333; /* Обычный цвет текста */
+        transition: color 0.3s ease; /* Плавный переход цвета */
+    }
+    
+    .menu-item:hover {
+        color: #ff9800;
+    }
+    
+    .menu-item.active {
+        color: #ff9800;
+        font-weight: bold; 
+    }
+
+    .menu-bottom {
+        margin-top: auto;
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
+        list-style-type: none;
+    }
+    
+    .menu-bottom .menu-item {
+        color: #555;
+    }
+    
+    .menu-bottom .menu-item:hover {
+        color: #ff9800;
+    }
+</style>
+<button class="menu-toggle" id="menuToggle">☰ Меню</button>
+
+
+<div class="sidebar" id="sidebar">
+  <h4>Меню</h4>
+  <a href="{% url 'sim_dashboard' %}" class="menu-item {% if page_active == 'sim' %}active{% endif %}">Симкарты</a>
+  <a href="{% url 'transfer_dashboard' %}" class="menu-item {% if page_active == 'money' %}active{% endif %}">Денежные переводы</a>
+  <a href="{% url 'dialogs' %}" target="_blank" class="menu-item {% if page_active == 'chat' %}active{% endif %}">Мессенджер</a>
+  <li class="menu-bottom"><a href="/admin/" class="menu-item">В админ панель</a></li>
+</div>
+
+<script>
+    document.getElementById('menuToggle').addEventListener('click', function (event) {
+      event.preventDefault();
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('open');
+    });
+</script>
