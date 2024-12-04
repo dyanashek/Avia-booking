@@ -21,8 +21,14 @@ class SimCardAdmin(admin.ModelAdmin):
     fields = ('name', 'sim_phone', 'fare', 'next_payment', 'debt',)
     list_filter = ('to_main_bot', 'is_stopped', 'icount_api',)
 
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('name', 'sim_phone', 'fare', 'next_payment', 'debt',)
+              
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.icount_api and obj.to_main_bot:
+        if obj and obj.icount_api and obj.to_main_bot and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
         
         return []

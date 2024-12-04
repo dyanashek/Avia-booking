@@ -28,7 +28,7 @@ class TGTextAdmin(SortableAdminMixin, admin.ModelAdmin):
     readonly_fields = ('slug',)
 
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.slug:
+        if obj and obj.slug and not request.user.is_superuser:
             return ('slug',)
 
         return tuple()
@@ -86,6 +86,14 @@ class TGUserAdmin(admin.ModelAdmin):
               'phone', 'addresses', 'lat', 'lon', 'sex', 'birth_date', 'start_date',
                'end_date', 'passport_number', 'passport_photo_user', 'created_at')
 
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('user_id', 'language', 'username', 'active', 'name', 'family_name',
+              'phone', 'addresses', 'lat', 'lon', 'sex', 'birth_date', 'start_date',
+               'end_date', 'passport_number', 'passport_photo_user', 'created_at')
+
 
 @admin.register(Parcel)
 class ParcelAdmin(admin.ModelAdmin):
@@ -95,9 +103,19 @@ class ParcelAdmin(admin.ModelAdmin):
               'start_date', 'end_date', 'passport_number', 'passport_photo_parcel',
               'complete', 'confirmed', 'price', 'user', 'created_at')
     
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('variation', 'fio_receiver', 'phone_receiver', 'items_list',
+              'name', 'family_name', 'phone', 'address', 'sex', 'birth_date',
+              'start_date', 'end_date', 'passport_number', 'passport_photo_parcel',
+              'complete', 'confirmed', 'price', 'user', 'created_at')
+
     def get_readonly_fields(self, request, obj=None):
-        if obj:
+        if obj and obj.id and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
+        return tuple()
     
     def to_circuit_button(self, obj):
         if obj.circuit_api is False:
@@ -128,10 +146,20 @@ class FlightAdmin(admin.ModelAdmin):
               'passport_number', 'passport_photo_flight', 'complete', 'confirmed', 'price',
               'user', 'created_at',)
     
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('route', 'type', 'departure_date', 'arrival_date', 'phone', 'name', 
+              'family_name', 'address', 'sex', 'birth_date', 'start_date', 'end_date', 
+              'passport_number', 'passport_photo_flight', 'complete', 'confirmed', 'price',
+              'user', 'created_at',)
+
     def get_readonly_fields(self, request, obj=None):
-        if obj:
+        if obj and obj.id and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
-    
+        return tuple()
+
     def to_circuit_button(self, obj):
         if obj.circuit_api is False:
             return format_html(f'''
@@ -168,6 +196,12 @@ class UsersSimAdmin(admin.ModelAdmin):
     fields = ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
     readonly_fields = ('driver', 'is_old_sim',)
     autocomplete_fields = ('user',)
+
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('user', 'fare', 'debt', 'sim_phone', 'next_payment', 'pay_date', 'ready_to_pay', 'is_old_sim', 'driver',)
 
     def to_circuit_button(self, obj):
         if obj.circuit_api is False and obj.icount_api:
@@ -263,8 +297,14 @@ class NotificationAdmin(admin.ModelAdmin):
     fields = ('user', 'text', 'notify_now', 'notify_time', 'notified')
     autocomplete_fields = ('user',)
 
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('user', 'text', 'notify_now', 'notify_time', 'notified')
+
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.notified:
+        if obj and obj.notified and not request.user.is_superuser:
             return ('user', 'text', 'notify_now', 'notify_time', 'notified')
 
         return ('notified',)
@@ -318,7 +358,7 @@ class LinkButtonInline(admin.StackedInline):
     fields = ('text', 'link',)
     
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.started:
+        if obj and obj.started and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
         else:
             return []
@@ -332,8 +372,14 @@ class ImprovedNotificationAdmin(admin.ModelAdmin):
     inlines = (LinkButtonInline,)
     autocomplete_fields = ('user',)
 
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('target', 'user', 'text', 'notify_time', 'image',)
+
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.started:
+        if obj and obj.started and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
         else:
             return []
@@ -367,7 +413,3 @@ class UserMessageAdmin(admin.ModelAdmin):
 class QuestionAdmin(SortableAdminMixin, admin.ModelAdmin):
     list_display = ('question_rus', 'order',)
     search_fields = ('question_rus',)
-
-    def has_module_permission(self, request):
-        return False
-        

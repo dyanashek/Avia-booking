@@ -20,8 +20,17 @@ class ParcelAdmin(admin.ModelAdmin):
               'passport_number', 'passport_photo_parcel', 'price',
               'user',)
 
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('variation', 'fio_receiver', 'phone_receiver', 'items_list', 'phone', 'name', 
+              'family_name', 'address', 'sex', 'birth_date', 'start_date', 'end_date', 
+              'passport_number', 'passport_photo_parcel', 'price',
+              'user',)
+
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.circuit_api:
+        if obj and obj.circuit_api and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
         
         return []

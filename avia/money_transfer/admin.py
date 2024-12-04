@@ -20,8 +20,11 @@ class TransferInline(admin.StackedInline):
     fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount',)
 
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.valid:
+        if obj and obj.valid and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
+
+        elif request.user.is_superuser:
+            return tuple()
 
         return ('pass_date',)
 
@@ -73,6 +76,12 @@ class DeliveryAdmin(VersionAdmin):
     list_filter = ('valid', 'status', 'created_by', 'driver')
     inlines = (TransferInline,)
     autocomplete_fields = ('sender',)
+    
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
+        else:
+            return ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver',)
 
     def final_commission(self, obj):
         if obj.commission == 0:
@@ -80,9 +89,10 @@ class DeliveryAdmin(VersionAdmin):
         return f'{obj.commission}₪'
 
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.valid:
+        if obj and obj.valid and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
-
+        elif request.user.is_superuser:
+            return tuple()
         return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd', 'driver',)
 
     def download_report(self, request):
