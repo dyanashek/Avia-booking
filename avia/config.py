@@ -33,3 +33,7 @@ ICOUNT_CREATE_INVOICE_ENDPOINT = 'https://api.icount.co.il/api/v3.php/doc/create
 
 SIM_DEBT_LIMIT = 300
 DOMAIN = 'http://185.25.116.226:8000'
+
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = int(os.getenv('REDIS_PORT'))
+REDIS_DB = int(os.getenv('REDIS_DB'))

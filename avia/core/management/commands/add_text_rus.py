@@ -36,7 +36,7 @@ class Command(BaseCommand):
             ['address_question', 'Пожалуйста, укажите ваш адрес.'],
             ['passport_photo_question', 'Пожалуйста, отправьте фото вашего паспорта'],
             ['confirm_application', 'Подтвердите данные:'],
-            ['contact_soon', 'Спасибо за заявку. Скоро с вами свяжемся.'],
+            ['contact_soon', 'Спасибо за заявку. Скоро с вами свяжемся. '],
             ['fio_receiver_question', 'Пожалуйста, введите ФИО получателя'],
             ['phone_receiver_question', 'Пожалуйста, введите телефон получателя'],
             ['flight_button', 'Билет'],

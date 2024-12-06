@@ -34,16 +34,16 @@ async def choose_language_keyboard():
 async def flight_or_parcel_keyboard(language):
     keyboard = InlineKeyboardBuilder()
 
-    flight_button = await sync_to_async(TGText.objects.get)(slug='flight_button', language=language)
-    parcel_button = await sync_to_async(TGText.objects.get)(slug='parcel_button', language=language)
+    #flight_button = await sync_to_async(TGText.objects.get)(slug='flight_button', language=language)
+    #parcel_button = await sync_to_async(TGText.objects.get)(slug='parcel_button', language=language)
     sim_button = await sync_to_async(TGText.objects.get)(slug='sim_button', language=language)
-    faq_button = await sync_to_async(TGText.objects.get)(slug='faq', language=language)
+    #faq_button = await sync_to_async(TGText.objects.get)(slug='faq', language=language)
 
-    # keyboard.add(types.InlineKeyboardButton(text=flight_button.text, callback_data = f'flight'))
-    # keyboard.add(types.InlineKeyboardButton(text=parcel_button.text, callback_data = f'parcel'))
+    #keyboard.add(types.InlineKeyboardButton(text=flight_button.text, callback_data = f'flight'))
+    #keyboard.add(types.InlineKeyboardButton(text=parcel_button.text, callback_data = f'parcel'))
     transfer = types.InlineKeyboardButton(text='Перевод', url = 'https://t.me/Roma0927')
     keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'), transfer)
-    # keyboard.row(types.InlineKeyboardButton(text=faq_button.text, callback_data = f'faq'))
+    #keyboard.row(types.InlineKeyboardButton(text=faq_button.text, callback_data = f'faq'))
 
     return keyboard.as_markup()
 

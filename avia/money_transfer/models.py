@@ -385,6 +385,7 @@ Operation_types = (
     (4, 'получено от Равшана'),
 )
 
+
 operation_types_dict = dict(Operation_types)
 class DebitCredit(models.Model):
     amount = models.FloatField(verbose_name='Сумма в $', default=0)
@@ -532,9 +533,8 @@ class Report(models.Model):
         return [first_driver, second_driver, third_driver]
 
 
-
 @receiver(post_save, sender=Transfer)
-def update_delivery_valid(sender, instance, **kwargs):
+def update_delivery_valid(sender, instance: Transfer, **kwargs):
     usd_amount = 0
     commission = 0
 
@@ -624,14 +624,18 @@ def update_delivery_valid(sender, instance, **kwargs):
                                 \n\
                                 \n*Отправление:*\
                                 \nНомер отправителя: *{instance.delivery.sender.phone}*\
-                                \nСумма в ₪: *{int(instance.delivery.ils_amount)}*\
-                                \nСумма в $: *{int(instance.delivery.usd_amount)}*\
+                                '''
+                    if instance.delivery.ils_amount:
+                        message += f'\nСумма в ₪: *{int(instance.delivery.ils_amount)}*'
+                    
+                    message += f'''\nСумма в $: *{int(instance.delivery.usd_amount)}*\
                                 \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
-                                \nИтого в $: *{int(instance.delivery.total_usd)}*\
-                                \n\
-                                \n*Получатели:*\
-                               '''
-                    usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
+                                '''
+
+                    if instance.delivery.ils_amount:     
+                        message += f'Итого в $: *{int(instance.delivery.total_usd)}*'
+                    
+                    message += f'\n\n*Получатели:*'
 
                     for num, transfer in enumerate(instance.delivery.transfers.all()):
                         if transfer.pick_up:
@@ -679,7 +683,7 @@ def update_delivery_valid(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=BuyRate)
-def update_gspread_buy_rate(sender, instance, created, **kwargs):
+def update_gspread_buy_rate(sender, instance: BuyRate, created, **kwargs):
     if not created:
         ids = Delivery.objects.filter(created_at__date=instance.date).values_list('id', flat=True)
         ids = list(ids)
@@ -698,4 +702,59 @@ def update_gspread_buy_rate(sender, instance, created, **kwargs):
                         )
                     except:
                         pass
-                    
+
+
+@receiver(post_save, sender=Delivery)
+def update_gspread_buy_rate(sender, instance: Delivery, created, **kwargs):
+    if (not created and instance.approved_by_client is not None and\
+    instance.created_by_callcenter and instance.circuit_id is None and\
+    instance.valid):
+        if instance.approved_by_client:
+            if (instance.status_message is None) or ('Доставка передана в Circuit' not in instance.status_message and\
+            'Ошибка передачи в Circuit (необходимо вручную)' not in instance.status_message and\
+            'Получено от отправителя' not in instance.status_message and 'Отменено клиентом' not in instance.status_message):
+
+                codes = ''
+                for transfer in instance.transfers.all():
+                    codes += f'{transfer.id}, '
+
+                try:
+                    delivery_to_gspread(instance)
+                    gspread = True
+                except Exception as ex:
+                    gspread = False
+
+                    try:
+                        AppError.objects.create(
+                            source='5',
+                            error_type='6',
+                            description=f'Не удалось перенести данные в гугл таблицу (отправка денег, создание - через подтверждение клиентом). {instance.id}. {ex}',
+                        )
+                    except:
+                        pass
+
+                codes = codes.rstrip(', ')
+                stop_id = send_pickup_address(instance.sender, instance, codes)
+                if stop_id:
+                    api_status = Status.objects.get(slug='api')
+                    instance.circuit_id = stop_id
+                    instance.circuit_api = True
+                    instance.status = api_status
+                    instance.status_message = 'Доставка передана в Circuit.'
+                else:
+                    api_error_status = Status.objects.get(slug='api_error')
+                    instance.circuit_api = False
+                    instance.status = api_error_status
+                    instance.status_message = 'Ошибка передачи в Circuit (необходимо вручную).'
+                
+                if not gspread:
+                    instance.status_message += ' Ошибка при записи в гугл таблицу.'
+                    instance.gspread_api = False
+                else:
+                    instance.gspread_api = True
+
+        else:
+            api_status = Status.objects.get(slug='cancelled')
+            instance.status = api_status
+            instance.status_message = 'Отменено клиентом'
+            instance.save(update_fields=['status', 'status_message'])
