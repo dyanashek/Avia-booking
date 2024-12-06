@@ -12,6 +12,8 @@ class Command(BaseCommand):
             ['api_error', 'Ошибка передачи данных в Circuit'],
             ['finished', 'Получено от отправителя'],
             ['attempted', 'Не удалось забрать у отправителя'],
+            ['waiting', 'Ожидает подтверждения клиентом'],
+            ['cancelled', 'Отменено клиентом'],
         ]
         
         for item in statuses:

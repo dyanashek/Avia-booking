@@ -492,7 +492,7 @@ def send_message_on_telegram(params, token=TELEGRAM_TOKEN):
             )
         except:
             pass
-
+        
     return response
 
 

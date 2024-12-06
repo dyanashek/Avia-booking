@@ -94,6 +94,11 @@ class TGUserAdmin(admin.ModelAdmin):
               'phone', 'addresses', 'lat', 'lon', 'sex', 'birth_date', 'start_date',
                'end_date', 'passport_number', 'passport_photo_user', 'created_at')
 
+    def has_module_permission(self, request):
+        if request.user.groups.count() == 1 and request.user.groups.first().name == 'Call-center':
+            return False
+        return True
+
 
 @admin.register(Parcel)
 class ParcelAdmin(admin.ModelAdmin):

@@ -96,7 +96,7 @@ class Route(models.Model):
 
 class TGUser(models.Model):
     user_id = models.CharField(verbose_name='Телеграм id', max_length=100, unique=True)
-    language = models.ForeignKey(Language, verbose_name='Язык', on_delete=models.SET_NULL, related_name='users', null=True,)
+    language = models.ForeignKey(Language, verbose_name='Язык', on_delete=models.SET_DEFAULT, related_name='users', blank=True, default=1,)
     username = models.CharField(verbose_name='Ник телеграм', max_length=100, null=True, blank=True)
     name = models.CharField(verbose_name='Имя', max_length=100, null=True, blank=True)
     family_name = models.CharField(verbose_name='Фамилия', max_length=100, null=True, blank=True)

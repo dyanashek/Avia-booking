@@ -203,6 +203,25 @@ async def language_message(message: types.Message):
             pass
 
 
+@dp.message(ChatTypeFilter(chat_type='private'), Command("id"))
+async def language_message(message: types.Message):
+    try:
+        message.reply(
+            text=f'*Telegram ID:* {message.from_user.id}',
+            parse_mode='Markdown',
+        )
+    except:
+        try:
+            await sync_to_async(AppError.objects.create)(
+                source='1',
+                error_type='2',
+                main_user=message.from_user.id,
+                description=f'Не удалось отправить id пользователю {message.from_user.id}.',
+            )
+        except:
+            pass
+
+
 @dp.callback_query()
 async def callback_query(call: types.CallbackQuery):
     """Handles queries from inline keyboards."""

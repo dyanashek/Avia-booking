@@ -71,9 +71,8 @@ class ReceiverAdmin(VersionAdmin):
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
     change_list_template = "admin/delivery_change_list.html"
-    fields = ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver',)
     search_fields = ('sender__name', 'sender__phone',)
-    list_filter = ('valid', 'status', 'created_by', 'driver')
+    list_filter = ('valid', 'status', 'created_by', 'driver', 'created_by_callcenter', 'approved_by_client', 'invite_client',)
     inlines = (TransferInline,)
     autocomplete_fields = ('sender',)
     
@@ -81,7 +80,7 @@ class DeliveryAdmin(VersionAdmin):
         if request.user.is_superuser:
             return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
         else:
-            return ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver',)
+            return ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver', 'invite_client')
 
     def final_commission(self, obj):
         if obj.commission == 0:
@@ -93,7 +92,7 @@ class DeliveryAdmin(VersionAdmin):
             return [field.name for field in self.model._meta.fields]
         elif request.user.is_superuser:
             return tuple()
-        return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd', 'driver',)
+        return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd', 'driver', 'invite_client',)
 
     def download_report(self, request):
         date_from = datetime.datetime.strptime(request.POST.get('date_from'), '%Y-%m-%d').date()
@@ -126,6 +125,11 @@ class DeliveryAdmin(VersionAdmin):
 
     def save_model(self, request, obj, form, change,):
         if request.user and obj.pk is None:
+            user_groups = request.user.groups.all()
+            for group in user_groups:
+                if group.name == 'Call-center':
+                    obj.created_by_callcenter = True
+                    obj.approved_by_client = None
             obj.created_by = request.user
 
         super().save_model(request, obj, form, change)
@@ -157,7 +161,7 @@ class DeliveryAdmin(VersionAdmin):
         return '-'
     
     def get_list_display(self, request, obj=None):
-        fields = ['pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes', 'created_at',]
+        fields = ['pk', 'sender', 'final_commission', 'valid', 'status_message', 'receivers_codes', 'created_at', 'invite_client']
         for delivery in super().get_queryset(request):
             if delivery.circuit_api is False:
                 if 'to_circuit_button' not in fields:
@@ -239,6 +243,11 @@ class TransferAdmin(VersionAdmin):
     search_fields = ('pk',)
     list_filter = (DatePassedFilter, 'credit',)
     readonly_fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount')
+
+    def has_module_permission(self, request):
+        if request.user.groups.count() == 1 and request.user.groups.first().name == 'Call-center':
+            return False
+        return True
 
 
 @admin.register(DebitCredit)

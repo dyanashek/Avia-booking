@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import post_save
@@ -7,6 +9,8 @@ from django.db.models.functions import Coalesce
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspread, get_delivery_ids, update_delivery_buy_rate
 from errors.models import AppError
+from core.utils import send_message_on_telegram
+from config import TELEGRAM_BOT
 
 User = get_user_model()
 
@@ -142,6 +146,10 @@ class Delivery(models.Model):
 
     circuit_api = models.BooleanField(null=True, blank=True, default=None)
     gspread_api = models.BooleanField(null=True, blank=True, default=None)
+
+    created_by_callcenter = models.BooleanField(verbose_name='Создано колл центром?', default=False)
+    approved_by_client = models.BooleanField(verbose_name='Одобрено клиентом?', null=True, blank=True, default=True)
+    invite_client = models.CharField(verbose_name='Ссылка для подтверждения', max_length=512, null=True, blank=True)
 
     class Meta:
         verbose_name = 'доставка'
@@ -564,45 +572,104 @@ def update_delivery_valid(sender, instance, **kwargs):
             instance.delivery.valid = True
             instance.delivery.commission = round(commission + instance.delivery.calculate_commission(), 2)
             
-            if (instance.delivery.status_message is None) or ('Доставка передана в Circuit' not in instance.delivery.status_message and\
-            'Ошибка передачи в Circuit (необходимо вручную)' not in instance.delivery.status_message and 'Получено от отправителя' not in instance.delivery.status_message):
-                instance.delivery.status = success_status
-                instance.delivery.status_message = 'Доставка сохранена.'
-
-                try:
-                    delivery_to_gspread(instance.delivery)
-                    gspread = True
-                except Exception as ex:
-                    gspread = False
+            if not instance.delivery.created_by_callcenter:
+                if (instance.delivery.status_message is None) or ('Доставка передана в Circuit' not in instance.delivery.status_message and\
+                'Ошибка передачи в Circuit (необходимо вручную)' not in instance.delivery.status_message and 'Получено от отправителя' not in instance.delivery.status_message):
+                    instance.delivery.status = success_status
+                    instance.delivery.status_message = 'Доставка сохранена.'
 
                     try:
-                        AppError.objects.create(
-                            source='5',
-                            error_type='6',
-                            description=f'Не удалось перенести данные в гугл таблицу (отправка денег, создание). {instance.delivery.id}. {ex}',
-                        )
-                    except:
-                        pass
+                        delivery_to_gspread(instance.delivery)
+                        gspread = True
+                    except Exception as ex:
+                        gspread = False
 
-                codes = codes.rstrip(', ')
-                stop_id = send_pickup_address(instance.delivery.sender, instance.delivery, codes)
-                if stop_id:
-                    api_status = Status.objects.get(slug='api')
-                    instance.delivery.circuit_id = stop_id
-                    instance.delivery.circuit_api = True
-                    instance.delivery.status = api_status
-                    instance.delivery.status_message = 'Доставка передана в Circuit.'
+                        try:
+                            AppError.objects.create(
+                                source='5',
+                                error_type='6',
+                                description=f'Не удалось перенести данные в гугл таблицу (отправка денег, создание). {instance.delivery.id}. {ex}',
+                            )
+                        except:
+                            pass
+
+                    codes = codes.rstrip(', ')
+                    stop_id = send_pickup_address(instance.delivery.sender, instance.delivery, codes)
+                    if stop_id:
+                        api_status = Status.objects.get(slug='api')
+                        instance.delivery.circuit_id = stop_id
+                        instance.delivery.circuit_api = True
+                        instance.delivery.status = api_status
+                        instance.delivery.status_message = 'Доставка передана в Circuit.'
+                    else:
+                        api_error_status = Status.objects.get(slug='api_error')
+                        instance.delivery.circuit_api = False
+                        instance.delivery.status = api_error_status
+                        instance.delivery.status_message = 'Ошибка передачи в Circuit (необходимо вручную).'
+                    
+                    if not gspread:
+                        instance.delivery.status_message += ' Ошибка при записи в гугл таблицу.'
+                        instance.delivery.gspread_api = False
+                    else:
+                        instance.delivery.gspread_api = True
+
+            else:
+                api_status = Status.objects.get(slug='waiting')
+                instance.delivery.status = api_status
+                instance.delivery.status_message = 'Ожидает подтверждения клиентом.'
+
+                if instance.delivery.sender.user:
+                    message = f'''
+                                \nПодтвердите информацию о переводе!\
+                                \n\
+                                \n*Отправление:*\
+                                \nНомер отправителя: *{instance.delivery.sender.phone}*\
+                                \nСумма в ₪: *{int(instance.delivery.ils_amount)}*\
+                                \nСумма в $: *{int(instance.delivery.usd_amount)}*\
+                                \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
+                                \nИтого в $: *{int(instance.delivery.total_usd)}*\
+                                \n\
+                                \n*Получатели:*\
+                               '''
+                    usd_amount = models.FloatField(verbose_name='Сумма в долларах', default=0)
+
+                    for num, transfer in enumerate(instance.delivery.transfers.all()):
+                        if transfer.pick_up:
+                            pick_up = 'да'
+                        else:
+                            pick_up = 'нет'
+
+                        transfer_message = f'''\n{num + 1}. Код получения: *{transfer.id}*\
+                                            \nНомер получателя: *{transfer.receiver.phone}*\
+                                            \nСумма: *{int(transfer.usd_amount)} $*\
+                                            \nДоставка: *{pick_up}*\
+                                            '''
+                        
+                        if transfer.address:
+                            address = transfer.address.address
+                            transfer_message += f'\nАдрес: *{address}*'
+                        transfer_message += '\n'
+                        message += transfer_message
+
+                    params = {
+                        'chat_id': instance.delivery.sender.user.user_id,
+                        'text': message,
+                        'parse_mode': 'Markdown',
+                        'reply_markup': json.dumps({
+                            'inline_keyboard': [
+                                [{'text': '✅', 'callback_data': f'approvetransfer_{instance.delivery.id}'},
+                                {'text': '❌', 'callback_data': f'canceltransfer_{instance.delivery.id}'}],
+                            ]
+                        })
+                    }
+                    response = send_message_on_telegram(params)
+                    if not (response and response.ok):
+                        instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
                 else:
-                    api_error_status = Status.objects.get(slug='api_error')
-                    instance.delivery.circuit_api = False
-                    instance.delivery.status = api_error_status
-                    instance.delivery.status_message = 'Ошибка передачи в Circuit (необходимо вручную).'
+                    instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
                 
-                if not gspread:
-                    instance.delivery.status_message += ' Ошибка при записи в гугл таблицу.'
-                    instance.delivery.gspread_api = False
-                else:
-                    instance.delivery.gspread_api = True
+                instance.delivery.save(update_fields=['status', 'status_message', 'invite_client'])
+
         else:
             instance.delivery.valid = False
             instance.delivery.status = error_status
