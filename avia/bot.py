@@ -11,6 +11,8 @@ from bot.handlers import (
     old_photo_handlers,
     old_query_handlers,
     old_text_handlers,
+    transfers_handler,
+    navigation_handler,
 )
 
 
@@ -27,6 +29,8 @@ async def main() -> None:
     bot = Bot(token=config.TELEGRAM_TOKEN)
     dp = Dispatcher(storage=storage)
 
+    dp.include_router(transfers_handler.router)
+    dp.include_router(navigation_handler.router)
     dp.include_router(old_commands_handlers.router)
     dp.include_router(old_query_handlers.router)
     dp.include_router(old_text_handlers.router)

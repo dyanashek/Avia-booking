@@ -37,3 +37,5 @@ DOMAIN = 'http://185.25.116.226:8000'
 REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = int(os.getenv('REDIS_PORT'))
 REDIS_DB = int(os.getenv('REDIS_DB'))
+
+PER_PAGE = 5

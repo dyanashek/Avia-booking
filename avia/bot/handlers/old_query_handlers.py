@@ -2154,7 +2154,7 @@ async def callback_query(call: types.CallbackQuery):
 
                 name_text = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                 familyname_text = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
-                #TODO:
+               
                 reply_text = f'''
                             *Заявка от пользователя на симку:*\
                             \n\

@@ -614,65 +614,69 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                         instance.delivery.gspread_api = True
 
             else:
-                api_status = Status.objects.get(slug='waiting')
-                instance.delivery.status = api_status
-                instance.delivery.status_message = 'Ожидает подтверждения клиентом.'
+                if (instance.delivery.status_message is None) or ('Доставка передана в Circuit' not in instance.delivery.status_message and\
+                'Ошибка передачи в Circuit (необходимо вручную)' not in instance.delivery.status_message and\
+                'Получено от отправителя' not in instance.delivery.status_message and 'Ожидает подтверждения клиентом' not in instance.delivery.status_message):
+                    api_status = Status.objects.get(slug='waiting')
+                    instance.delivery.status = api_status
+                    instance.delivery.status_message = 'Ожидает подтверждения клиентом.'
 
-                if instance.delivery.sender.user:
-                    message = f'''
-                                \nПодтвердите информацию о переводе!\
-                                \n\
-                                \n*Отправление:*\
-                                \nНомер отправителя: *{instance.delivery.sender.phone}*\
-                                '''
-                    if instance.delivery.ils_amount:
-                        message += f'\nСумма в ₪: *{int(instance.delivery.ils_amount)}*'
-                    
-                    message += f'''\nСумма в $: *{int(instance.delivery.usd_amount)}*\
-                                \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
-                                '''
-
-                    if instance.delivery.ils_amount:     
-                        message += f'Итого в $: *{int(instance.delivery.total_usd)}*'
-                    
-                    message += f'\n\n*Получатели:*'
-
-                    for num, transfer in enumerate(instance.delivery.transfers.all()):
-                        if transfer.pick_up:
-                            pick_up = 'да'
-                        else:
-                            pick_up = 'нет'
-
-                        transfer_message = f'''\n{num + 1}. Код получения: *{transfer.id}*\
-                                            \nНомер получателя: *{transfer.receiver.phone}*\
-                                            \nСумма: *{int(transfer.usd_amount)} $*\
-                                            \nДоставка: *{pick_up}*\
-                                            '''
+                    if instance.delivery.sender.user:
+                        message = f'''
+                                    \nПодтвердите информацию о переводе!\
+                                    \n\
+                                    \n*Отправление:*\
+                                    \nНомер отправителя: *{instance.delivery.sender.phone}*\
+                                    '''
+                        if instance.delivery.ils_amount:
+                            message += f'\nСумма в ₪: *{int(instance.delivery.ils_amount)}*'
                         
-                        if transfer.address:
-                            address = transfer.address.address
-                            transfer_message += f'\nАдрес: *{address}*'
-                        transfer_message += '\n'
-                        message += transfer_message
+                        message += f'''\nСумма в $: *{int(instance.delivery.usd_amount)}*\
+                                    \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
+                                    '''
 
-                    params = {
-                        'chat_id': instance.delivery.sender.user.user_id,
-                        'text': message,
-                        'parse_mode': 'Markdown',
-                        'reply_markup': json.dumps({
-                            'inline_keyboard': [
-                                [{'text': '✅', 'callback_data': f'approvetransfer_{instance.delivery.id}'},
-                                {'text': '❌', 'callback_data': f'canceltransfer_{instance.delivery.id}'}],
-                            ]
-                        })
-                    }
-                    response = send_message_on_telegram(params)
-                    if not (response and response.ok):
+                        if instance.delivery.ils_amount:     
+                            message += f'Итого в $: *{int(instance.delivery.total_usd)}*'
+                        
+                        message += f'\n\n*Получатели:*'
+
+                        for num, transfer in enumerate(instance.delivery.transfers.all()):
+                            if transfer.pick_up:
+                                pick_up = 'да'
+                            else:
+                                pick_up = 'нет'
+
+                            transfer_message = f'''\n{num + 1}. Код получения: *{transfer.id}*\
+                                                \nНомер получателя: *{transfer.receiver.phone}*\
+                                                \nСумма: *{int(transfer.usd_amount)} $*\
+                                                \nДоставка: *{pick_up}*\
+                                                '''
+                            
+                            if transfer.address:
+                                address = transfer.address.address
+                                transfer_message += f'\nАдрес: *{address}*'
+                            transfer_message += '\n'
+                            message += transfer_message
+
+                        params = {
+                            'chat_id': instance.delivery.sender.user.user_id,
+                            'text': message,
+                            'parse_mode': 'Markdown',
+                            'reply_markup': json.dumps({
+                                'inline_keyboard': [
+                                    [{'text': '✅', 'callback_data': f'delivery:confirm:{instance.delivery.id}'},
+                                    {'text': '❌', 'callback_data': f'delivery:cancel:{instance.delivery.id}'}],
+                                ]
+                            })
+                        }
+
+                        response = send_message_on_telegram(params)
+                        if not response or not response.ok:
+                            instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
+                        else:
+                            instance.delivery.invite_client = f'отправлено: https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
+                    else:
                         instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
-                else:
-                    instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
-                
-                instance.delivery.save(update_fields=['status', 'status_message', 'invite_client'])
 
         else:
             instance.delivery.valid = False
@@ -753,7 +757,9 @@ def update_gspread_buy_rate(sender, instance: Delivery, created, **kwargs):
                 else:
                     instance.gspread_api = True
 
-        else:
+                instance.save()
+
+        elif 'Отменено клиентом' not in instance.status_message:
             api_status = Status.objects.get(slug='cancelled')
             instance.status = api_status
             instance.status_message = 'Отменено клиентом'

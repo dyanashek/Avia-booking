@@ -18,6 +18,7 @@ from money_transfer.models import Delivery
 from errors.models import AppError
 from sim.models import SimCard
 
+from bot.new_keyboards import new_keyboards
 import config
 import keyboards
 import utils
@@ -99,6 +100,7 @@ async def start_message(message: types.Message, command: CommandObject):
                     try:
                         await message.answer(
                             text=reply_message, 
+                            reply_markup=await new_keyboards.delivery_action_keyboard(delivery.id),
                             parse_mode='Markdown',
                             )
 

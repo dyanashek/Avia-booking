@@ -44,6 +44,7 @@ async def flight_or_parcel_keyboard(language):
     transfer = types.InlineKeyboardButton(text='Перевод', url = 'https://t.me/Roma0927')
     keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'), transfer)
     #keyboard.row(types.InlineKeyboardButton(text=faq_button.text, callback_data = f'faq'))
+    #keyboard.row(types.InlineKeyboardButton(text='Мои переводы', callback_data = 'deliveries:all:1'))
 
     return keyboard.as_markup()
 
@@ -209,6 +210,7 @@ async def ready_pay_only_keyboard(language):
     ready_pay_button = await sync_to_async(TGText.objects.get)(slug='ready_pay_button', language=language)
 
     keyboard.row(types.InlineKeyboardButton(text=ready_pay_button.text, callback_data='readypay'))
+    keyboard.row(types.InlineKeyboardButton(text='⬅️ Назад', callback_data='back:menu'))
 
     return keyboard.as_markup()
 
