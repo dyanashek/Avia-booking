@@ -114,6 +114,7 @@ class TGUser(models.Model):
     curr_input = models.CharField(verbose_name='Текущий ввод', max_length=100, null=True, blank=True, default=None)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
     active = models.BooleanField(verbose_name='Пользователь активен?', default=True)
+    thread_id = models.IntegerField(verbose_name='Thread ID', blank=True, null=True, default=None)
 
     class Meta:
         verbose_name = 'клиент'
@@ -451,6 +452,9 @@ class UserMessage(models.Model):
                 'text': text,
                 'parse_mode': "Markdown",
             }
+        if self.user.thread_id:
+            params['message_thread_id'] = self.user.thread_id
+
         send_message_on_telegram(params)
         super().save(*args, **kwargs)
 
@@ -479,7 +483,7 @@ def handle_notification(sender, instance, **kwargs):
                 'chat_id': instance.user.user_id,
                 'text': instance.text,
             }
-
+        
         try:
             response = send_message_on_telegram(params)
             instance.notified = True

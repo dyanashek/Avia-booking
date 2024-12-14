@@ -414,7 +414,6 @@ async def handle_text(message: types.Message):
                 except:
                     pass
 
-
     elif curr_input:
         flight = await sync_to_async(Flight.objects.filter(user=user, complete__isnull=True).first)()
         parcel = await sync_to_async(Parcel.objects.filter(user=user, complete__isnull=True).first)()
@@ -1151,16 +1150,29 @@ async def handle_text(message: types.Message):
                             pass
     
     else:
+        if not user.thread_id:
+            topic_name = ''
+            sim_card = await sync_to_async(user.sim_cards.first)()
+            if sim_card:
+                topic_name += f'{sim_card.sim_phone} '
+            topic_name += user.user_id
+
+            new_thread = await message.bot.create_forum_topic(
+                chat_id=config.MESSAGES_CHAT_ID,
+                name=topic_name,
+            )
+            user.thread_id = new_thread.message_thread_id
+            await sync_to_async(user.save)(update_fields=['thread_id'])
         await sync_to_async(UserMessage.objects.create)(
             user=user,
             message=input_info,
         )
 
 
-@router.message(ChatTypeFilter(chat_type='group'), F.text)
+@router.message(ChatTypeFilter(chat_type=['group', 'supergroup']), F.text)
 async def handle_text(message):
     reply_text = message.text
-    if message.reply_to_message:
+    if message.reply_to_message and str(message.chat.id) == config.MESSAGES_CHAT_ID:
         text = message.reply_to_message.text
 
         if 'TG id: ' in text:
