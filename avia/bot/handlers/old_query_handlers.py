@@ -1969,7 +1969,7 @@ async def callback_query(call: types.CallbackQuery):
                           \n*{sim_debt.text}: {abs(users_sim.debt)}₪*\
                           '''
             try:
-                await call.delete.message()
+                await call.message.delete()
             except:
                 try:
                     await sync_to_async(AppError.objects.create)(
