@@ -1150,19 +1150,23 @@ async def handle_text(message: types.Message):
                             pass
     
     else:
-        if not user.thread_id:
-            topic_name = ''
-            sim_card = await sync_to_async(user.sim_cards.first)()
-            if sim_card:
-                topic_name += f'{sim_card.sim_phone} '
-            topic_name += user.user_id
+        try:
+            if not user.thread_id:
+                topic_name = ''
+                sim_card = await sync_to_async(user.sim_cards.first)()
+                if sim_card:
+                    topic_name += f'{sim_card.sim_phone} '
+                topic_name += user.user_id
 
-            new_thread = await message.bot.create_forum_topic(
-                chat_id=config.MESSAGES_CHAT_ID,
-                name=topic_name,
-            )
-            user.thread_id = new_thread.message_thread_id
-            await sync_to_async(user.save)(update_fields=['thread_id'])
+                new_thread = await message.bot.create_forum_topic(
+                    chat_id=config.MESSAGES_CHAT_ID,
+                    name=topic_name,
+                )
+                user.thread_id = new_thread.message_thread_id
+                await sync_to_async(user.save)(update_fields=['thread_id'])
+        except:
+            pass
+        
         await sync_to_async(UserMessage.objects.create)(
             user=user,
             message=input_info,
