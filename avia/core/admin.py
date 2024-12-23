@@ -81,7 +81,7 @@ class TGUserAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'username', 'active', 'name', 'family_name', 'get_thumbnail')
     search_fields = ('user_id', 'username', 'name', 'family_name', 'sim_cards__sim_phone',)
     readonly_fields = ('created_at', 'active',)
-    list_filter = ('active',)
+    list_filter = ('active', 'language',)
     fields = ('user_id', 'language', 'username', 'active', 'name', 'family_name',
               'phone', 'addresses', 'lat', 'lon', 'sex', 'birth_date', 'start_date',
                'end_date', 'passport_number', 'passport_photo_user', 'created_at')
