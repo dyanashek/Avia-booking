@@ -3,6 +3,7 @@ import tempfile
 import requests
 import datetime
 import time
+import threading
 
 import pandas
 import gspread
@@ -84,7 +85,7 @@ def send_pickup_address(sender, delivery, codes):
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
-                redistribute_plan()
+                threading.Thread(target=redistribute_plan).start()
             except Exception as ex:
                 try:
                     AppError.objects.create(

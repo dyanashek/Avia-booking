@@ -1,5 +1,7 @@
 import requests
 import tempfile
+import time 
+import threading
 
 import pandas
 
@@ -15,7 +17,13 @@ def reoptimize_plan():
 
 
 def redistribute_plan():
-    requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    start = time.time()
+    while not response.ok:
+        response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+        if time.time() - start > 60:
+            break
+        time.sleep(3)
 
 
 def send_parcel_pickup_address(application):
@@ -62,7 +70,7 @@ def send_parcel_pickup_address(application):
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
-                redistribute_plan()
+                threading.Thread(target=redistribute_plan).start()
             except Exception as ex:
                 try:
                     AppError.objects.create(

@@ -4,6 +4,7 @@ import ssl
 import certifi
 import tempfile
 import time
+import threading
 
 import pandas
 
@@ -102,7 +103,8 @@ async def send_pickup_address(application, application_type):
 
                         try:
                             reoptimize_plan()
-                            redistribute_plan()
+                            threading.Thread(target=redistribute_plan).start()
+                            threading.Thread(target=redistribute_plan).start()
                         except Exception as ex:
                             try:
                                 curr_user = await sync_to_async(lambda: application.user)()
@@ -199,7 +201,7 @@ async def send_sim_delivery_address(phone, user, fare):
 
                         try:
                             reoptimize_plan()
-                            redistribute_plan()
+                            threading.Thread(target=redistribute_plan).start()
                         except Exception as ex:
                             try:
                                 await sync_to_async(AppError.objects.create)(
@@ -296,7 +298,7 @@ async def send_sim_money_collect_address(phone, user, debt):
 
                         try:
                             reoptimize_plan()
-                            redistribute_plan()
+                            threading.Thread(target=redistribute_plan).start()
                         except Exception as ex:
                             try:
                                 await sync_to_async(AppError.objects.create)(
@@ -606,7 +608,7 @@ def send_pickup_address_sync(application, application_type):
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
-                redistribute_plan()
+                threading.Thread(target=redistribute_plan).start()
             except Exception as ex:
                 try:
                     AppError.objects.create(
@@ -701,7 +703,7 @@ def send_sim_delivery_address_sync(phone, user, fare):
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
-                redistribute_plan()
+                threading.Thread(target=redistribute_plan).start()
             except:
                 pass
         else:
@@ -846,7 +848,7 @@ def send_sim_money_collect_address_sync(phone, user, debt):
             stop_id = response.json().get('stop').get('id')
             try:
                 reoptimize_plan()
-                redistribute_plan()
+                threading.Thread(target=redistribute_plan).start()
             except Exception as ex:
                 try:
                     AppError.objects.create(
