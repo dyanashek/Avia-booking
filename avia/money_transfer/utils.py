@@ -2,6 +2,7 @@ import asyncio
 import tempfile
 import requests
 import datetime
+import time
 
 import pandas
 import gspread
@@ -28,7 +29,13 @@ def reoptimize_plan():
 
 
 def redistribute_plan():
-    requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    start = time.time()
+    while not response.ok:
+        response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+        if time.time() - start > 60:
+            break
+        time.sleep(3)
 
 
 def send_pickup_address(sender, delivery, codes):

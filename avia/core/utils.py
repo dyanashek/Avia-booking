@@ -3,7 +3,7 @@ import aiohttp
 import ssl
 import certifi
 import tempfile
-
+import time
 
 import pandas
 
@@ -34,7 +34,13 @@ def reoptimize_plan():
 
 
 def redistribute_plan():
-    requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+    start = time.time()
+    while not response.ok:
+        response = requests.post(settings.REDISTRIBUTE_PLAN_ENDPOINT , headers=settings.CURCUIT_HEADER)
+        if time.time() - start > 60:
+            break
+        time.sleep(3)
 
 
 async def send_pickup_address(application, application_type):
