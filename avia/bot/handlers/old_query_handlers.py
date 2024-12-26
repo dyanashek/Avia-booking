@@ -2378,6 +2378,7 @@ async def callback_query(call: types.CallbackQuery):
 
                 sim_card.ready_to_pay = True
                 if stop_id:
+                    sim_card.pay_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()
                     sim_card.circuit_id_collect = stop_id
                     sim_card.circuit_api_collect = True
                 else:
