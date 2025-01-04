@@ -179,7 +179,7 @@ async def see_delivery(callback: CallbackQuery, callback_data: DeliveryCallbackF
                     '''
 
         if delivery.ils_amount:     
-            reply_message += f'Итого в $: *{int(delivery.total_usd)}*'
+            reply_message += f'\nИтого в $: *{int(delivery.total_usd)}*'
         
         reply_message += f'\n\n*Получатели:*'
 

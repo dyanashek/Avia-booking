@@ -72,7 +72,7 @@ async def start_message(message: types.Message, command: CommandObject):
                                 '''
 
                     if delivery.ils_amount:     
-                        reply_message += f'Итого в $: *{int(delivery.total_usd)}*'
+                        reply_message += f'\nИтого в $: *{int(delivery.total_usd)}*'
                     
                     reply_message += f'\n\n*Получатели:*'
 

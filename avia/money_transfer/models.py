@@ -636,7 +636,7 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                                     '''
 
                         if instance.delivery.ils_amount:     
-                            message += f'Итого в $: *{int(instance.delivery.total_usd)}*'
+                            message += f'\nИтого в $: *{int(instance.delivery.total_usd)}*'
                         
                         message += f'\n\n*Получатели:*'
 
