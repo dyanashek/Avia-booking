@@ -29,7 +29,7 @@ class SimCardAdmin(admin.ModelAdmin):
               
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.icount_api and obj.to_main_bot and not request.user.is_superuser:
-            return [field.name for field in self.model._meta.fields]
+            return [field.name for field in self.model._meta.fields if not field.name in ('is_stopped',)]
         
         return []
 
