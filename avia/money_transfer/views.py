@@ -21,7 +21,7 @@ from core.utils import send_message_on_telegram
 from drivers.utils import construct_collect_sim_money_message, construct_delivery_sim_message
 from money_transfer.additional_utils import report_to_db, stop_to_report, extract_driver
 
-from config import TELEGRAM_DRIVERS_TOKEN
+from config import TELEGRAM_DRIVERS_TOKEN, DUPLICATE_SIM_MONEY
 
 # Create your views here.
 def get_sender_addresses(request):
@@ -186,6 +186,8 @@ def stop_status(request):
             if params:
                 try:
                     send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
+                    params['chat_id'] = DUPLICATE_SIM_MONEY
+                    #send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
                 except:
                     pass
 
@@ -227,6 +229,8 @@ def stop_status(request):
             if params:
                 try:
                     send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
+                    params['chat_id'] = DUPLICATE_SIM_MONEY
+                    #send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
                 except:
                     pass
     

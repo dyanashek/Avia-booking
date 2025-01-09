@@ -39,3 +39,5 @@ REDIS_PORT = int(os.getenv('REDIS_PORT'))
 REDIS_DB = int(os.getenv('REDIS_DB'))
 
 PER_PAGE = 5
+
+DUPLICATE_SIM_MONEY = os.getenv('DUPLICATE_SIM_MONEY')
