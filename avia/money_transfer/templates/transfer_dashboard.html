@@ -66,6 +66,8 @@
     .column-received .task-card { background-color: rgba(23, 162, 184, 0.1); border: 1px solid #17a2b8; }
     .column-loan .task-card { background-color: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; }
     .column-delivered .task-card { background-color: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; }
+    .column-cancelled .task-card { background-color: rgba(128, 0, 128, 0.1); border: 1px solid #800080; }
+    .column-waiting .task-card { background-color: rgba(255, 165, 0, 0.1); border: 1px solid #ffa500; }
 
     /* Подзадачи */
     .subtask {
@@ -97,6 +99,29 @@
         </div>
     </div>
   </form>
+  <div class="column">
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-error')"> Ошибка
+    </label>
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-cancelled')"> Отменено клиентом
+    </label>
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-waiting')"> Ожидает подтверждения клиентом
+    </label>
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-sent')"> Передано в Circuit
+    </label>
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-received')"> Получено
+    </label>
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-loan')"> Выдано (в кредит)
+    </label>
+    <label class="pe-2">
+      <input type="checkbox" checked onchange="ShowHideColumn(event, 'column-delivered')"> Выдано
+    </label>
+  </div>
   <!-- Горизонтальная прокрутка с задачами -->
   <div class="dashboard-container">
 
@@ -135,6 +160,84 @@
         {% endif %}
       {% endfor %}
     </div>
+
+    <!-- Колонка "Отменено клиентом" -->
+    <div class="task-column column-cancelled">
+      <h5>Отменено клиентом</h5>
+      {% for delivery in deliveries %}
+        {% if delivery.is_cancelled %}
+            <div class="task-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="task-number">#{{ delivery.id }}</div>
+                    <div class="small text-muted ms-2">{{ delivery.status }}</div>
+                    <div class="small text-muted ms-2">{{ delivery.created_at|israel_time }}</div>
+                </div>
+                <div class="task-info">Имя: {{ delivery.sender.name }}</div>
+                <div class="task-info">Номер: {{ delivery.sender.phone}}</div>
+                <div class="task-info">Адрес: {{ delivery.sender_address.address }}</div>
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if delivery.usd_amount %}<div class="task-amount task-info text-muted">{{ delivery.usd_amount|to_int }}$</div>{% endif %}
+                    {% if delivery.ils_amount %}<div class="task-amount task-info text-muted">{{ delivery.ils_amount|to_int }}₪</div>{% endif %}
+                    <div class="task-amount task-info text-muted">+{{ delivery.commission|to_int }}₪</div>
+                    {% if delivery.ils_amount %}<div class="task-amount task-info text-muted">({{ delivery.total_usd|to_int }}$)</div>{% endif %}
+                </div>
+                {% for transfer in delivery.transfers.all %}
+                    {% if not transfer.pass_date %}
+                        <div class="subtask">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Имя: {{ transfer.receiver.name }}</span><br>
+                                <div class="task-number">#{{ transfer.id }}</div>
+                            </div>
+                            {% if transfer.pick_up %}<span>Доставка: {{ transfer.address.address }}</span><br>{% endif %}
+                            <span>Телефон: {{ transfer.receiver.phone }}</span><br>
+                            <span>Сумма: {{ transfer.usd_amount|to_int }} $</span><br>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+
+    <!-- Колонка "Ожидает подтверждения клиентом" -->
+    <div class="task-column column-waiting">
+      <h5>Ожидает подтверждения клиентом</h5>
+      {% for delivery in deliveries %}
+        {% if delivery.is_waiting %}
+            <div class="task-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="task-number">#{{ delivery.id }}</div>
+                    <div class="small text-muted ms-2">{{ delivery.status }}</div>
+                    <div class="small text-muted ms-2">{{ delivery.created_at|israel_time }}</div>
+                </div>
+                <div class="task-info">Имя: {{ delivery.sender.name }}</div>
+                <div class="task-info">Номер: {{ delivery.sender.phone}}</div>
+                <div class="task-info">Адрес: {{ delivery.sender_address.address }}</div>
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if delivery.usd_amount %}<div class="task-amount task-info text-muted">{{ delivery.usd_amount|to_int }}$</div>{% endif %}
+                    {% if delivery.ils_amount %}<div class="task-amount task-info text-muted">{{ delivery.ils_amount|to_int }}₪</div>{% endif %}
+                    <div class="task-amount task-info text-muted">+{{ delivery.commission|to_int }}₪</div>
+                    {% if delivery.ils_amount %}<div class="task-amount task-info text-muted">({{ delivery.total_usd|to_int }}$)</div>{% endif %}
+                </div>
+                {% for transfer in delivery.transfers.all %}
+                    {% if not transfer.pass_date %}
+                        <div class="subtask">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Имя: {{ transfer.receiver.name }}</span><br>
+                                <div class="task-number">#{{ transfer.id }}</div>
+                            </div>
+                            {% if transfer.pick_up %}<span>Доставка: {{ transfer.address.address }}</span><br>{% endif %}
+                            <span>Телефон: {{ transfer.receiver.phone }}</span><br>
+                            <span>Сумма: {{ transfer.usd_amount|to_int }} $</span><br>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
 
     <!-- Колонка "Передано в Circuit" -->
     <div class="task-column column-sent">
@@ -310,6 +413,11 @@
       console.log('Фильтр по датам:', dateFrom, dateTo);
     });
   });
+
+  function ShowHideColumn (event, column) {
+    const ActionColumn = document.querySelector(`.${column}`)
+    ActionColumn.style.display = event.target.checked ? 'block' : 'none';
+  }
 </script>
 
 </body>

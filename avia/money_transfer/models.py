@@ -308,6 +308,18 @@ class Delivery(models.Model):
                 return True
         return False
 
+    @property
+    def is_waiting(self):
+        if self.status.slug == 'waiting':
+            return True
+        return False
+
+    @property
+    def is_cancelled(self):
+        if self.status.slug == 'cancelled':
+            return True
+        return False
+
 
 class Rate(models.Model):
     slug = models.CharField(verbose_name='Валютная пара', max_length=10, unique=True)

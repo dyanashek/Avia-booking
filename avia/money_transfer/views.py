@@ -365,13 +365,17 @@ class TransferDashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        date_today = datetime.datetime.utcnow()
+        date_before = date_today - datetime.timedelta(days=7)
+        date_today_text = date_today.strftime("%Y-%m-%d")
+        date_before_text = date_before.strftime("%Y-%m-%d")
         queryset = Delivery.objects.order_by('-created_at').all()
-        date_from = self.request.GET.get('date-from')
+        date_from = self.request.GET.get('date-from', date_before_text)
         if date_from:
             context['date_from'] = date_from
             date_from = datetime.datetime.strptime(date_from, "%Y-%m-%d").date()
             queryset = queryset.filter(created_at__date__gte=date_from)
-        date_to = self.request.GET.get('date-to')
+        date_to = self.request.GET.get('date-to', date_today_text)
         if date_to:
             context['date_to'] = date_to
             date_to = datetime.datetime.strptime(date_to, "%Y-%m-%d").date()
