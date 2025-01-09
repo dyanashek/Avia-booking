@@ -1,5 +1,6 @@
 import os
 import datetime
+import json
 
 import django
 
@@ -200,6 +201,57 @@ async def callback_query(call: types.CallbackQuery):
                     except:
                         pass
                 
+                try:
+                    delivery: Delivery = await sync_to_async(lambda: transfer.delivery)()
+                    sender = await sync_to_async(lambda: delivery.sender)()
+                    sender_user = await sync_to_async(lambda: sender.user)()
+                    if sender_user and sender_user.user_id:
+                        receiver = await sync_to_async(lambda: transfer.receiver)()
+                        receiver_address = await sync_to_async(lambda: transfer.address)()
+
+                        if receiver_address:
+                            receiver_address = receiver_address.address
+                        else:
+                            receiver_address = 'не указан'
+                    
+                        if transfer.pick_up:
+                            pick_up = 'да'
+                        else:
+                            pick_up = 'нет'
+                        
+                        pass_date = transfer.pass_date
+                        if pass_date:
+                            pass_date = pass_date.strftime('%d.%m.%Y %H:%M')
+                        else:
+                            pass_date = 'не выдано'
+
+                        if transfer.credit:
+                            pass_date += f' (в кредит)'
+
+                        reply_text = f'''
+                                    \n*Выдан денежный перевод #{transfer.pk}:*\
+                                    \nСумма: *{transfer.usd_amount} $*\
+                                    \nИмя получателя: *{receiver.name}*\
+                                    \nНомер: *{receiver.phone}*\
+                                    \nДоставка: *{pick_up}*\
+                                    \nАдрес: *{receiver_address}*\
+                                    \nВыдано: *{pass_date}*\
+                                    '''
+
+                        params = {
+                            'chat_id': sender_user.user_id,
+                            'text': reply_text,
+                            'parse_mode': 'Markdown',
+                            'reply_markup': json.dumps({
+                                'inline_keyboard': [
+                                    [{'text': '👁 Смотреть перевод', 'callback_data': f'delivery:see:{delivery.id}'},],
+                                ]
+                            })
+                        }
+                        await utils.send_tg_message(params)
+                except:
+                    pass
+
                 try:
                     await bot.send_message(chat_id=user_id,
                             text='Перевод помечен как выданный.',

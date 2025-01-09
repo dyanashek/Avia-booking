@@ -1,5 +1,8 @@
 import re
 import datetime
+import requests
+
+import config
 
 
 async def extract_digits(input_string):
@@ -131,3 +134,14 @@ async def get_payment_dates():
             payment_days.append(f'{day}.{payment_month}.{payment_year}')
 
     return payment_days
+
+
+async def send_tg_message(params, token=config.TELEGRAM_TOKEN):
+    endpoint = f'https://api.telegram.org/bot{token}/sendMessage'
+    try:
+        response = requests.post(endpoint, params=params)
+    except:
+        pass
+        
+    return response
+    
