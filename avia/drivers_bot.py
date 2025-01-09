@@ -110,8 +110,13 @@ async def callback_query(call: types.CallbackQuery):
         elif query == 'amount':
             sim_id = int(call_data[1])
 
-            user.curr_input = f'amount_{sim_id}'
-            await sync_to_async(user.save)()
+            sim = await sync_to_async(UsersSim.objects.filter(id=sim_id).first)()
+            collect = None
+            if sim:
+                try:
+                    collect = await sync_to_async(Collect.objects.filter(sim=sim, amount__isnull=True).first)()
+                except:
+                    collect = None
 
             try:
                 await bot.edit_message_reply_markup(chat_id=chat_id,
@@ -129,21 +134,41 @@ async def callback_query(call: types.CallbackQuery):
                 except:
                     pass
             
-            try:
-                await bot.send_message(chat_id=chat_id,
-                        text='Введите сумму в шекелях (₪), переданную клиентом.',
-                        parse_mode='Markdown',
-                        )
-            except:
+            if collect:
+                user.curr_input = f'amount_{sim_id}'
+                await sync_to_async(user.save)()
+
                 try:
-                    await sync_to_async(AppError.objects.create)(
-                        source='2',
-                        error_type='2',
-                        main_user=user_id,
-                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
-                    )
+                    await bot.send_message(chat_id=chat_id,
+                            text='Введите сумму в шекелях (₪), переданную клиентом.',
+                            parse_mode='Markdown',
+                            )
                 except:
-                    pass
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='2',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
+            else:
+                try:
+                    await bot.send_message(chat_id=chat_id,
+                            text='Переданная клиентом сумма уже учтена',
+                            parse_mode='Markdown',
+                            )
+                except:
+                    try:
+                        await sync_to_async(AppError.objects.create)(
+                            source='2',
+                            error_type='2',
+                            main_user=user_id,
+                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                        )
+                    except:
+                        pass
         
         elif query == 'retype':
             sim_id = int(call_data[1])
@@ -189,26 +214,6 @@ async def callback_query(call: types.CallbackQuery):
 
                 sim = await sync_to_async(UsersSim.objects.filter(id=sim_id).first)()
                 if sim:
-                    sim.driver = user
-                    sim.debt -= amount
-                    await sync_to_async(sim.save)()
-
-                    try:
-                        await bot.edit_message_reply_markup(chat_id=chat_id,
-                                                        message_id=message_id,
-                                                        reply_markup=InlineKeyboardBuilder().as_markup(),
-                                                        )
-                    except:
-                        try:
-                            await sync_to_async(AppError.objects.create)(
-                                source='2',
-                                error_type='1',
-                                main_user=user_id,
-                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
-                            )
-                        except:
-                            pass
-                    
                     try:
                         collect = await sync_to_async(Collect.objects.filter(sim=sim, amount__isnull=True).first)()
                         if collect:
@@ -233,57 +238,94 @@ async def callback_query(call: types.CallbackQuery):
                                     source='2',
                                     error_type='10',
                                     main_user=user_id,
-                                    description=f'Не удалось внести сумму собранную за симкарту в сущность забора и отчет. Сумма {amount}, телефон {sim.sim_phone}.',
+                                    description=f'Не удалось внести сумму собранную за симкарту в сущность забора и отчет (возможно, внесена разнее). Сумма {amount}, телефон {sim.sim_phone}.',
                                 )
                             except:
                                 pass
                     except:
                         collect = None
 
-                    invoice_url = await create_icount_invoice(sim.icount_id, amount, sim.is_old_sim)
-                    if invoice_url:
-                        if collect:
+                    try:
+                        await bot.edit_message_reply_markup(chat_id=chat_id,
+                                                        message_id=message_id,
+                                                        reply_markup=InlineKeyboardBuilder().as_markup(),
+                                                        )
+                    except:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='2',
+                                error_type='1',
+                                main_user=user_id,
+                                description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                            )
+                        except:
+                            pass
+
+                    if collect:
+                        sim.driver = user
+                        sim.debt -= amount
+                        await sync_to_async(sim.save)()
+                        
+                        invoice_url = await create_icount_invoice(sim.icount_id, amount, sim.is_old_sim)
+                        if invoice_url:
                             try:
                                 collect.receipt = invoice_url
                                 await sync_to_async(collect.save)()
                             except:
                                 pass
-                            
-                        sim_user = await sync_to_async(lambda: sim.user)()
-                        user_language = await sync_to_async(lambda: sim_user.language)()
-                        if not user_language:
-                            user_language = await sync_to_async(Language.objects.get)(slug='rus')
-                        invoice_text = await sync_to_async(TGText.objects.get)(slug='invoice_url', language=user_language)
-                        reply_text = f'{invoice_text.text} {invoice_url}'
-                        await sync_to_async(Notification.objects.create)(
-                            user=sim_user,
-                            text=reply_text,
-                        )
+                                
+                            sim_user = await sync_to_async(lambda: sim.user)()
+                            user_language = await sync_to_async(lambda: sim_user.language)()
+                            if not user_language:
+                                user_language = await sync_to_async(Language.objects.get)(slug='rus')
+                            invoice_text = await sync_to_async(TGText.objects.get)(slug='invoice_url', language=user_language)
+                            reply_text = f'{invoice_text.text} {invoice_url}'
+                            await sync_to_async(Notification.objects.create)(
+                                user=sim_user,
+                                text=reply_text,
+                            )
 
-                        try:
-                            await bot.send_message(chat_id=chat_id,
-                                text=f'Подтверждена передача клиентом суммы в {amount} ₪',
-                                parse_mode='Markdown',
-                                )
-                        except:
                             try:
-                                await sync_to_async(AppError.objects.create)(
-                                    source='2',
-                                    error_type='2',
-                                    main_user=user_id,
-                                    description=f'Не удалось отправить сообщение пользователю {user_id}.',
-                                )
+                                await bot.send_message(chat_id=chat_id,
+                                    text=f'Подтверждена передача клиентом суммы в {amount} ₪',
+                                    parse_mode='Markdown',
+                                    )
                             except:
-                                pass
+                                try:
+                                    await sync_to_async(AppError.objects.create)(
+                                        source='2',
+                                        error_type='2',
+                                        main_user=user_id,
+                                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                    )
+                                except:
+                                    pass
 
+                        else:
+                            sim.icount_collect_amount += amount
+                            sim.icount_api_collect = False
+                            await sync_to_async(sim.save)()
+
+                            try:
+                                await bot.send_message(chat_id=chat_id,
+                                    text=f'Подтверждена передача клиентом суммы в {amount} ₪. Квитанция не сформировалась, воспользуйтесь админ панелью.',
+                                    parse_mode='Markdown',
+                                    )
+                            except:
+                                try:
+                                    await sync_to_async(AppError.objects.create)(
+                                        source='2',
+                                        error_type='2',
+                                        main_user=user_id,
+                                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                                    )
+                                except:
+                                    pass
+                    
                     else:
-                        sim.icount_collect_amount += amount
-                        sim.icount_api_collect = False
-                        await sync_to_async(sim.save)()
-
                         try:
                             await bot.send_message(chat_id=chat_id,
-                                text=f'Подтверждена передача клиентом суммы в {amount} ₪. Квитанция не сформировалась, воспользуйтесь админ панелью.',
+                                text=f'Сумма, переданная клиентом, уже была учтена ранее',
                                 parse_mode='Markdown',
                                 )
                         except:

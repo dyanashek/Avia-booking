@@ -369,7 +369,7 @@ class TransferDashboardView(LoginRequiredMixin, TemplateView):
         date_before = date_today - datetime.timedelta(days=7)
         date_today_text = date_today.strftime("%Y-%m-%d")
         date_before_text = date_before.strftime("%Y-%m-%d")
-        queryset = Delivery.objects.order_by('-created_at').all()
+        queryset = Delivery.objects.filter(status__isnull=False).order_by('-created_at').all()
         date_from = self.request.GET.get('date-from', date_before_text)
         if date_from:
             context['date_from'] = date_from
