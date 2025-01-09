@@ -1,0 +1,27 @@
+{% extends 'admin/change_form.html' %}
+{% block field_sets %}
+    $: <input type="number" name="text" id='usd' placeholder="Сумма в $" style="margin-right: 15px;" oninput="ChangeIlsValue(event)">
+    ₪: <input type="number" name="text" id='ils' placeholder="Сумма в ₪" oninput="ChangeUsdValue(event)">
+    {{ block.super }}
+    <script>
+        const rate = parseFloat("{{ rate }}");
+        
+        function ChangeIlsValue(event) {
+            const IlsInput = document.getElementById('ils')
+            if (event.target.value) {
+                IlsInput.value = (event.target.value * rate).toFixed(2)
+            } else {
+                IlsInput.value = ''
+            }
+        }
+
+        function ChangeUsdValue(event) {
+            const UsdInput = document.getElementById('usd')
+            if (event.target.value) {
+                UsdInput.value = (event.target.value / rate).toFixed(2)
+            } else {
+                UsdInput.value = ''
+            }
+        }
+    </script>
+{% endblock %}

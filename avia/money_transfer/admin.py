@@ -71,6 +71,7 @@ class ReceiverAdmin(VersionAdmin):
 @admin.register(Delivery)
 class DeliveryAdmin(VersionAdmin):
     change_list_template = "admin/delivery_change_list.html"
+    change_form_template = "admin/delivery_change_form.html"
     search_fields = ('sender__name', 'sender__phone',)
     list_filter = ('valid', 'status', 'created_by', 'driver', 'created_by_callcenter', 'approved_by_client', 'invite_client',)
     inlines = (TransferInline,)
@@ -171,6 +172,20 @@ class DeliveryAdmin(VersionAdmin):
                     fields.append('to_gspread_button')
 
         return fields
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        rate = Rate.objects.filter(slug='usd-ils').first()
+        if rate:
+            extra_context['rate'] = str(rate.rate)
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
+
+    def add_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        rate = Rate.objects.filter(slug='usd-ils').first()
+        if rate:
+            extra_context['rate'] = str(rate.rate)
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     final_commission.short_description = 'комиссия'
     receivers_codes.short_description = 'коды для получения'
