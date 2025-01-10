@@ -185,7 +185,7 @@ class DeliveryAdmin(VersionAdmin):
         rate = Rate.objects.filter(slug='usd-ils').first()
         if rate:
             extra_context['rate'] = str(rate.rate)
-        return super().change_view(request, object_id, form_url, extra_context=extra_context)
+        return super().change_view(request, form_url, extra_context=extra_context)
 
     final_commission.short_description = 'комиссия'
     receivers_codes.short_description = 'коды для получения'
