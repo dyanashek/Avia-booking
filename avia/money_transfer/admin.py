@@ -180,7 +180,7 @@ class DeliveryAdmin(VersionAdmin):
             extra_context['rate'] = str(rate.rate)
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
-    def add_view(self, request, object_id, form_url='', extra_context=None):
+    def add_view(self, request, form_url='', extra_context=None):
         extra_context = extra_context or {}
         rate = Rate.objects.filter(slug='usd-ils').first()
         if rate:
