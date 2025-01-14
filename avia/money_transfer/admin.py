@@ -73,7 +73,7 @@ class DeliveryAdmin(VersionAdmin):
     change_list_template = "admin/delivery_change_list.html"
     change_form_template = "admin/delivery_change_form.html"
     search_fields = ('sender__name', 'sender__phone',)
-    list_filter = ('valid', 'status', 'created_by', 'driver', 'created_by_callcenter', 'approved_by_client', 'invite_client',)
+    list_filter = ('valid', 'status', 'created_by', 'driver', 'created_by_callcenter', 'approved_by_client',)
     inlines = (TransferInline,)
     autocomplete_fields = ('sender',)
     

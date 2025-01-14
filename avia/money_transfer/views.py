@@ -187,7 +187,7 @@ def stop_status(request):
                 try:
                     send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
                     params['chat_id'] = DUPLICATE_SIM_MONEY
-                    #send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
+                    send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
                 except:
                     pass
 
@@ -230,7 +230,7 @@ def stop_status(request):
                 try:
                     send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
                     params['chat_id'] = DUPLICATE_SIM_MONEY
-                    #send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
+                    send_message_on_telegram(params, TELEGRAM_DRIVERS_TOKEN)
                 except:
                     pass
     
