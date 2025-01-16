@@ -44,7 +44,7 @@ async def flight_or_parcel_keyboard(language):
     transfer = types.InlineKeyboardButton(text='Перевод', url = 'https://t.me/Roma0927')
     keyboard.row(types.InlineKeyboardButton(text=sim_button.text, callback_data = f'sim'), transfer)
     #keyboard.row(types.InlineKeyboardButton(text=faq_button.text, callback_data = f'faq'))
-    #keyboard.row(types.InlineKeyboardButton(text='Мои переводы', callback_data = 'deliveries:all:1'))
+    keyboard.row(types.InlineKeyboardButton(text='Мои переводы', callback_data = 'deliveries:all:1'))
 
     return keyboard.as_markup()
 
