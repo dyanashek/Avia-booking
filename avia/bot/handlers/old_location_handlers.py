@@ -16,6 +16,7 @@ from core.utils import get_address
 
 import keyboards
 from filters import ChatTypeFilter
+import config
 
 
 router = Router()
@@ -319,3 +320,31 @@ async def handle_location(message: types.Message):
                         )
                     except:
                         pass
+    
+    else:
+        try:
+            if not user.thread_id:
+                topic_name = ''
+                sim_card = await sync_to_async(user.sim_cards.first)()
+                if sim_card:
+                    topic_name += f'{sim_card.sim_phone} '
+                topic_name += user.user_id
+
+                new_thread = await message.bot.create_forum_topic(
+                    chat_id=config.MESSAGES_CHAT_ID,
+                    name=topic_name,
+                )
+                user.thread_id = new_thread.message_thread_id
+                await sync_to_async(user.save)(update_fields=['thread_id'])
+        except:
+            pass
+        
+        try:
+            await message.bot.send_location(
+                chat_id=config.MESSAGES_CHAT_ID,
+                message_thread_id=user.thread_id,
+                latitude=message.location.latitude,
+                longitude=message.location.longitude,
+            )
+        except:
+            pass

@@ -13,6 +13,13 @@ from bot.handlers import (
     old_text_handlers,
     transfers_handler,
     navigation_handler,
+    image_handler,
+    video_handler,
+    video_note_handler,
+    voice_handler,
+    document_handler,
+    location_handler,
+    contact_handler
 )
 
 
@@ -37,6 +44,14 @@ async def main() -> None:
     dp.include_router(old_contacts_handlers.router)
     dp.include_router(old_photo_handlers.router)
     dp.include_router(old_location_handlers.router)
+
+    dp.include_router(image_handler.router)
+    dp.include_router(video_handler.router)
+    dp.include_router(video_note_handler.router)
+    dp.include_router(voice_handler.router)
+    dp.include_router(document_handler.router)
+    dp.include_router(location_handler.router)
+    dp.include_router(contact_handler.router)
 
     cmds = [
         BotCommand(command="start", description="Меню"),

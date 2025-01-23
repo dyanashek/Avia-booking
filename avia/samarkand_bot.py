@@ -248,7 +248,7 @@ async def callback_query(call: types.CallbackQuery):
                                 ]
                             })
                         }
-                        #await utils.send_tg_message(params)
+                        await utils.send_tg_message(params)
                 except:
                     pass
 
