@@ -2,10 +2,11 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.db.models import Count, Sum, Q, Case, When, F, Value, ExpressionWrapper, DecimalField
 from django.db.models.functions import Coalesce
+from django.core.exceptions import ValidationError
 
 from money_transfer.utils import send_pickup_address, delivery_to_gspread, get_delivery_ids, update_delivery_buy_rate
 from errors.models import AppError

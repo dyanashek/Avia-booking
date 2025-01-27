@@ -12,10 +12,12 @@ from money_transfer.models import (Manager, Sender, Receiver, Address, Transfer,
                                    Delivery, Rate, Commission, Status, DebitCredit,
                                    Balance, BuyRate, Report)
 from adminsortable2.admin import SortableAdminMixin
+from money_transfer.formsets import TransferInlineFormSet
 
 
 class TransferInline(admin.StackedInline):
     model = Transfer
+    #formset = TransferInlineFormSet
     extra = 0
     fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount',)
 

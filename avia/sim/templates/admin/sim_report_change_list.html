@@ -12,7 +12,7 @@
         margin-right: 5px;
     }
   </style>
-  <form method="post" class="form-inline" action="{% url 'admin:report_drivers' %}" style="padding-bottom: 15px;" id="reportForm">
+  <form method="post" class="form-inline" action="{% url 'admin:sim_report_drivers' %}" style="padding-bottom: 15px;" id="reportForm">
     {% csrf_token %}
     <div class="form-group">
         <label for="date_from">От:</label>
