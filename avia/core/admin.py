@@ -79,7 +79,7 @@ class RouteAdmin(SortableAdminMixin, admin.ModelAdmin):
 class TGUserAdmin(admin.ModelAdmin):
     change_form_template = "admin/dialog_button.html"
     list_display = ('user_id', 'username', 'active', 'name', 'family_name', 'get_thumbnail')
-    search_fields = ('user_id', 'username', 'name', 'family_name', 'sim_cards__sim_phone',)
+    search_fields = ('user_id', 'username', 'name', 'family_name', 'sim_cards__sim_phone', 'phone',)
     readonly_fields = ('created_at', 'active',)
     list_filter = ('active', 'language',)
     fields = ('user_id', 'language', 'username', 'active', 'name', 'family_name',

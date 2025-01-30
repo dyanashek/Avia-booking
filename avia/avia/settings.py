@@ -17,6 +17,9 @@ from pathlib import Path
 import pymysql 
 from dotenv import load_dotenv
 
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 
 pymysql.install_as_MySQLdb()
 load_dotenv()
@@ -49,6 +52,7 @@ INSTALLED_APPS = [
     'drivers.apps.DriversConfig',
     'errors.apps.ErrorsConfig',
     'currency',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
