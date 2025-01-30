@@ -74,6 +74,38 @@ async def callback_query(call: types.CallbackQuery):
             if sim:
                 sim.driver = user
                 await sync_to_async(sim.save)()
+                
+                amount = 0
+                try:
+                    collect = await sync_to_async(Collect.objects.filter(sim=sim, amount__isnull=True).first)()
+                    if collect:
+                        collect.amount = amount
+                        await sync_to_async(collect.save)()
+
+                        sim_collect_report, _ = await sync_to_async(Report.objects.get_or_create)(report_date=datetime.datetime.utcnow().date())
+                        if collect.driver == '1':
+                            sim_collect_report.first_driver_ils += amount
+                            sim_collect_report.first_driver_points += 1
+                        elif collect.driver == '2':
+                            sim_collect_report.second_driver_ils += amount
+                            sim_collect_report.second_driver_points += 1
+                        elif collect.driver == '3':
+                            sim_collect_report.third_driver_ils += amount
+                            sim_collect_report.third_driver_points += 1
+                        
+                        await sync_to_async(sim_collect_report.save)()
+                    else:
+                        try:
+                            await sync_to_async(AppError.objects.create)(
+                                source='2',
+                                error_type='10',
+                                main_user=user_id,
+                                description=f'Не удалось внести сумму собранную за симкарту в сущность забора и отчет (возможно, внесена разнее). Сумма {amount}, телефон {sim.sim_phone}.',
+                            )
+                        except:
+                            pass
+                except:
+                    pass
             
             try:
                 await bot.edit_message_reply_markup(chat_id=chat_id,

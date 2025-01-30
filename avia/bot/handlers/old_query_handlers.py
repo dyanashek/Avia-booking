@@ -1961,7 +1961,7 @@ async def callback_query(call: types.CallbackQuery):
             else:
                 sim_debt = await sync_to_async(TGText.objects.get)(slug='sim_balance', language=user_language)
             reply_text = f'''
-                          *{fare_description.text}*\
+                          *{fare_description.text} ({users_sim.sim_phone})* \
                           \n{fare.description}\
                           \n\
                           \n{fare_price.text} {fare.price}₪/{short_month.text}\

@@ -105,7 +105,7 @@ def stop_status(request):
     driver_id = request.POST.get('driver')
     status = request.POST.get('status', 'false')
     status = status.lower()
-    print(request.POST)
+
     if order_id and order_id == '3' and status == 'true':
         delivery = Delivery.objects.filter(circuit_id=stop_id).first()
         if delivery:
@@ -192,20 +192,16 @@ def stop_status(request):
                     pass
 
     elif order_id and order_id == '5' and status == 'true':
-        print(1)
         users_sim = UsersSim.objects.filter(circuit_id_collect=stop_id).first()
         if users_sim:
-            print(2)
             try:
                 curr_driver = extract_driver(stop_id)
                 if curr_driver:
-                    print(3)
                     Collect.objects.create(
                         sim=users_sim,
                         driver=curr_driver,
                     )
                 else:
-                    print(4)
                     try:
                         AppError.objects.create(
                             source='5',
@@ -215,7 +211,6 @@ def stop_status(request):
                     except:
                         pass
             except Exception as ex:
-                print(5)
                 try:
                     AppError.objects.create(
                         source='5',
