@@ -101,6 +101,7 @@ class CollectAdmin(admin.ModelAdmin):
     list_display = ('sim', 'driver', 'created_at', 'amount',)
     list_filter = ('driver',)
     autocomplete_fields = ('sim',)
+    search_fields = ('sim__sim_phone',)
 
 
 @admin.register(Report)
