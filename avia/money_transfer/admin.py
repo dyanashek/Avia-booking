@@ -17,7 +17,7 @@ from money_transfer.formsets import TransferInlineFormSet
 
 class TransferInline(admin.StackedInline):
     model = Transfer
-    #formset = TransferInlineFormSet
+    formset = TransferInlineFormSet
     extra = 0
     fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount',)
 
