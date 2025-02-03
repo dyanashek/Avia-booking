@@ -11,6 +11,7 @@ from core.models import (Language, TGText, ParcelVariation, Day, Route, TGUser, 
                          UsersSim, Notification, OldSim, ImprovedNotification, LinkButton, Receipt,
                          UserMessage, Question)
 from core.utils import create_excel_file
+from core.custom_filters import CustomUserSimFilter
 
 
 @admin.register(Language)
@@ -81,7 +82,7 @@ class TGUserAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'username', 'active', 'name', 'family_name', 'get_thumbnail')
     search_fields = ('user_id', 'username', 'name', 'family_name', 'sim_cards__sim_phone', 'phone',)
     readonly_fields = ('created_at', 'active',)
-    list_filter = ('active', 'language',)
+    list_filter = ('active', 'language', CustomUserSimFilter)
     fields = ('user_id', 'language', 'username', 'active', 'name', 'family_name',
               'phone', 'addresses', 'lat', 'lon', 'sex', 'birth_date', 'start_date',
                'end_date', 'passport_number', 'passport_photo_user', 'created_at')
