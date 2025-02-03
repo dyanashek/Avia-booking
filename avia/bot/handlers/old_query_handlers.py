@@ -2007,33 +2007,19 @@ async def callback_query(call: types.CallbackQuery):
             user.curr_input = 'user_passport'
             await sync_to_async(user.save)()
 
-            if user.passport_photo_id and user.addresses and user.name and user.family_name:
-                try:
-                    await call.message.delete()
-                except:
-                    try:
-                        await sync_to_async(AppError.objects.create)(
-                            source='1',
-                            error_type='1',
-                            main_user=user_id,
-                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
-                        )
-                    except:
-                        pass
-
+            if user.addresses and user.name and user.family_name:
                 reuse = await sync_to_async(TGText.objects.get)(slug='reuse', language=user_language)
                 address_text = await sync_to_async(TGText.objects.get)(slug='address', language=user_language)
                 name_text = await sync_to_async(TGText.objects.get)(slug='name', language=user_language)
                 familyname_text = await sync_to_async(TGText.objects.get)(slug='familyname', language=user_language)
-                reply_text = f'{reuse.text}\n\n'
+                reply_text = f'{reuse.text}\n'
                 reply_text += f'\n*{name_text.text}* {user.name}'
                 reply_text += f'\n*{familyname_text.text}* {user.family_name}'
                 reply_text += f'\n*{address_text.text}* {user.addresses}'
 
                 try:
-                    await call.message.answer_photo(
-                                caption=reply_text,
-                                photo=user.passport_photo_id,
+                    await call.message.edit_text(
+                                text=reply_text,
                                 reply_markup=await keyboards.sim_confirm_or_hand_write_keyboard('s-confirmation', user_language),
                                 parse_mode='Markdown',
                                 disable_notification=False,
@@ -2063,13 +2049,17 @@ async def callback_query(call: types.CallbackQuery):
                     except:
                         pass
 
-                passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
+                user.curr_input = 's-address'
+                await sync_to_async(user.save)()
 
-                try:
+                question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
+                try:   
                     await call.message.answer(
-                            text=passport_request.text,
-                            parse_mode='Markdown',
-                            )
+                                    text=question.text,
+                                    reply_markup=await keyboards.request_location_keyboard(user_language),
+                                    parse_mode='Markdown',
+                                    disable_notification=True,
+                                    )
                 except:
                     try:
                         await sync_to_async(AppError.objects.create)(
@@ -2174,9 +2164,8 @@ async def callback_query(call: types.CallbackQuery):
                     reply_text += f'\n\nПользователь без валидного никнейма. Telegram id: {user.user_id} (для связи через админку).'
 
                 try:
-                    await call.bot.send_photo(chat_id=config.SIM_MANAGER_ID,
-                                    caption=reply_text,
-                                    photo=user.passport_photo_id,
+                    await call.bot.send_message(chat_id=config.SIM_MANAGER_ID,
+                                    text=reply_text,
                                     reply_markup=await keyboards.sim_confirm_application_keyboard(user.pk, fare.pk),
                                     parse_mode='Markdown',
                                     disable_notification=False,
@@ -2466,13 +2455,17 @@ async def callback_query(call: types.CallbackQuery):
 
         if curr_input and curr_input == 'user_passport':
             if info == 's-confirmation':
-                passport_request = await sync_to_async(TGText.objects.get)(slug='passport_photo_question', language=user_language)
+                user.curr_input = 's-address'
+                await sync_to_async(user.save)()
 
-                try:
+                question = await sync_to_async(TGText.objects.get)(slug='address_question', language=user_language)
+                try:   
                     await call.message.answer(
-                            text=passport_request.text,
-                            parse_mode='Markdown',
-                            )
+                                    text=question.text,
+                                    reply_markup=await keyboards.request_location_keyboard(user_language),
+                                    parse_mode='Markdown',
+                                    disable_notification=True,
+                                    )
                 except:
                     try:
                         await sync_to_async(AppError.objects.create)(
@@ -2607,9 +2600,8 @@ async def callback_query(call: types.CallbackQuery):
                         '''
 
             try:
-                await call.message.answer_photo(
-                                caption=reply_text,
-                                photo=user.passport_photo_id,
+                await call.message.answer(
+                                text=reply_text,
                                 reply_markup=await keyboards.sim_confirmation_keyboard(fare_id, user_language),
                                 parse_mode='Markdown',
                                 disable_notification=False,

@@ -96,7 +96,7 @@ async def handle_location(message: types.Message):
         else:
             question = await sync_to_async(TGText.objects.get)(slug='name_question', language=user_language)
             try:
-                await message.answer(chat_id=chat_id,
+                await message.answer(
                                 text=question.text,
                                 parse_mode='Markdown',
                                 )
