@@ -173,7 +173,7 @@ class Delivery(models.Model):
         return usd_amount
 
     def calculate_commission(self):
-        usd_amount = self.calculate_total_usd_amount()
+        usd_amount = round(self.calculate_total_usd_amount(), 0)
         commission = Commission.objects.filter(Q(Q(low_value__lte=usd_amount) & Q(high_value__gte=usd_amount)) | 
                                 Q(Q(low_value__lte=usd_amount) & Q(high_value__isnull=True))).first()
         
