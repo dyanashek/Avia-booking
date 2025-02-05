@@ -2572,7 +2572,7 @@ async def callback_query(call: types.CallbackQuery):
             except:
                 pass
 
-        if curr_input and curr_input == 'sim-fare' and user.addresses and user.passport_photo_id and fare and user.name and user.family_name:
+        if curr_input and curr_input == 'sim-fare' and user.addresses and fare and user.name and user.family_name:
             user.curr_input = 'sim-confirmation'
             await sync_to_async(user.save)()
 
