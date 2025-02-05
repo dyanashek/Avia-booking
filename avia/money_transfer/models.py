@@ -581,7 +581,7 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
             break
 
     else:
-        if usd_amount - 1 <= delivery_total_usd_amount and usd_amount + 1 >= delivery_total_usd_amount:
+        if usd_amount - 2 <= delivery_total_usd_amount and usd_amount + 2 >= delivery_total_usd_amount:
             instance.delivery.valid = True
             instance.delivery.commission = round(commission + instance.delivery.calculate_commission(), 2)
             
