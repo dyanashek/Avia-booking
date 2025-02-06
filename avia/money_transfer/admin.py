@@ -30,6 +30,10 @@ class TransferInline(admin.StackedInline):
 
         return ('pass_date',)
 
+    def has_add_permission(self, request, obj):
+        if obj and obj.valid and not request.user.is_superuser:
+            return False
+        return True
 
 @admin.register(Manager)
 class ManagerAdmin(VersionAdmin):
@@ -83,7 +87,7 @@ class DeliveryAdmin(VersionAdmin):
         if request.user.is_superuser:
             return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
         else:
-            return ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'commission', 'driver', 'invite_client')
+            return ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'cancel_validation', 'custom_commission', 'commission', 'driver', 'invite_client')
 
     def final_commission(self, obj):
         if obj.commission == 0:

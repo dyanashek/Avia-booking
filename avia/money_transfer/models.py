@@ -152,6 +152,9 @@ class Delivery(models.Model):
     approved_by_client = models.BooleanField(verbose_name='Одобрено клиентом?', null=True, blank=True, default=True)
     invite_client = models.CharField(verbose_name='Ссылка для подтверждения', max_length=512, null=True, blank=True)
 
+    cancel_validation = models.BooleanField(verbose_name='Пропустить валидацию?', default=False)
+    custom_commission = models.FloatField(verbose_name='Задать свою комиссию (₪)', blank=True, default=0)
+
     class Meta:
         verbose_name = 'доставка'
         verbose_name_plural = 'доставки'
@@ -581,7 +584,25 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
             break
 
     else:
-        if usd_amount - 2 <= delivery_total_usd_amount and usd_amount + 2 >= delivery_total_usd_amount:
+        if instance.delivery.cancel_validation:
+            instance.delivery.valid = True
+            instance.delivery.commission = instance.delivery.custom_commission
+
+            if not instance.delivery.created_by_callcenter:
+                api_error_status = Status.objects.get(slug='api_error')
+                instance.delivery.circuit_api = False
+                instance.delivery.status = api_error_status
+                instance.delivery.status_message = 'Ошибка передачи в Circuit (необходимо вручную). Ошибка при записи в гугл таблицу.'
+                instance.delivery.gspread_api = False
+            else:
+                api_status = Status.objects.get(slug='waiting')
+                instance.delivery.status = api_status
+                instance.delivery.status_message = 'Ожидает подтверждения клиентом.'
+                instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
+
+            instance.delivery.save()
+
+        elif usd_amount - 2 <= delivery_total_usd_amount and usd_amount + 2 >= delivery_total_usd_amount:
             instance.delivery.valid = True
             instance.delivery.commission = round(commission + instance.delivery.calculate_commission(), 2)
             
@@ -722,7 +743,7 @@ def update_gspread_buy_rate(sender, instance: BuyRate, created, **kwargs):
 
 
 @receiver(post_save, sender=Delivery)
-def update_gspread_buy_rate(sender, instance: Delivery, created, **kwargs):
+def send_delivery(sender, instance: Delivery, created, **kwargs):
     if (not created and instance.approved_by_client is not None and\
     instance.created_by_callcenter and instance.circuit_id is None and\
     instance.valid):

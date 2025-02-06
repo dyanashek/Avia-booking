@@ -6,6 +6,24 @@
     <script>
         const rate = parseFloat("{{ rate }}");
         
+        const validationCheck = document.getElementById('id_cancel_validation')
+        const customCommissionField = document.querySelector('.field-custom_commission')
+        const commissionField = document.querySelector('.field-commission')
+        
+        if (customCommissionField) {
+            customCommissionField.style.display = 'none';
+        }
+        if (validationCheck) {
+            validationCheck.addEventListener('change', function() {
+                if (this.checked) {
+                    customCommissionField.style.display = 'block'
+                    commissionField.style.display = 'none'
+                } else {
+                    customCommissionField.style.display = 'none'
+                    commissionField.style.display = 'block'
+                }
+            });
+        }
         function ChangeIlsValue(event) {
             const IlsInput = document.getElementById('ils')
             if (event.target.value) {
