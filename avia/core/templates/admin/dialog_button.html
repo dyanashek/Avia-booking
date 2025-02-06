@@ -19,7 +19,8 @@
         background-color: #696969; /* Темно-серый цвет при наведении */
     }
   </style>
-
-  <a href="{% url 'dialog' dialog=original.user_id %}" class='custom-button' style="margin-bottom: 10px; text-decoration: none; color: inherit;" target="_blank">Диалог с пользователем</a>
+  {% if original.user %}
+    <a href="{% url 'dialog' dialog=original.user_id %}" class='custom-button' style="margin-bottom: 10px; text-decoration: none; color: inherit;" target="_blank">Диалог с пользователем</a>
+  {% endif %}
   {{ block.super }}
 {% endblock %}
