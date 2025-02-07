@@ -266,6 +266,50 @@ def delivery_resend_circuit(request, pk):
 
             delivery.save()
 
+            if delivery.sender.user:
+                message = f'''
+                            \nСоздан новый перевод!\
+                            \n\
+                            \n*Отправление:*\
+                            \nНомер отправителя: *{delivery.sender.phone}*\
+                            '''
+                if delivery.ils_amount:
+                    message += f'\nСумма в ₪: *{int(delivery.ils_amount)}*'
+                
+                message += f'''\nСумма в $: *{int(delivery.usd_amount)}*\
+                            \nКомиссия в ₪: *{int(delivery.commission)}*\
+                            '''
+
+                if delivery.ils_amount:     
+                    message += f'\nИтого в $: *{int(delivery.total_usd)}*'
+                
+                message += f'\n\n*Получатели:*'
+
+                for num, transfer in enumerate(delivery.transfers.all()):
+                    if transfer.pick_up:
+                        pick_up = 'да'
+                    else:
+                        pick_up = 'нет'
+
+                    transfer_message = f'''\n{num + 1}. Код получения: *{transfer.id}*\
+                                        \nНомер получателя: *{transfer.receiver.phone}*\
+                                        \nСумма: *{int(transfer.usd_amount)} $*\
+                                        \nДоставка: *{pick_up}*\
+                                        '''
+                    
+                    if transfer.address:
+                        address = transfer.address.address
+                        transfer_message += f'\nАдрес: *{address}*'
+                    transfer_message += '\n'
+                    message += transfer_message
+
+                params = {
+                    'chat_id': delivery.sender.user.user_id,
+                    'text': message,
+                    'parse_mode': 'Markdown',
+                }
+
+                send_message_on_telegram(params)
 
     return redirect('/admin/money_transfer/delivery/')
 

@@ -35,6 +35,7 @@ class TransferInline(admin.StackedInline):
             return False
         return True
 
+
 @admin.register(Manager)
 class ManagerAdmin(VersionAdmin):
     list_display = ('name', 'telegram_id', 'updated_at',)

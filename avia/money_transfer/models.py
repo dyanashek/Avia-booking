@@ -635,6 +635,51 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                         instance.delivery.circuit_api = True
                         instance.delivery.status = api_status
                         instance.delivery.status_message = 'Доставка передана в Circuit.'
+
+                        if instance.delivery.sender.user:
+                            message = f'''
+                                        \nСоздан новый перевод!\
+                                        \n\
+                                        \n*Отправление:*\
+                                        \nНомер отправителя: *{instance.delivery.sender.phone}*\
+                                        '''
+                            if instance.delivery.ils_amount:
+                                message += f'\nСумма в ₪: *{int(instance.delivery.ils_amount)}*'
+                            
+                            message += f'''\nСумма в $: *{int(instance.delivery.usd_amount)}*\
+                                        \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
+                                        '''
+
+                            if instance.delivery.ils_amount:     
+                                message += f'\nИтого в $: *{int(instance.delivery.total_usd)}*'
+                            
+                            message += f'\n\n*Получатели:*'
+
+                            for num, transfer in enumerate(instance.delivery.transfers.all()):
+                                if transfer.pick_up:
+                                    pick_up = 'да'
+                                else:
+                                    pick_up = 'нет'
+
+                                transfer_message = f'''\n{num + 1}. Код получения: *{transfer.id}*\
+                                                    \nНомер получателя: *{transfer.receiver.phone}*\
+                                                    \nСумма: *{int(transfer.usd_amount)} $*\
+                                                    \nДоставка: *{pick_up}*\
+                                                    '''
+                                
+                                if transfer.address:
+                                    address = transfer.address.address
+                                    transfer_message += f'\nАдрес: *{address}*'
+                                transfer_message += '\n'
+                                message += transfer_message
+
+                            params = {
+                                'chat_id': instance.delivery.sender.user.user_id,
+                                'text': message,
+                                'parse_mode': 'Markdown',
+                            }
+
+                            send_message_on_telegram(params)
                     else:
                         api_error_status = Status.objects.get(slug='api_error')
                         instance.delivery.circuit_api = False
