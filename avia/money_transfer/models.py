@@ -60,7 +60,7 @@ class Sender(models.Model):
     def __str__(self):
         result =  f'{self.name} - {self.phone}'
         if self.user:
-            result = '(BOT)' + result
+            result = '(BOT) ' + result
             if self.user.username:
                 result += f' - @{self.user.username}'
             result += f' - tg_id: {self.user.user_id}'
