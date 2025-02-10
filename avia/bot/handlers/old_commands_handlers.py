@@ -51,13 +51,14 @@ async def start_message(message: types.Message, command: CommandObject):
                 delivery = None
 
             if delivery:
+                delivery.invite_client = f'посещено: https://t.me/{config.TELEGRAM_BOT}?start=money{delivery.id}'
+                await sync_to_async(delivery.save)(update_fields=['invite_client'])
                 delivery_sender = await sync_to_async(lambda: delivery.sender)()
                 delivery_user = await sync_to_async(lambda: delivery_sender.user)()
-                if delivery.approved_by_client is None and (delivery_user is None or delivery_user.user_id == user_id):
-                    if delivery_user is None:
-                        delivery_sender.user = user
-                        await sync_to_async(delivery_sender.save)(update_fields=['user'])
-
+                if delivery_user is None:
+                    delivery_sender.user = user
+                    await sync_to_async(delivery_sender.save)(update_fields=['user'])
+                if (delivery.approved_by_client is None or delivery.approved_by_client) and (delivery_user is None or delivery_user.user_id == user_id):
                     reply_message = f'''
                                 \nПодтвердите информацию о переводе!\
                                 \n\
@@ -96,11 +97,16 @@ async def start_message(message: types.Message, command: CommandObject):
                         transfer_message += '\n'
                         reply_message += transfer_message
                     
-                    
+
+                    if delivery.approved_by_client:
+                        reply_message = reply_message.replace('Подтвердите информацию о переводе!', 'Создан перевод!')
+                        curr_keyboard = None
+                    else:
+                        curr_keyboard = await new_keyboards.delivery_action_keyboard(delivery.id)
                     try:
                         await message.answer(
                             text=reply_message, 
-                            reply_markup=await new_keyboards.delivery_action_keyboard(delivery.id),
+                            reply_markup=curr_keyboard,
                             parse_mode='Markdown',
                             )
 

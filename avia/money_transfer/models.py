@@ -636,6 +636,7 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                         instance.delivery.circuit_api = True
                         instance.delivery.status = api_status
                         instance.delivery.status_message = 'Доставка передана в Circuit.'
+                        instance.delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
 
                         if instance.delivery.sender.user:
                             message = f'''
@@ -680,7 +681,9 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                                 'parse_mode': 'Markdown',
                             }
 
-                            send_message_on_telegram(params)
+                            response = send_message_on_telegram(params)
+                            if response and response.ok:
+                                instance.delivery.invite_client = f'отправлено: https://t.me/{TELEGRAM_BOT}?start=money{instance.delivery.id}'
                     else:
                         api_error_status = Status.objects.get(slug='api_error')
                         instance.delivery.circuit_api = False

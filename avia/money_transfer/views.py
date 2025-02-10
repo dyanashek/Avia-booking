@@ -21,7 +21,7 @@ from core.utils import send_message_on_telegram
 from drivers.utils import construct_collect_sim_money_message, construct_delivery_sim_message
 from money_transfer.additional_utils import report_to_db, stop_to_report, extract_driver
 
-from config import TELEGRAM_DRIVERS_TOKEN, DUPLICATE_SIM_MONEY
+from config import TELEGRAM_DRIVERS_TOKEN, DUPLICATE_SIM_MONEY, TELEGRAM_BOT
 
 # Create your views here.
 def get_sender_addresses(request):
@@ -255,6 +255,7 @@ def delivery_resend_circuit(request, pk):
             delivery.circuit_id = stop_id
             delivery.circuit_api = True
             delivery.status = api_status
+            delivery.invite_client = f'https://t.me/{TELEGRAM_BOT}?start=money{delivery.id}'
 
             if 'Ошибка при записи в гугл таблицу' in delivery.status_message:
                 gspread_error = True
@@ -309,7 +310,10 @@ def delivery_resend_circuit(request, pk):
                     'parse_mode': 'Markdown',
                 }
 
-                send_message_on_telegram(params)
+                response = send_message_on_telegram(params)
+                if response and response.ok:
+                    delivery.invite_client = f'отправлено: https://t.me/{TELEGRAM_BOT}?start=money{delivery.id}'
+                    delivery.save(update_fields=['invite_client',])
 
     return redirect('/admin/money_transfer/delivery/')
 
