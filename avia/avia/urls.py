@@ -51,6 +51,7 @@ urlpatterns = [
     path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
     path('icount/admin-sim/<int:pk>/', sim_view.sim_resend_icount, name='sim_admin_icount'),
     path('money/report/', money_transfer_views.construct_report, name='money_transfer_report'),
+    path('money/calculate/', money_transfer_views.calculate_values, name='money_transfer_calculate'),
     path('dialog/<str:dialog>/', core_views.DialogView.as_view(), name='dialog'),
     path('dialog/', core_views.DialogView.as_view(), name='dialogs'),
     path('transfer-dashboard/', money_transfer_views.TransferDashboardView.as_view(), name='transfer_dashboard'),

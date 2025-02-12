@@ -437,3 +437,52 @@ class TransferDashboardView(LoginRequiredMixin, TemplateView):
         context['page_active'] = 'money'
 
         return context
+
+
+@csrf_exempt
+def calculate_values(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        client_usd = float(data.get('client_usd', 0))
+        client_ils = float(data.get('client_ils', 0))
+
+        rate = Rate.objects.get(slug='usd-ils').rate
+        usd_amount = round(client_usd + client_ils / rate, 0)
+        commission = Commission.objects.filter(Q(Q(low_value__lte=usd_amount) & Q(high_value__gte=usd_amount)) | 
+                                Q(Q(low_value__lte=usd_amount) & Q(high_value__isnull=True))).first()
+        
+        if commission:
+            unit = commission.unit
+            value = commission.value
+
+            if unit == 1:
+                commission = usd_amount * rate * (value / 100)
+            else:
+                commission = value
+
+        usd_amount = round(client_usd + client_ils / rate - commission / rate, 0)
+        commission = Commission.objects.filter(Q(Q(low_value__lte=usd_amount) & Q(high_value__gte=usd_amount)) | 
+                                Q(Q(low_value__lte=usd_amount) & Q(high_value__isnull=True))).first()
+        
+        if commission:
+            unit = commission.unit
+            value = commission.value
+
+            if unit == 1:
+                commission = round(usd_amount * rate * (value / 100), 0)
+            else:
+                commission = value
+        else:
+            commission = 0
+
+        to_receivers = usd_amount
+        if client_ils >= commission:
+            from_sender_ils = client_ils - commission
+            from_sender_usd = client_usd
+        else:
+            from_sender_ils = 0
+            from_sender_usd = round(client_usd - (commission - client_ils) / rate, 0)
+
+        return JsonResponse({'commission': commission, 'to_receivers': to_receivers, 'from_sender_ils': from_sender_ils, 'from_sender_usd': from_sender_usd})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)

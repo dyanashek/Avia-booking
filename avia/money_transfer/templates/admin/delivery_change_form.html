@@ -1,8 +1,22 @@
 {% extends 'admin/change_form.html' %}
 {% block field_sets %}
-    $: <input type="number" name="text" id='usd' placeholder="Сумма в $" style="margin-right: 15px;" oninput="ChangeIlsValue(event)">
-    ₪: <input type="number" name="text" id='ils' placeholder="Сумма в ₪" oninput="ChangeUsdValue(event)">
+        $ у клиента: <input type="number" name="client_usd" id='client_usd' value="0" placeholder="Сумма в $" style="margin-right: 15px;">
+        ₪ у клиента: <input type="number" name="client_ils" id='client_ils' value="0" placeholder="Сумма в ₪">
+        <button class="button" onclick="calculateValues(event)">Рассчитать</button>
+    <br>
+    <div id="result-text" style="display: none;">
+        <span id="sender-text" class="help"></span><br>
+        <span id="receiver-text" class="help"></span><br>
+        <span id="commission-text" class="help"></span>
+    </div>
+    <hr style="margin-top: 10px;">
+    <div style="margin-top: 10px;">
+    $: <input type="number" name="text" id='usd' placeholder="Сумма в $" style="margin-right: 15px;" readonly>
+    ₪: <input type="number" name="text" id='ils' placeholder="Сумма в ₪" readonly>
+    </dvi>
+    <hr style="margin-top: 10px;">
     {{ block.super }}
+    
     <script>
         const rate = parseFloat("{{ rate }}");
         
@@ -10,6 +24,11 @@
         const customCommissionField = document.querySelector('.field-custom_commission')
         const commissionField = document.querySelector('.field-commission')
         
+        const resultText = document.getElementById('result-text')
+        const senderText = document.getElementById('sender-text')
+        const receiverText = document.getElementById('receiver-text')
+        const commissionText = document.getElementById('commission-text')
+
         if (customCommissionField) {
             customCommissionField.style.display = 'none';
         }
@@ -40,6 +59,28 @@
             } else {
                 UsdInput.value = ''
             }
+        }
+
+        function calculateValues(event) {
+            event.preventDefault();
+            const clientUsd = document.getElementById('client_usd').value;
+            const clientIls = document.getElementById('client_ils').value;
+
+            fetch('/money/calculate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ client_usd: clientUsd, client_ils: clientIls })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultText.style.display = 'block'
+                senderText.textContent = `для передачи клиентом: ${data.from_sender_usd} $ и ${data.from_sender_ils} ₪`
+                receiverText.textContent = `получателям: ${data.to_receivers} $`
+                commissionText.textContent = `комиссия: ${data.commission} ₪`
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 {% endblock %}
