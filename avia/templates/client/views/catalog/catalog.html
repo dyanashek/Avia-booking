@@ -85,16 +85,19 @@
 
                             <!-- ko if: !product.in_cart -->
                             <button class="catalogCardPlus" data-bind="attr:{data:product.id}" onclick="addToCart(event)">
-                                <img src="/static/img/icons/plus.svg" alt="plus">
+                                <img src="/static/img/icons/plus.svg" data-bind="attr:{data:product.id}" alt="plus">
                             </button>
-                            <a href="{% url 'shop:cart' %}" class="catalogCardAdd d-none">
-                                <img src="/static/img/icons/cart-white.svg" alt="cart">
-                            </a>
                             <!-- /ko -->
                             <!-- ko if: product.in_cart -->
-                            <a href="{% url 'shop:cart' %}" class="catalogCardAdd">
-                                <img src="/static/img/icons/cart-white.svg" alt="cart">
-                            </a>
+                            <div class="productCardCount productQuantity" data-title="Количество">
+                                <button class="productQuantityMinus productQuantityBtn" data-bind="attr:{data:product.id}" onclick="decreaseFromCart(event)">
+                                    <img src="/static/img/icons/minus.svg" data-bind="attr:{data:product.id}" alt="minus">
+                                </button>
+                                <input type="number" max="99" step="1" min="0" data-bind="value:product.item_count" title="Кол-во" inputmode="numeric" autocomplete="off">
+                                <button class="productQuantityPlus productQuantityBtn" data-bind="attr:{data:product.id}" onclick="addToCart(event)">
+                                    <img src="/static/img/icons/plus-grey.svg" data-bind="attr:{data:product.id}" alt="plus">
+                                </button>
+                            </div>
                             <!-- /ko -->
                         </div>
                     </div>
@@ -189,19 +192,45 @@
         }
 
         function addToCart(event) {
-            const card = event.target.closest('.catalogCardBottom')
-            const btn = card.querySelector('.catalogCardPlus')
-            var productId = btn.getAttribute("data");
+            const productId = event.target.getAttribute("data");
             if (!productId) { return }
             $.post(
                 "{% url 'api:add_to_cart' %}",
                 JSON.stringify({ "product_id": productId })
             ).done(
                 () => {
-                    updateCartItems()
-                    btn.nextElementSibling?.classList.remove('d-none');
-                    btn.classList.add('d-none');
+                    updateCartItems();
+                    loadProducts(); // обновляем список продуктов
                 }).fail(() => { alert("Ошибка при добавлении товара в корзину, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function decreaseFromCart(event) {
+            const productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:decrease_from_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    updateCartItems();
+                    loadProducts(); // обновляем список продуктов
+                }).fail(() => { alert("Ошибка при удалении товара из корзины, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function loadProducts() {
+            var curr_count = count;
+            if (curr_count == 0) {
+                curr_count = 12;
+            }
+            var url = `{% url 'api:products' %}?category={{category}}&subcategory={{subcategory}}&count=${curr_count}&search=${searchValue}&all=true`;
+
+            $.get(url).done((data) => {
+                state.products.removeAll();
+                for (var product of data.products) {
+                    state.products.push(product)
+                }
+                count = data.products.length
+            })
         }
 
         function changeFav(event) {

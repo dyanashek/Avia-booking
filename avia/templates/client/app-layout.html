@@ -21,9 +21,9 @@
                         </div><!-- /Hamburger Menu -->
                     </div>
 
-                    <a href="{% url 'shop:catalog' %}" class="headerLogo logo">
+                    {% comment %} <a href="{% url 'shop:catalog' %}" class="headerLogo logo">
                         <img src="{% if settings.client_page_logo %}{{ settings.client_page_logo.url }}{% else %}/static/img/admin/logo/logo.svg{% endif %}" alt="logo">
-                    </a>
+                    </a> {% endcomment %}
                     <a id="cartItems" href="{% url 'shop:cart' %}" class="headerCart" data-count="0">
                         <img src="/static/img/icons/cart-black.svg" alt="cart">
                     </a>

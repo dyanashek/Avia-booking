@@ -66,6 +66,8 @@ def notify_users(users_sims):
                     \n*{fare_price_text} {users_sim.fare.price}₪*\
                     \n\
                     \n{payment_needed}\
+                    \n\
+                    \n*ВНИМАНИЕ:* для выбора варианта *нажмите одну из кнопок* ниже!\
                     '''
 
             

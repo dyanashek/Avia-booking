@@ -40,6 +40,7 @@ class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     subcategory = SubCategorySerializer()
     unit = ProductUnitSerializer()
+    item_count = serializers.IntegerField(default=0)
 
     class Meta:
         model = Product
@@ -55,6 +56,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "category",
             "subcategory",
             "unit",
+            "item_count",
         ]
 
     def get_cover(self, obj):

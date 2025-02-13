@@ -1,7 +1,7 @@
 import json
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Case, When, Q
+from django.db.models import Case, When, Q, Count, Subquery, OuterRef
 from django.http import JsonResponse
 from django.views import View
 from django.utils.decorators import method_decorator
@@ -30,6 +30,11 @@ class ProductsView(View):
                 default=False
             )
         )
+        products = products.annotate(
+            item_count=Subquery(
+                CartItem.objects.filter(product=OuterRef('pk'), cart__user=request.user).values('item_count')[:1]
+            )
+        )
 
         category_title = request.GET.get("category")
         category = Category.objects.filter(title=category_title).first()
@@ -47,7 +52,11 @@ class ProductsView(View):
             products = products.filter(Q(title__icontains=search_query) | Q(description__icontains=search_query)).distinct()
 
         count = int(request.GET.get("count", 0))
-        products = products[count:count + 12]                    
+        all = request.GET.get("all")
+        if all:
+            products = products[:count]                    
+        else:
+            products = products[count:count + 12]
         serializer = ProductSerializer(products, many=True)
         return JsonResponse({"products": serializer.data}, status=200)
 

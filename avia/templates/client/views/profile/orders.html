@@ -54,7 +54,7 @@
                         <div class="historyProductList pb-1">
                             <div class="container">
                                 <div class="d-flex gap-2 mt-4 historyProductListW align-items-end">
-                                    {% for i in order.items.all|slice:":5" %}
+                                    {% for i in order.items.all|slice:":7" %}
                                         <a href="{% url 'shop:product_detail' i.product.id %}" class="productImg productImg--sm">
                                             {% if i.product.cover %}
                                                 {% thumbnail i.product.cover 40x40 crop="center" as im %}
@@ -64,7 +64,7 @@
                                             {% endif %}
                                         </a>
                                     {% endfor %}
-                                    {% if order.items.all|length > 5 %}
+                                    {% if order.items.all|length > 7 %}
                                         <div class="text-center">...</div>
                                     {% endif %}
                                 </div>

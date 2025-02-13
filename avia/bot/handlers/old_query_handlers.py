@@ -1983,6 +1983,7 @@ async def callback_query(call: types.CallbackQuery):
             
             if users_sim.circuit_id_collect is None:
                 curr_keyboard = await keyboards.ready_pay_only_keyboard(user_language)
+                reply_text += '\n\nЕсли готовы оплатить *сегодня*, нажмите на кнопку *Готов оплатить* ниже!'
             else:
                 curr_keyboard = InlineKeyboardBuilder().as_markup()
 
