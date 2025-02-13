@@ -1,0 +1,345 @@
+:root {
+
+    --container-offset: 15px;
+    --container-width: calc(var(--content-width) + (var(--container-offset) * 2));
+    --container-fluid-width: calc(var(--content-fluid-width) + (var(--container-offset) * 2));
+    --outline: #e3ebf2;
+    --black: #333;
+    --background: #f3f7fd;
+    --success: #27c340;
+    --error: #e02828;
+    --yellow: #ffc529;
+    --disabled: #c5cfdc;
+    --tetriary: #abc4e4;
+    --primary: #2f80ed;
+    --gray: #8b8b8b;
+    --secondary: #2169c9;
+    --secondary-color-black: #2b3e73;
+    --secondary-text-color-black: #a9aaad;
+}
+
+
+
+
+body {
+    font-family: "Manrope", sans-serif;
+}
+
+.b-shadow {
+    box-shadow: 0 0 8px 2px var(--outline);
+}
+
+.manager-dashboard {
+    width: 100%;
+    max-height: 100%;
+}
+
+.t-shadow-black {
+    text-shadow: 0 0 5px black;
+}
+
+.manager-dashboard .header {
+    height: 40px;
+    font-size: 24px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.manager-dashboard .content {
+    height: 90%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.user-thumbnail {
+    width: 40px;
+    height: 40px;
+    border-radius: 100%;
+    overflow: hidden;
+}
+
+.user-thumbnail>img {
+    width: 100%;
+}
+
+.user-thumbnail-order {
+    width: 32px;
+    height: 32px;
+    border-radius: 100%;
+    overflow: hidden;
+}
+
+.table-guest-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 56px;
+    border-bottom: 1px solid #D4DDE8;
+}
+
+.dish-thumb {
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+}
+
+.dish-row-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.dish-row-chars {
+    font-size: 10px;
+    font-weight: 400;
+}
+
+.dish-row-sum {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.dish-row-status {
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.text-ok {
+    color: #27C340;
+}
+
+.text-bad {
+    color: tomato;
+}
+
+.employee-row {
+    width: 100%;
+    height: 64px;
+    border-bottom: 1px solid #D4DDE8;
+}
+
+.btn-tetriary {
+    color: white;
+    background-color: var(--tetriary);
+}
+
+.searchInput {
+    background-color: var(--background);
+    border-radius: 8px;
+    height: 48px;
+    padding-left: 16px;
+    padding-right: 16px;
+    width: 100%;
+    border: 1px solid var(--background);
+    font-size: 16px;
+}
+
+.searchInput:focus {
+    background-color: transparent;
+    border: 1px solid var(--black);
+}
+
+.searchW {
+    position: relative;
+}
+
+@media (min-width: 992px) {
+    .searchInput {
+        font-size: 14px;
+    }
+}
+
+.searchInputBtn {
+    position: absolute;
+    right: 0;
+    height: 100%;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 0;
+}
+
+.selectw {
+    height: 100%;
+}
+
+
+.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    height: 40px;
+    border-radius: 16px;
+    font-weight: 700;
+    padding-left: 44px;
+    padding-right: 44px;
+}
+
+.button--transparent {
+    color: var(--black);
+    border: 1px solid var(--gray);
+    transition: border-color 0.2s linear, color 0.2s linear, background 0.2s linear;
+}
+
+.button--transparent:hover {
+    color: var(--tetriary);
+    background: var(--background);
+    border-color: var(--background);
+}
+
+.button--transparent:disabled {
+    border-color: var(--disabled);
+    color: var(--disabled);
+}
+
+.button--transparent-blue {
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    transition: border-color 0.2s linear, color 0.2s linear, background 0.2s linear;
+}
+
+.button--transparent-blue:hover {
+    color: var(--tetriary);
+    background: var(--background);
+    border-color: var(--background);
+}
+
+.button--transparent-blue:hover svg {
+    stroke: var(--tetriary);
+}
+
+.button--transparent-blue:disabled {
+    border-color: var(--disabled);
+    color: var(--disabled);
+}
+
+.button--transparent-blue:disabled svg {
+    stroke: var(--disabled);
+}
+
+.button--transparent-blue svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--primary);
+    transition: stroke 0.2s linear;
+}
+
+.button--transparent-tetriary {
+    color: var(--tetriary);
+    border: 1px solid var(--tetriary);
+    transition: border-color 0.2s linear, color 0.2s linear, background 0.2s linear;
+    cursor: pointer;
+}
+
+.button--transparent-tetriary.border-width-2 {
+    border-width: 2px;
+}
+
+.button--transparent-tetriary:hover svg {
+    stroke: var(--tetriary);
+}
+
+.button--transparent-tetriary:disabled {
+    border-color: var(--disabled);
+    color: var(--disabled);
+}
+
+.button--transparent-tetriary:disabled svg {
+    stroke: var(--disabled);
+}
+
+.button--transparent-tetriary svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--tetriary);
+    fill: transparent;
+    transition: stroke 0.2s linear;
+}
+
+.button--blue {
+    background: var(--primary);
+    color: #fff;
+    transition: background-color 0.2s linear;
+}
+
+.button--blue:hover,
+.button--blue:focus {
+    background-color: var(--secondary);
+}
+
+.button--blue:disabled {
+    background-color: var(--disabled);
+}
+
+.button--blue.disabled {
+    background-color: var(--disabled);
+    pointer-events: none;
+}
+
+.button--blue.disabled svg {
+    stroke: var(--disabled);
+}
+
+.button--green {
+    background-color: var(--success);
+}
+
+.button--lg {
+    height: 48px;
+    font-size: 18px;
+}
+
+.button--lg.text--sm {
+    font-size: 14px;
+    line-height: 114%;
+}
+
+@media (max-width: 350px) {
+    .button--lg {
+        font-size: 16px;
+    }
+}
+
+.rating-wrapper {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+
+.rating-wrapper label {
+    color: #E1E6F6;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 3rem;
+    padding: 1rem .6rem;
+    transition: color 0.5s;
+}
+
+.rating-wrapper svg {
+    -webkit-text-fill-color: transparent;
+    -webkit-filter: drop-shadow (4px 1px 6px rgba(198, 206, 237, 1));
+    filter: drop-shadow(5px 1px 3px rgba(198, 206, 237, 1));
+}
+
+.rating-wrapper input {
+    height: 100%;
+    width: 100%;
+}
+
+.rating-wrapper input {
+    display: none;
+}
+
+.rating-wrapper label:hover,
+label:hover~label,
+input:checked~label {
+    color: #f7e338;
+}
+
+.mb-7 {
+    margin-bottom: 7rem;
+}

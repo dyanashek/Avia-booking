@@ -1,0 +1,153 @@
+{% extends 'client/page-layout.html' %}
+{% load static %}
+{% load filters %}
+
+{% block title %}Избранное{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+{% endblock%}
+
+
+{% block content %}
+    <main class="main">
+        <div class="pageHeadW">
+            <div class="container">
+                <div class="pageHead d-flex justify-content-between align-items-center py-2">
+                    <a class="pageHeadBack d-flex align-items-center" href="{% url 'shop:catalog' %}">
+                        <button class="pageHeadBackBtn">
+                            <img src="/static/img/icons/arrow-back.svg" alt="icon">
+                        </button>
+                        Избранное
+                    </a>
+                </div><!-- /pageHead -->
+            </div>
+        </div>
+        <div class="catalogW py-3">
+            <div class="container">
+                {% if favs %}
+                    <div id="favorites-list" class="catalogGrid">
+                        {% for fav in favs %}
+                            {% with fav.product as item %}
+                                <div class="catalogCard htmx-scroll">
+                                    <div class="catalogCardBottom">
+                                        <a class="catalogCardImg" href="{% url 'shop:product_detail' pk=item.id %}">
+                                            {% if item.cover %}
+                                                <img class="catalogCardImg" src="{{ item.cover.url }}" alt="image">
+                                            {% else %}
+                                                <img class="catalogCardImg" src="{% static 'img/default-product.jpg' %}" alt="image">
+                                            {% endif %}
+                                        </a>
+                                        <button onclick="changeFav(event)" class="catalogCardWishlist active" data="{{ item.id }}">
+                                        </button>
+                                    </div>
+                                    <div class="catalogCardBottom">
+                                        <div class="catalogCardContent">
+                                            <div class="catalogCardTitle mb-1">
+                                                {{ item.title }}
+                                            </div>
+                                            <p class="catalogCardDescr mb-2">
+                                                {{ item.description }}
+                                            </p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="catalogCardWeight">
+                                                    {% if item.unit %}
+                                                        {{ item.unit.title }}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="catalogCardAction d-flex justify-content-between align-items-center mt-2">
+                                            <div class="catalogCardPrice">
+                                                {{ item.readable_price }} ₪
+                                            </div>
+                                            {% if not item.in_stoplist %}
+                                                {% if not fav.in_cart %}
+                                                    <button class="catalogCardPlus" data="{{ item.id }}" onclick="addToCart(event)">
+                                                        <img src="/static/img/icons/plus.svg" alt="plus">
+                                                    </button>
+                                                    <a href="{% url 'shop:cart' %}" class="catalogCardAdd d-none">
+                                                        <img src="/static/img/icons/cart-white.svg" alt="cart">
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{% url 'shop:cart' %}" class="catalogCardAdd">
+                                                        <img src="/static/img/icons/cart-white.svg" alt="cart">
+                                                    </a>
+                                                {% endif %}
+                                            {% else %}
+                                            <div class="catalogCardWeight">Временно недоступно</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div><!-- /catalogCard -->
+                            {% endwith %}
+                            {% if page_obj.has_next and forloop.last %}
+								<span hx-get="{% url 'shop:favorites' %}?page={{ page_obj.next_page_number }}"
+										hx-swap="beforeend" hx-target="#favorites-list" hx-select=".htmx-scroll" 
+										hx-trigger="intersect once delay:200ms" class="htmx-scroll" 
+										style="visibility: hidden;"
+										hx-on="htmx:afterRequest: this.remove()">
+								</span>
+							{% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cartEmpty">
+                        <div class="container">
+                            <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
+                                <div><h2>В избранном ничего нет</h2></div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+
+    <script>
+        function changeFav(event) {
+            var el = event.target;
+            if (el.tagName == "IMG") {
+                var btn = el.parentElement;
+            } else {
+                var btn = el;
+            }
+            var productId = btn.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:change_favorites' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    btn.classList.remove("active");
+                    var order = btn.parentElement.parentElement;
+                    order.remove();
+                }
+            ).fail(() => { alert("Произошла ошибка, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function addToCart(event) {
+            const card = event.target.closest('.catalogCardBottom')
+            const btn = card.querySelector('.catalogCardPlus')
+            var productId = btn.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:add_to_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    btn.nextElementSibling?.classList.remove('d-none');
+                    btn.classList.add('d-none');
+                }).fail(() => { alert("Ошибка при добавлении товара в корзину, перезагрузите страницу и попробуйте снова"); });
+        }
+
+    </script>
+{% endblock%}

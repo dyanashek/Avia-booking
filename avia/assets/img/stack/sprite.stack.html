@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta charset="utf-8"/>
+		<meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+		<title>SVG stack preview | svg-sprite</title>
+		<style>@charset "UTF-8";body{padding:0;margin:0;color:#666;background:#fafafa;font-family:Arial,Helvetica,sans-serif;font-size:1em;line-height:1.4}header{display:block;padding:3em 3em 2em 3em;background-color:#fff}header p{margin:2em 0 0 0}section{border-top:1px solid #eee;padding:2em 3em 0 3em}section ul{margin:0;padding:0}section li{display:inline;display:inline-block;background-color:#fff;position:relative;margin:0 2em 2em 0;vertical-align:top;border:1px solid #ccc;padding:1em 1em 3em 1em;cursor:default}.icon-box{margin:0;width:144px;height:144px;position:relative;background:#ccc url("data:image/gif;base64,R0lGODlhDAAMAIAAAMzMzP///yH/C1hNUCBEYXRhWE1QPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS4wLWMwNjEgNjQuMTQwOTQ5LCAyMDEwLzEyLzA3LTEwOjU3OjAxICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdFJlZj0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlUmVmIyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1LjEgV2luZG93cyIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozQjk4OTI0MUY5NTIxMUUyQkJDMEI5NEFEM0Y1QTYwQyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozQjk4OTI0MkY5NTIxMUUyQkJDMEI5NEFEM0Y1QTYwQyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjNCOTg5MjNGRjk1MjExRTJCQkMwQjk0QUQzRjVBNjBDIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjNCOTg5MjQwRjk1MjExRTJCQkMwQjk0QUQzRjVBNjBDIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+Af/+/fz7+vn49/b19PPy8fDv7u3s6+rp6Ofm5eTj4uHg397d3Nva2djX1tXU09LR0M/OzczLysnIx8bFxMPCwcC/vr28u7q5uLe2tbSzsrGwr66trKuqqainpqWko6KhoJ+enZybmpmYl5aVlJOSkZCPjo2Mi4qJiIeGhYSDgoGAf359fHt6eXh3dnV0c3JxcG9ubWxramloZ2ZlZGNiYWBfXl1cW1pZWFdWVVRTUlFQT05NTEtKSUhHRkVEQ0JBQD8+PTw7Ojk4NzY1NDMyMTAvLi0sKyopKCcmJSQjIiEgHx4dHBsaGRgXFhUUExIREA8ODQwLCgkIBwYFBAMCAQAAIfkEAAAAAAAsAAAAAAwADAAAAhaEH6mHmmzcgzJAUG/NVGrfOZ8YLlABADs=") top left repeat;border:1px solid #ccc;display:table-cell;vertical-align:middle;text-align:center}.icon{display:inline;display:inline-block}h1{margin-top:0}h2{margin:0;padding:0;font-size:1em;font-weight:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:absolute;left:1em;right:1em;bottom:1em}footer{display:block;margin:0;padding:0 3em 3em 3em}footer p{margin:0;font-size:.7em}footer a{color:#0f7595;margin-left:0}</style>
+
+<!--
+
+Sprite shape dimensions
+====================================================================================================
+You will need to set the sprite shape dimensions via CSS when you use them as stack SVGs, otherwise
+they would become a huge 100% in size. You may use the following dimension classes for doing so.
+They might well be outsourced to an external stylesheet of course.
+
+-->
+
+<style type="text/css">
+	.svg-about-dims { width: 21px; height: 20px; }
+	.svg-bell-dims { width: 16px; height: 16px; }
+	.svg-block-icon-dims { width: 24px; height: 24px; }
+	.svg-call-dims { width: 21px; height: 20px; }
+	.svg-call-person-1-dims { width: 48px; height: 48px; }
+	.svg-call-person-2-dims { width: 48px; height: 48px; }
+	.svg-call-person-3-dims { width: 48px; height: 48px; }
+	.svg-call-person-4-dims { width: 48px; height: 48px; }
+	.svg-cart-action-dims { width: 16px; height: 16px; }
+	.svg-delete-file-dims { width: 17px; height: 16px; }
+	.svg-dots-dims { width: 16px; height: 16px; }
+	.svg-edit-dims { width: 16px; height: 16px; }
+	.svg-edit-admin-dims { width: 24px; height: 24px; }
+	.svg-edit-icon-dims { width: 24px; height: 24px; }
+	.svg-fav-off-lg-dims { width: 48px; height: 48px; }
+	.svg-fav-on-lg-dims { width: 48px; height: 48px; }
+	.svg-menu-dims { width: 20px; height: 20px; }
+	.svg-minus-dims { width: 10px; height: 2px; }
+	.svg-part-icon-dims { width: 24px; height: 24px; }
+	.svg-plus-dims { width: 10px; height: 10px; }
+	.svg-profile-dims { width: 20px; height: 20px; }
+	.svg-remove-dims { width: 16px; height: 16px; }
+	.svg-star-dims { width: 10px; height: 10px; }
+	.svg-stop-dims { width: 16px; height: 16px; }
+	.svg-stop-lg-dims { width: 24px; height: 24px; }
+	.svg-tea-icon-dims { width: 24px; height: 24px; }
+	.svg-update-dims { width: 16px; height: 16px; }
+	.svg-upload-dims { width: 16px; height: 16px; }
+</style>
+
+<!--
+====================================================================================================
+-->
+
+	</head>
+	<body>
+		<header>
+			<h1>SVG stack preview</h1>
+			<p>This preview features an SVG stack. Please have a look at the HTML source for further details and be aware of the following constraints:</p>
+			<ul>
+				<li>Your browser has to <a href="http://caniuse.com/#feat=svg-fragment" target="_blank" rel="noopener noreferrer">support SVG fragment identifiers</a> for SVG stacks to work.</li>
+				<li>Support for SVG fragment identifiers hasn't always been that decent. For older browsers you will have to use some prolyfill like <a href="https://github.com/preciousforever/SVG-Stacker/blob/master/fixsvgstack.jquery.js" target="_blank" rel="noopener noreferrer">fixsvgstack.jquery.js</a>.</li>
+			</ul>
+		</header>
+		<section>
+
+<!--
+
+SVG stack
+====================================================================================================
+These SVG images make use of fragment identifiers (IDs) to reference certain portions of the
+external sprite. By default, all shapes inside the sprite are hidden by CSS. The `:target` pseudo
+selector is used to show the very shape that is referenced by the fragment identifier.
+
+-->
+
+			<ul>
+
+				<li title="about">
+					<div class="icon-box">
+
+						<!-- about -->
+						<img src="../icons/icons.svg#about" class="svg-about-dims" alt="about"/>
+
+					</div>
+					<h2>about</h2>
+				</li>
+				<li title="bell">
+					<div class="icon-box">
+
+						<!-- bell -->
+						<img src="../icons/icons.svg#bell" class="svg-bell-dims" alt="bell"/>
+
+					</div>
+					<h2>bell</h2>
+				</li>
+				<li title="block-icon">
+					<div class="icon-box">
+
+						<!-- block-icon -->
+						<img src="../icons/icons.svg#block-icon" class="svg-block-icon-dims" alt="block-icon"/>
+
+					</div>
+					<h2>block-icon</h2>
+				</li>
+				<li title="call">
+					<div class="icon-box">
+
+						<!-- call -->
+						<img src="../icons/icons.svg#call" class="svg-call-dims" alt="call"/>
+
+					</div>
+					<h2>call</h2>
+				</li>
+				<li title="call-person-1">
+					<div class="icon-box">
+
+						<!-- call-person-1 -->
+						<img src="../icons/icons.svg#call-person-1" class="svg-call-person-1-dims" alt="call-person-1"/>
+
+					</div>
+					<h2>call-person-1</h2>
+				</li>
+				<li title="call-person-2">
+					<div class="icon-box">
+
+						<!-- call-person-2 -->
+						<img src="../icons/icons.svg#call-person-2" class="svg-call-person-2-dims" alt="call-person-2"/>
+
+					</div>
+					<h2>call-person-2</h2>
+				</li>
+				<li title="call-person-3">
+					<div class="icon-box">
+
+						<!-- call-person-3 -->
+						<img src="../icons/icons.svg#call-person-3" class="svg-call-person-3-dims" alt="call-person-3"/>
+
+					</div>
+					<h2>call-person-3</h2>
+				</li>
+				<li title="call-person-4">
+					<div class="icon-box">
+
+						<!-- call-person-4 -->
+						<img src="../icons/icons.svg#call-person-4" class="svg-call-person-4-dims" alt="call-person-4"/>
+
+					</div>
+					<h2>call-person-4</h2>
+				</li>
+				<li title="cart-action">
+					<div class="icon-box">
+
+						<!-- cart-action -->
+						<img src="../icons/icons.svg#cart-action" class="svg-cart-action-dims" alt="cart-action"/>
+
+					</div>
+					<h2>cart-action</h2>
+				</li>
+				<li title="delete-file">
+					<div class="icon-box">
+
+						<!-- delete-file -->
+						<img src="../icons/icons.svg#delete-file" class="svg-delete-file-dims" alt="delete-file"/>
+
+					</div>
+					<h2>delete-file</h2>
+				</li>
+				<li title="dots">
+					<div class="icon-box">
+
+						<!-- dots -->
+						<img src="../icons/icons.svg#dots" class="svg-dots-dims" alt="dots"/>
+
+					</div>
+					<h2>dots</h2>
+				</li>
+				<li title="edit">
+					<div class="icon-box">
+
+						<!-- edit -->
+						<img src="../icons/icons.svg#edit" class="svg-edit-dims" alt="edit"/>
+
+					</div>
+					<h2>edit</h2>
+				</li>
+				<li title="edit-admin">
+					<div class="icon-box">
+
+						<!-- edit-admin -->
+						<img src="../icons/icons.svg#edit-admin" class="svg-edit-admin-dims" alt="edit-admin"/>
+
+					</div>
+					<h2>edit-admin</h2>
+				</li>
+				<li title="edit-icon">
+					<div class="icon-box">
+
+						<!-- edit-icon -->
+						<img src="../icons/icons.svg#edit-icon" class="svg-edit-icon-dims" alt="edit-icon"/>
+
+					</div>
+					<h2>edit-icon</h2>
+				</li>
+				<li title="fav-off-lg">
+					<div class="icon-box">
+
+						<!-- fav-off-lg -->
+						<img src="../icons/icons.svg#fav-off-lg" class="svg-fav-off-lg-dims" alt="fav-off-lg"/>
+
+					</div>
+					<h2>fav-off-lg</h2>
+				</li>
+				<li title="fav-on-lg">
+					<div class="icon-box">
+
+						<!-- fav-on-lg -->
+						<img src="../icons/icons.svg#fav-on-lg" class="svg-fav-on-lg-dims" alt="fav-on-lg"/>
+
+					</div>
+					<h2>fav-on-lg</h2>
+				</li>
+				<li title="menu">
+					<div class="icon-box">
+
+						<!-- menu -->
+						<img src="../icons/icons.svg#menu" class="svg-menu-dims" alt="menu"/>
+
+					</div>
+					<h2>menu</h2>
+				</li>
+				<li title="minus">
+					<div class="icon-box">
+
+						<!-- minus -->
+						<img src="../icons/icons.svg#minus" class="svg-minus-dims" alt="minus"/>
+
+					</div>
+					<h2>minus</h2>
+				</li>
+				<li title="part-icon">
+					<div class="icon-box">
+
+						<!-- part-icon -->
+						<img src="../icons/icons.svg#part-icon" class="svg-part-icon-dims" alt="part-icon"/>
+
+					</div>
+					<h2>part-icon</h2>
+				</li>
+				<li title="plus">
+					<div class="icon-box">
+
+						<!-- plus -->
+						<img src="../icons/icons.svg#plus" class="svg-plus-dims" alt="plus"/>
+
+					</div>
+					<h2>plus</h2>
+				</li>
+				<li title="profile">
+					<div class="icon-box">
+
+						<!-- profile -->
+						<img src="../icons/icons.svg#profile" class="svg-profile-dims" alt="profile"/>
+
+					</div>
+					<h2>profile</h2>
+				</li>
+				<li title="remove">
+					<div class="icon-box">
+
+						<!-- remove -->
+						<img src="../icons/icons.svg#remove" class="svg-remove-dims" alt="remove"/>
+
+					</div>
+					<h2>remove</h2>
+				</li>
+				<li title="star">
+					<div class="icon-box">
+
+						<!-- star -->
+						<img src="../icons/icons.svg#star" class="svg-star-dims" alt="star"/>
+
+					</div>
+					<h2>star</h2>
+				</li>
+				<li title="stop">
+					<div class="icon-box">
+
+						<!-- stop -->
+						<img src="../icons/icons.svg#stop" class="svg-stop-dims" alt="stop"/>
+
+					</div>
+					<h2>stop</h2>
+				</li>
+				<li title="stop-lg">
+					<div class="icon-box">
+
+						<!-- stop-lg -->
+						<img src="../icons/icons.svg#stop-lg" class="svg-stop-lg-dims" alt="stop-lg"/>
+
+					</div>
+					<h2>stop-lg</h2>
+				</li>
+				<li title="tea-icon">
+					<div class="icon-box">
+
+						<!-- tea-icon -->
+						<img src="../icons/icons.svg#tea-icon" class="svg-tea-icon-dims" alt="tea-icon"/>
+
+					</div>
+					<h2>tea-icon</h2>
+				</li>
+				<li title="update">
+					<div class="icon-box">
+
+						<!-- update -->
+						<img src="../icons/icons.svg#update" class="svg-update-dims" alt="update"/>
+
+					</div>
+					<h2>update</h2>
+				</li>
+				<li title="upload">
+					<div class="icon-box">
+
+						<!-- upload -->
+						<img src="../icons/icons.svg#upload" class="svg-upload-dims" alt="upload"/>
+
+					</div>
+					<h2>upload</h2>
+				</li>
+			</ul>
+
+<!--
+====================================================================================================
+-->
+
+		</section>
+		<footer>
+			<p>Generated at Mon, 11 Mar 2024 02:21:23 GMT by <a href="https://github.com/svg-sprite/svg-sprite" target="_blank" rel="noopener noreferrer">svg-sprite</a>.</p>
+		</footer>
+	</body>
+</html>

@@ -1,0 +1,110 @@
+{% extends 'client/page-layout.html' %}
+{% load thumbnail %}
+{% load static %}
+
+{% block title %}Профиль{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+{% endblock%}
+
+
+{% block content %}
+
+    <main class="main">
+        <div class="pageHeadW">
+            <div class="container">
+                <div class="pageHead d-flex justify-content-between align-items-center py-2">
+                    <a class="pageHeadBack d-flex align-items-center" href="{% url 'shop:catalog' %}">
+                        <button class="pageHeadBackBtn">
+                            <img src="/static/img/icons/arrow-back.svg" alt="icon">
+                        </button>
+                        История заказов
+                    </a>
+                </div><!-- /pageHead -->
+
+            </div>
+        </div>
+
+        {% if orders %}
+            <div class="historyList" id="orders-list">
+                {% for order in orders %}
+                    <div class="historyItem pb-4 htmx-scroll">
+                        <div class="pageInfoW border-0">
+                            <div class="container">
+
+                                <div class="pageInfo pt-4 d-flex justify-content-between">
+                                    <span>#{{order.id}}</span>
+                                    <span>{% if order.status == 'created' %}Создан{% elif order.status == 'accepted' %}Принят{% elif order.status == 'completed' %}Выполнен{% endif %}</span>
+                                    <div class="d-flex gap-2">
+                                        <span>{{order.readable_date}} {{order.readable_time}}</span>
+                                    </div>
+                                </div><!-- /pageInfo -->
+
+                            </div>
+                        </div><!-- /pageInfoW -->
+
+                        <div class="historyProductList pb-1">
+                            <div class="container">
+                                <div class="d-flex gap-2 mt-4 historyProductListW align-items-end">
+                                    {% for i in order.items.all|slice:":5" %}
+                                        <a href="{% url 'shop:product_detail' i.product.id %}" class="productImg productImg--sm">
+                                            {% if i.product.cover %}
+                                                {% thumbnail i.product.cover 40x40 crop="center" as im %}
+                                                <img src="{{ im.url }}">
+                                            {% else %}
+                                                <img src="/static/img/default-product.jpg">
+                                            {% endif %}
+                                        </a>
+                                    {% endfor %}
+                                    {% if order.items.all|length > 5 %}
+                                        <div class="text-center">...</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="d-flex gap-2 orderBtnW mt-4">
+                                <div class="button button--transparent" data-bs-toggle="modal" data-bs-target="#order-detail-modal" data-bs-order="{{ order.id }}">
+                                    Подробне
+                                </div>
+                                <a class="button button--blue" href="{% url 'shop:repeat_order' order.id %}">
+                                    Повторить
+                                </a>
+                            </div>
+                        </div>
+
+                    </div><!-- /historyItem -->
+                    {% if page_obj.has_next and forloop.last %}
+                        <span hx-get="{% url 'shop:orders' %}?page={{ page_obj.next_page_number }}"
+                                hx-swap="beforeend" hx-target="#orders-list" hx-select=".htmx-scroll" 
+                                hx-trigger="intersect once delay:200ms" class="htmx-scroll" 
+                                style="visibility: hidden;"
+                                hx-on="htmx:afterRequest: this.remove()">
+                        </span>
+					{% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="cartEmpty mt-5">
+                <div class="container">
+                    <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
+                        <div><h2>История заказов пуста</h2></div>
+                        <div><a href="{% url 'shop:catalog' %}" class="button button--lg button--blue mt-3">К покупкам</a></div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </main>
+
+{% endblock%}
+{% block modals %}
+  {% include 'common/components/modals/order-detail-modal.html' %}
+{% endblock %}

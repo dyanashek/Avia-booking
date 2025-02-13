@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'drivers.apps.DriversConfig',
     'errors.apps.ErrorsConfig',
     'currency',
+    'shop',
+    'api',
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -59,6 +61,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    "rest_framework",
     'easy_thumbnails',
     'filer',
     'adminsortable2',
@@ -85,6 +89,14 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'avia.urls'
+
+REST_FRAMEWORK = {
+    "DATE_INPUT_FORMATS": [
+        "%Y-%m-%d %H",
+    ],
+    "DATETIME_FORMAT": "%Y-%m-%d  [%H:%M]",
+    "DATE_FORMAT": "%Y-%m-%d %H",
+}
 
 TEMPLATES = [
     {
@@ -159,6 +171,9 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [
+    BASE_DIR / "assets",
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -171,6 +186,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 THUMBNAIL_ALIASES = {
     '': {
         'passport_thumbnail': {'size': (100, 100), 'quality': 90, 'crop': False},
+        'cover_thumbnail': {'size': (100, 100), 'quality': 90, 'crop': False},
     },
 }
 
@@ -213,3 +229,5 @@ CKEDITOR_5_CONFIGS = {
         }
     }
 }
+
+HIDE_SHOP = True

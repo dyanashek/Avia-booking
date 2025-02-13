@@ -1,0 +1,51 @@
+{% load i18n %}
+{% load filters %}
+<div class="headerSidebarWrap">
+    <div class="headerSidebar">
+
+        <div class="d-flex flex-column justify-content-between headerSidebarW pb-4">
+
+            <div class="d-block">
+                <div class="headerSidebarTop headerSidebarFixed">
+                    <div class="container">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button class="headerSidebarClose">
+                                <img src="/static/img/icons/close-black.svg" alt="filter">
+                            </button>
+                        </div>
+                    </div>
+                </div><!-- /headerSidebarTop -->
+
+                <div class="headerSidebarProfile pt-3 pb-3">
+
+                    <div class="container">
+                        <div class="fw-medium mb-2 fz-16">{% trans "Профиль" %}</div>
+                    </div>
+                    <nav class="headerMenuNav headerNav">
+                        <ul class="headerNavList">
+                            <li class="menu-restourant"><a href="{% url 'shop:orders' %}">{% trans "История заказов" %}</a></li>
+                            <li class="menu-wishlist"><a href="{% url 'shop:favorites' %}">Избранное</a></li>
+                        </ul>
+                    </nav>
+                </div><!-- /headerSidebarProfile -->
+
+            </div>
+            <div class="headerSidebarBottom pt-3">
+                <div class="container">
+                    {% if request.user.is_authenticated %}
+                        <div class="d-flex flex-column gap-2 mb-4 mt-4">
+                            <span class="headerSidebarNameProfile">{{ request.user.fullname }}</span>
+                            <a class="headerSidebarLogout" href="#">{% trans "Выйти" %}</a>
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex flex-column gap-2 fz-10">
+                        <div class="copyright">© {% now 'Y' %} Golan</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div><!-- /headerSidebar -->
+</div>

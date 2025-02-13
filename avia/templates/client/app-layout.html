@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load filters %}
+
+{% block title %}{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+{% block styles %}{% endblock %}
+{% block scripts %}{% endblock%}
+
+{% block layout %}
+    <div class="wrapper">
+        <header class="header" id="header">
+            <div class="container">
+                <div class="headerW">
+                    <div class="headerL">
+                        <div class="hamburger" id="toggle">
+                            <div class="top-bun"></div>
+                            <div class="meat"></div>
+                            <div class="bottom-bun"></div>
+                        </div><!-- /Hamburger Menu -->
+                    </div>
+
+                    <a href="{% url 'shop:catalog' %}" class="headerLogo logo">
+                        <img src="{% if settings.client_page_logo %}{{ settings.client_page_logo.url }}{% else %}/static/img/admin/logo/logo.svg{% endif %}" alt="logo">
+                    </a>
+                    <a id="cartItems" href="{% url 'shop:cart' %}" class="headerCart" data-count="0">
+                        <img src="/static/img/icons/cart-black.svg" alt="cart">
+                    </a>
+                </div>
+            </div>
+            {% block additional_header %}
+            {% endblock %}
+        </header>
+
+        {% include 'client/components/sidebar.html' %}
+
+        <main class="main">
+            {% block slider %}
+                {% include 'client/components/slider.html' %}
+            {% endblock %}
+            <section class="catalog">
+                {% block content %}
+                {% endblock%}
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const header = document.getElementById("header");
+            const main = document.querySelector(".main");
+            
+            if (header && main) {
+                main.style.marginTop = `${header.offsetHeight}px`;
+            }
+        });
+    </script>
+
+{% endblock%}

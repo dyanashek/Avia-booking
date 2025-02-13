@@ -30,6 +30,8 @@ from currency import views as currency_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('shop/', include('shop.urls')),
+    path('api/', include('api.urls')),
     path('send_message/', core_views.send_message, name='send_message'),
     path('get_sender_addresses/', money_transfer_views.get_sender_addresses, name='sender_addresses'),
     path('get_sender_receivers/', money_transfer_views.get_sender_receivers, name='sender_receivers'),

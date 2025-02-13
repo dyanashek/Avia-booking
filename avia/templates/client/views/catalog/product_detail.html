@@ -1,0 +1,154 @@
+{% extends 'client/app-layout.html' %}
+{% load static %}
+
+{% block title %}Каталог{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}?v=1"></script>
+{% endblock%}
+
+
+{% block slider %}
+    <section class="intro mb-5">
+        <section class="intro productIntro">
+            <div class="swiper introSlider">
+                <div class="swiper-wrapper">
+                    {% if not product.cover and not product.slider %}
+                        <div class="swiper-slide introSlide" style="background-image: url('/static/img/default-cart.png');">
+                        </div>
+                    {% endif %}
+                    {% if product.cover %}
+                        <div class="swiper-slide introSlide" style="background-image: url('{{product.cover.url}}');">
+                        </div>
+                    {% endif %}
+                    {% if product.slider %}
+                        {% for image in product.slider.files.all %}
+                            <div class="swiper-slide introSlide" style="background-image: url('{{image.url}}');">
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </section>
+    </section>
+{% endblock %}
+
+
+{% block content %}
+    <section class="product" id="product">
+        <div class="productFixed topRound">
+            <div class="container">
+                <div class="productHead d-flex justify-content-between align-items-center py-2">
+                    <a class="productHeadBack" href="{% url 'shop:catalog' %}">
+                        <img src="/static/img/icons/arrow-back.svg" alt="icon">
+                    </a>
+                    <div class="price">{{product.readable_price}} ₪</div>
+                </div><!-- /productHead -->
+            </div>
+        </div>
+
+        <div class="productW">
+            <div class="container">
+                <h2 class="productTitle py-1 mb-4 h1">{{ product.title }}</h2>
+                <div class="productParamList">
+                    {% if product.unit %}
+                        <div class="productParamItem d-flex justify-content-between">
+                            <span class="productParamItemName">{{product.unit.title}}:</span>
+                        </div><!-- /productParamItem -->
+                    {% endif %}
+                </div>
+
+                {% if product.description %}
+                    <h2 class="mb-3 h3 h-auto">Описание:</h2>
+                    <div class="contentText">
+                        <p>{{ product.description }}</p>
+                    </div>
+                {% endif %}
+
+                <div class="d-flex gap-2">
+                    {% if not in_cart %}
+                        <button id="addToCartBtn" class="button productAddToCart button--lg button--blue gap-2 w-100" data="{{ product.id }}" onclick="addToCart(event)">
+                            Добавить
+                        </button>
+                    {% endif %}
+                    <a href="{% url 'shop:cart' %}" id="toCartBtn" class="button productAddToCart button--lg button--blue gap-2 w-100 {% if not in_cart %}d-none{% endif %}">
+                        <img src="/static/img/icons/cart-white.svg" alt="cart">
+                        К корзине
+                    </a>
+                    <button onclick="changeFav(event)" data="{{ product.id }}" type="button" class="productAddToWishlist {% if in_fav %}active{% endif %}"></button>
+                </div>
+
+            </div>
+        </div>
+
+    </section>
+
+    <script>
+        var cartIndicatorQuantity = $("#cartItems");
+
+        function updateCartItems() {
+            $.get(
+                "{% url 'api:cart_quantity' %}",
+                (data) => {
+                    cartIndicatorQuantity.attr('data-count', data.items_num);
+                }
+            );
+        }
+
+        function addToCart(event) {
+            var productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:add_to_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    updateCartItems()
+                    document.getElementById('toCartBtn').classList.remove('d-none');
+                    event.target.classList.add('d-none');
+                }).fail(() => { alert("Ошибка при добавлении товара в корзину, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function addToFav() {
+            $.post(
+                `${window.location.origin}/api/client/favourites/add`,
+                JSON.stringify(cartItem)
+            ).done(
+                (data) => {
+                    $("#addToFavBtn").toggleClass('active')
+
+                }
+            ).fail(() => { alert("error"); });
+            //redirect();
+        }
+
+        function changeFav(event) {
+            var el = event.target;
+            if (el.tagName == "IMG") {
+                var btn = el.parentElement;
+            } else {
+                var btn = el;
+            }
+            var productId = btn.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:change_favorites' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    btn.classList.toggle("active");
+                }
+            ).fail(() => { alert("Произошла ошибка, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        updateCartItems()
+    </script>
+
+{% endblock %}

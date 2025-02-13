@@ -1,0 +1,189 @@
+{% extends 'client/page-layout.html' %}
+{% load static %}
+{% load i18n %}
+{% load filters %}
+
+{% block title %}Корзина{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}?v=1"></script>
+{% endblock%}
+
+{% block content %}
+    <main class="main">
+        <div class="pageHeadW">
+            <div class="container">
+                <div class="pageHead d-flex justify-content-between align-items-center py-2">
+                    <a class="pageHeadBack d-flex align-items-center" href="{% url 'shop:catalog' %}">
+                        <button class="pageHeadBackBtn">
+                            <img src="/static/img/icons/arrow-back.svg" alt="icon">
+                        </button>
+                        Корзина
+                    </a>
+                    <a class="headerCart" data-bind="attr:{'data-count':cart.items().length}" >
+                        <img src="/static/img/icons/cart-black.svg" alt="cart">
+                    </a>
+                </div><!-- /pageHead -->
+
+            </div>
+        </div>
+
+        <section class="cart" id="cart">
+            <div class="container">
+                <div class="cartList py-3 items" data-bind="foreach:{data:cart.items, as:'item'}">
+                    <div class="cartItem d-flex justify-content-between">
+                        <a data-bind="attr:{href:`/shop/product/${product.id}`}" class="cartItemImg">
+                            <img data-bind="attr:{src:item.product.cover ? item.product.cover : '/static/img/default-product.jpg'}" alt="image">
+                        </a>
+                        <div class="cartItemContent d-flex flex-column">
+                            <div class="cartItemTop d-flex justify-content-between gap-2">
+                                <div class="d-flex flex-column">
+                                    <div class="cartItemTitle mb-1" data-bind="text:item.product.title"></div>
+                                    <div class="fs-10" data-bind="text:item.product.unit.title"></div>
+                                </div><!-- /cartItemTop -->
+                                <button data-bind="attr:{data:item.product.id}" onclick="deleteFromCart(event)" class="cartItemRemove">
+                                    <img src="/static/img/icons/remove2.svg" data-bind="attr:{data:item.product.id}">
+                                </button>
+                            </div>
+                            <div class="cartItemBottom d-flex justify-content-between flex-wrap gap-2">
+
+                                <div class="productCardCount productQuantity" data-title="Количество">
+                                    <button class="productQuantityMinus productQuantityBtn" data-bind="attr:{data:item.product.id}" onclick="decreaseFromCart(event)">
+                                        <img src="/static/img/icons/minus.svg" data-bind="attr:{data:item.product.id}">
+                                    </button>
+                                    <input type="number" max="99" step="1" min="0" data-bind="value:item.item_count" title="Кол-во" inputmode="numeric"
+                                           autocomplete="off">
+                                    <button class="productQuantityPlus productQuantityBtn" data-bind="attr:{data:item.product.id}" onclick="addToCart(event)">
+                                        <img src="/static/img/icons/plus-grey.svg" data-bind="attr:{data:item.product.id}">
+                                    </button>
+                                </div><!-- /productQuantity -->
+
+
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <div class="cartItemPricePerOne d-flex align-items-end gap-1">
+                                        <span data-bind="text:item.item_count"></span>
+                                        <span>х</span>
+                                        <span data-bind="text:item.product.price"></span>
+                                        <span>₪</span>
+                                    </div>
+                                    <span>&nbsp;</span>
+                                    <span>&nbsp;</span>
+                                    <div class="cartItemPriceTotal">
+                                        <span data-bind="text:item.readable_total_sum"></span> ₪
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div><!-- /cartItem -->
+
+                    </div><!-- /cartList -->
+                </div><!-- /container -->
+                <!-- ko if: cart.items().length > 0 -->
+                    <div class="cartFooter py-3">
+                        <div class="container">
+                            <div class="cartFooterW d-flex justify-content-end">
+                                <span class="cartFooterName">Итого:</span>
+                                <span class="cartFooterPrice"><span data-bind="text:cart.total_sum"></span> ₪</span>
+                            </div>
+                        </div>
+                    </div>
+                <!-- /ko -->
+                <!-- ko if: cart.items().length == 0 -->
+                    <div class="cartEmpty">
+                        <div class="container">
+                            <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
+                                <div><h2>Корзина пуста</h2></div>
+                                <div><a href="{% url 'shop:catalog' %}" class="button button--lg button--blue mt-3">К покупкам</a></div>
+                            </div>
+                        </div>
+                    </div>
+                <!-- /ko -->
+                <!-- ko if: cart.items().length > 0 -->
+                    <div class="cartBottom mt-5">
+                    <div class="container">
+                        <div class="cartBottomW d-flex flex-column gap-2">
+                              <a href="{% url 'shop:create_order' %}" class="button button--lg button--blue w-100 px-2">Оформить заказ</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- /ko -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        var prev_cart_data = "";
+        var cart = {
+            total_sum: ko.observable(),
+            items: ko.observableArray(),
+        }
+        ko.applyBindings({
+            cart: cart,
+        });
+
+        function loadCart() {
+            $.get("{% url 'api:cart' %}").done(
+                (data) => {
+                    var text = JSON.stringify(data);
+                    if (text == prev_cart_data) {
+                        return
+                    }
+                    prev_cart_data = text;
+                    if (data.cart) {
+                        cart.total_sum(data.cart.total_sum);
+                        cart.items.removeAll();
+                        for (var i of data.cart.items) {
+                            cart.items.push(i)
+                        }
+                    }
+                }
+            );
+        }
+
+        function addToCart(event) {
+            var productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:add_to_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    loadCart();
+                }).fail(() => { alert("Ошибка при удалении товара из корзины, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function decreaseFromCart(event) {
+            var productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:decrease_from_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    loadCart();
+                }).fail(() => { alert("Ошибка при удалении товара из корзины, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function deleteFromCart(event) {
+            var productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:delete_from_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    loadCart();
+                }).fail(() => { alert("Ошибка при удалении товара из корзины, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        loadCart();
+    </script>
+    </script>
+{% endblock%}

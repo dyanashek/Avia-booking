@@ -1,0 +1,230 @@
+{% extends 'client/app-layout.html' %}
+{% load static %}
+
+{% block title %}Каталог{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}?v=1"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+{% endblock%}
+
+{% block additional_header %}
+<div class="container catalogFixed">
+    <div class="catalogAction d-flex justify-content-between align-items-center mb-1">
+        <div class="catalogActionTitle">Категории</div>
+        <div class="catalogActionRight d-flex gap-2">
+            <button type="button" onclick="toggleSearch()" class="catalogActionSearchBtn">
+                <img src="/static/img/icons/search.svg" alt="search">
+            </button>
+        </div>
+    </div>
+
+    <!-- ko if: state.isSearchShown -->
+    <div class="search pb-3">
+        <input type="text" id="searchInput" onkeyup="searchProducts(event)" placeholder="Поиск по каталогу" class="form-control">
+    </div>
+    <!-- /ko-->
+
+    <div class="catalogCat mb-1">
+        <a href="{% url 'shop:catalog' %}" class="catalogCatLink {% if category == 'all' %}active{%endif%}">Все</a>
+        {% if popular_products %}
+            <a href="{% url 'shop:catalog' %}?category=popular" class="catalogCatLink {% if category == 'popular' %}active{%endif%}">Популярное</a>
+        {% endif %}
+        {% for cat in categories %}
+            <a href="{% url 'shop:catalog' %}?category={{cat.title}}" class="catalogCatLink {% if category == cat.title %}active{%endif%}">
+                {{ cat.title }}
+            </a>
+        {% endfor%}
+    </div>
+    {% if subcategories %}
+        <div class="catalogCardTitle mb-1"><strong>Подкатегории:</strong></div>
+        <div class="catalogCat mb-3">
+            {% for subcat in subcategories %}
+                <a href="{% url 'shop:catalog' %}?category={{subcat.category.title}}&subcategory={{subcat.title}}" class="catalogCatLink {% if subcategory == subcat.title %}active{%endif%}">
+                    {{ subcat.title }}
+                </a>
+            {% endfor%}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block content %}
+    <div class="catalogW">
+        <div class="container">
+            <div class="catalogGrid" data-bind="foreach:{data:state.products, as:'product'}">
+                <div class="catalogCard">
+                    <div class="catalogCardBottom">
+                        <a data-bind="attr:{href:`/shop/product/${product.id}`}" class="catalogCardImg">
+                            <img class="catalogCardImg" data-bind="attr:{src: product.cover ? product.cover : '/static/img/default-product.jpg'}" alt="image">
+                        </a>
+                        <!-- ko if: product.in_fav -->
+                        <button onclick="changeFav(event)" class="catalogCardWishlist active" data-bind="attr:{data:product.id}">
+                        </button>
+                        <!-- /ko -->
+
+                        <!-- ko if: !product.in_fav -->
+                        <button onclick="changeFav(event)" data-bind="attr:{data:product.id}" class="catalogCardWishlist">
+                        </button>
+                        <!-- /ko -->
+                    </div>
+
+                    <div class="catalogCardBottom">
+                        <div class="catalogCardContent">
+                            <div class="catalogCardTitle mb-1" data-bind="text:product.title"></div>
+                            <p class="catalogCardDescr mb-2" data-bind="text:product.description"></p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="catalogCardWeight" data-bind="text:product.unit.title"></div>
+                            </div>
+                        </div>
+                        <div class="catalogCardAction catalogCardAction--default d-flex justify-content-between align-items-center mt-2">
+                            <div class="catalogCardPrice" data-bind="text:`${product.readable_price} ₪`"></div>
+
+                            <!-- ko if: !product.in_cart -->
+                            <button class="catalogCardPlus" data-bind="attr:{data:product.id}" onclick="addToCart(event)">
+                                <img src="/static/img/icons/plus.svg" alt="plus">
+                            </button>
+                            <a href="{% url 'shop:cart' %}" class="catalogCardAdd d-none">
+                                <img src="/static/img/icons/cart-white.svg" alt="cart">
+                            </a>
+                            <!-- /ko -->
+                            <!-- ko if: product.in_cart -->
+                            <a href="{% url 'shop:cart' %}" class="catalogCardAdd">
+                                <img src="/static/img/icons/cart-white.svg" alt="cart">
+                            </a>
+                            <!-- /ko -->
+                        </div>
+                    </div>
+                </div><!-- /catalogCard -->
+            </div>
+            <span hx-trigger="intersect once delay:200ms"></span>
+        </div>
+    </div>
+
+    <div class="overlay"></div>
+
+    <script>
+        var count = 0
+        var searchValue = ""
+        var cartIndicatorQuantity = $("#cartItems");
+        
+        var state = {
+            selectedCategory: ko.observable(""),
+            selectedSubcategory: ko.observable(""),
+            availableCategories: ko.observableArray(),
+            availableSubcategories: ko.observableArray(),
+            products: ko.observableArray(),
+            isSearchShown: ko.observable(false),
+            isFilterShown: ko.observable(false),
+        }
+
+        ko.applyBindings({
+            "state": state
+        });
+
+        function updateCartItems() {
+            $.get(
+                "{% url 'api:cart_quantity' %}",
+                (data) => {
+                    cartIndicatorQuantity.attr('data-count', data.items_num);
+                }
+            );
+        }
+
+        function toggleSearch() {
+            var now = state.isSearchShown();
+            state.isSearchShown(!now);
+            const searchInput = document.getElementById("searchInput")
+            if (searchInput) {
+                searchInput.value = searchValue
+            }
+        }
+
+        function initProducts() {
+            var url = "{% url 'api:products' %}?category={{category}}&subcategory={{subcategory}}";
+
+            $.get(url).done((data) => {
+                state.products.removeAll();
+                for (var product of data.products) {
+                    state.products.push(product)
+                }
+                document.addEventListener("intersect", (event) => {
+                    addProducts();
+                });
+                count += data.products.length
+            })
+        }
+
+        function addProducts() {
+            var url = `{% url 'api:products' %}?category={{category}}&subcategory={{subcategory}}&count=${count}&search=${searchValue}`;
+
+            $.get(url).done((data) => {
+                for (var product of data.products) {
+                    state.products.push(product)
+                }
+                count += data.products.length
+            })
+        }
+
+        function searchProducts(event) {
+            if (event.key === "Enter") {
+                event.target.blur();
+                toggleSearch()
+            }
+            else {
+                var query = event.target.value;
+                searchValue = query
+                var url = `{% url 'api:products' %}?category={{category}}&subcategory={{subcategory}}&search=${query}`
+                $.get(url).done((data) => {
+                    state.products.removeAll();
+                    for (var product of data.products) {
+                        state.products.push(product)
+                    }
+                    count = data.products.length
+                })
+            }
+        }
+
+        function addToCart(event) {
+            const card = event.target.closest('.catalogCardBottom')
+            const btn = card.querySelector('.catalogCardPlus')
+            var productId = btn.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:add_to_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    updateCartItems()
+                    btn.nextElementSibling?.classList.remove('d-none');
+                    btn.classList.add('d-none');
+                }).fail(() => { alert("Ошибка при добавлении товара в корзину, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function changeFav(event) {
+            var el = event.target;
+            if (el.tagName == "IMG") {
+                var btn = el.parentElement;
+            } else {
+                var btn = el;
+            }
+            var productId = btn.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:change_favorites' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    btn.classList.toggle("active");
+                }
+            ).fail(() => { alert("Произошла ошибка, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        initProducts();
+        updateCartItems()
+
+    </script>
+{% endblock%}

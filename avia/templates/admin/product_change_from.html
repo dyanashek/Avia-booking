@@ -1,0 +1,23 @@
+{% extends 'admin/change_form.html' %}
+{% block admin_change_form_document_ready %}
+  <script>
+    (function($) {
+        $(document).ready(function() {
+            $('#id_category').change(function() {
+                const categoryId = $(this).val();
+                const subcategories = $('#id_subcategory');
+
+                $.ajax({
+                    url: '{% url "shop:get_subcategories" %}',
+                    data: {
+                        'category_id': categoryId
+                    },
+                    success: function (data) {
+                        subcategories.html(data.subcategories);
+                    }
+                });
+            });
+        });
+    })(django.jQuery);
+  </script>
+{% endblock %}

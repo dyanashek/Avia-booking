@@ -1,0 +1,27 @@
+{% load i18n %}
+{% load filters %}
+
+<div class="swiper introSlider">
+    <div class="swiper-wrapper">
+        {% for slide in slides %}
+            <div class="swiper-slide introSlide" style="background-image: url('{{ slide.photo.url }}');">
+                <div class="container">
+                    {% if slide.title %}
+                        <div class="introTitle">
+                            <a {% if slide.link %}href="{{ slide.link }}"{% else %}href="#"{% endif %} target="_blank">{{ slide.title }}</a>
+                        </div>
+                    {% endif %}
+                    {% if slide.subtitle %}
+                        <div class="introCat introCatLink">
+                            {{ slide.subtitle }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div><!-- /introSlide -->
+        {% endfor %}
+    </div>
+    <div class="swiper-pagination"></div>
+</div><!-- /introSlider -->
+
+
+

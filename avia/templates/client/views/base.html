@@ -1,0 +1,633 @@
+{% load static %}
+{% load i18n %}
+
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" href="{% static 'restaurnt/img/favicon.png' %}">
+  <link rel="manifest" href="{% static 'restaurnt/site.webmanifest' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'restaurnt/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'restaurnt/css/swiper-bundle.min.css' %}">
+  <link rel="stylesheet" href="{% static 'restaurnt/css/style.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'restaurnt/css/custom.css' %}">
+
+  <title>{% trans "Главная" %}</title>
+</head>
+
+<body>
+  <div class="wrapper">
+    {% block header %}
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="container">
+        <div class="headerW">
+          <div class="headerL">
+            <div class="hamburger" id="toggle">
+              <div class="top-bun"></div>
+              <div class="meat"></div>
+              <div class="bottom-bun"></div>
+            </div><!-- /Hamburger Menu -->
+            {% if table %}
+            <div class="tableNumber">
+              {{table.number}}
+            </div>
+            {% endif %}
+          </div>
+
+          <a href="/" class="headerLogo logo">
+            <img src="{% static 'restaurnt/img/admin/logo/logo.svg' %}" alt="logo">
+          </a>
+          <a href="{% url 'core:cart' %}" class="headerCart" data-count="0">
+            <img src="{% static 'restaurnt/img/icons/cart-black.svg' %}" alt="cart">
+          </a>
+        </div>
+      </div>
+
+
+    </header>
+    
+    <div class="headerSidebarWrap">
+      <div class="headerSidebar">
+
+        <div class="d-flex flex-column justify-content-between headerSidebarW">
+
+          <div class="d-block">
+            <div class="headerSidebarTop headerSidebarFixed">
+              <div class="container">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="headerLang" style="color: black;">
+                    <select name="language" id="language" onchange="changeLanguageBase(this)">
+                      <option value="ru" {% if LANGUAGE_CODE == 'ru' %}selected{% endif %}>Rus</option>
+                      <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>Eng</option>
+                      <option value="kk" {% if LANGUAGE_CODE == 'kk' %}selected{% endif %}>Каз</option>
+                    </select>
+                  </div>
+                  <button class="headerSidebarClose">
+                    <img src="{% static 'restaurnt/img/icons/close-black.svg' %}" alt="filter">
+                  </button>
+                </div>
+              </div>
+            </div><!-- /headerSidebarTop -->
+
+            <div class="headerSidebarProfile pt-3 pb-3">
+
+              <div class="container">
+                <div class="fw-medium mb-2 fz-16">{% trans "Профиль" %}</div>
+              </div>
+
+              {% if request.user.is_authenticated %}
+                <nav class="headerMenuNav headerNav">
+                  <ul class="headerNavList">
+                    <li class="menu-profile"><a href="{% url 'core:profile' %}">{% trans "Мой профиль" %}</a></li>
+                    <li class="menu-history disabled"><a href="{% url 'core:order_history' %}">{% trans "История заказов" %}</a></li>
+                    <li class="menu-wishlist"><a data-count="{{ request.user.favorites.all.count }}" href="{% url 'core:favorites' %}">{% trans "Избранное" %}</a></li>
+                  </ul>
+                </nav>
+              {% else %}
+                <div class="container">
+                  <button class="headerAuthorizeBtn button button--blue mt-3 mb-3">
+                    {% trans "Авторизация" %}
+                  </button>
+                </div>
+              {% endif %}
+
+            </div><!-- /headerSidebarProfile -->
+
+            <div class="headerSidebarMenu headerMenu pt-3 pb-3">
+
+              <div class="container">
+                <div class="fw-medium mb-2 fz-16">{% trans "Ресторан" %}</div>
+              </div>
+
+              <nav class="headerMenuNav headerNav">
+                <ul class="headerNavList">
+                  <li class="menu-restourant"><a href="{% url 'core:about' %}">{% trans "О ресторане" %}</a></li>
+                  <li class="menu-stocks"><a href="{% url 'core:news_list' %}">{% trans "Акции и новости" %}</a></li>
+                  <li class="menu-reviews"><a href="{% url 'core:reviews' %}">{% trans "Отзывы" %}</a></li>
+                  <li class="menu-order"><a href="{% url 'core:feedback' %}">{% trans "Обратная связь" %}</a></li>
+                </ul>
+              </nav>
+
+            </div>
+          </div>
+          <div class="headerSidebarBottom pt-3">
+            <div class="container">
+              
+              {% if request.user.is_authenticated %}
+              <div class="d-flex flex-column gap-2 mb-4 mt-4">
+                <span class="headerSidebarNameProfile">{{request.user.full_name}}</span>
+                <a class="headerSidebarLogout" href="{% url 'core:logout_view' %}">{% trans "Выйти" %}</a>
+              </div>
+              {% endif %}
+              <div class="d-flex flex-column gap-2 fz-10">
+                <a href="#">
+                  {% trans "Политика конфиденциальности" %}
+                </a>
+                <div class="copyright">© {% now 'Y' %} {% trans "Название компании" %}</div>
+                <a href="#" class="develop">{% trans "Разработка сайта" %} – {% trans "Вангер.рф" %}</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div><!-- /headerSidebar -->
+
+      <div class="headerAuthorize">
+
+        <div class="headerSidebarTop headerSidebarFixed w-100">
+          <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+              <button class="headerAuthorizeBack">
+                {% trans "Войти" %}
+              </button>
+              <button class="headerSidebarRegisterBtn">
+                {% trans "Зарегистрироваться" %}
+              </button>
+            </div>
+          </div>
+        </div><!-- /headerSidebarTop -->
+
+        <div class="authorizeFormW pt-4">
+          <div class="container">
+            <form class="headerAuthorizeForm authorizeForm" action="{% url 'core:login_view' %}" method="POST">
+              {% csrf_token %}
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Номер телефона" %}
+                </div>
+                <input type="tel" class="formInput error phone-mask" name="username" placeholder="+7 (___) ___ __ __">
+              </div>
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Пароль" %}
+                </div>
+                <input type="password" class="formInput" name="password" placeholder="**********">
+              </div>
+              <a style="cursor: pointer;" class="authorizeForgotBtn mb-4 text-center">{% trans "Забыли пароль?" %}</a>
+              <button class="authorizeBtn button button--lg button--blue w-100">{% trans "Войти" %}</button>
+              <div class="authorizeSocials mt-5">
+                <div class="authorizeSocialsName gap-2">
+                  <span>{% trans "Войти с помощью" %}</span>
+                </div>
+                <ul class="authorizeSocialsList d-flex flex-wrap justify-content-center mt-4">
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/fb.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/vk.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/google.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/yandex.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </form>
+          </div>
+        </div>
+
+
+
+      </div><!-- /headerAuthorize -->
+
+      <div class="headerRegister">
+
+        <div class="headerSidebarTop headerSidebarFixed w-100">
+          <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+              <button class="headerRegisterBack">
+                {% trans "Зарегистрироваться" %}
+              </button>
+              <button class="headerSidebarAuthorizeBtn">
+                {% trans "Войти" %}
+              </button>
+            </div>
+          </div>
+        </div><!-- /headerSidebarTop -->
+
+        <div class="authorizeFormW pt-4">
+          <div class="container">
+            <form class="headerAuthorizeForm authorizeForm" action="#">
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Имя" %}
+                </div>
+                <input type="text" class="formInput" placeholder="Как к вам обращаться">
+              </div>
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Номер телефона" %}
+                </div>
+                <input type="tel" class="formInput phone-mask" placeholder="+7 (___) ___ __ __">
+              </div>
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Пароль" %}
+                </div>
+                <input type="password" class="formInput" placeholder="**********">
+              </div>
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "повторите Пароль" %}
+                </div>
+                <input type="password" class="formInput" placeholder="**********">
+              </div>
+              <button class="authorizeBtn button button--lg button--blue w-100 mt-4">{% trans "Регистрация" %}</button>
+              <div class="authorizeSocials mt-5">
+                <div class="authorizeSocialsName gap-2">
+                  <span>{% trans "Войти с помощью" %}</span>
+                </div>
+                <ul class="authorizeSocialsList d-flex flex-wrap justify-content-center mt-4">
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/fb.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/vk.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/google.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <img src="{% static 'restaurnt/img/admin/socials/yandex.svg' %}" alt="icon">
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </form>
+          </div>
+        </div>
+
+
+
+      </div><!-- /headerRegister -->
+
+      <div class="headerForgotPassword">
+        <div class="headerSidebarTop headerSidebarFixed w-100">
+          <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+              <button class="headerForgotPasswordBack">
+                {% trans "Забыли пароль" %}
+              </button>
+            </div>
+          </div>
+        </div><!-- /headerSidebarTop -->
+
+        <div class="authorizeFormW pt-4">
+          <div class="container">
+            <form class="headerAuthorizeForm authorizeForm" id="passwordResetFormPhone" action="#">
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Номер телефона" %}
+                </div>
+                <input type="tel" id="passwordResetPhone" class="formInput phone-mask" placeholder="+7 (___) ___ __ __">
+              </div>
+              <div class="agreement">
+                <input type="checkbox" id="forgotPasswordCheckbox_2" hidden>
+                <label class="d-flex gap-2" for="forgotPasswordCheckbox_2">
+                  <div class="rect"></div>
+                  <span class="pt-1">{% trans "Я соглашаюсь на обработку персональных данных и с условиями" %} <a
+                      class="d-inline-block" href="#">{% trans "Политики конфиденциальности" %}</a> </span>
+                </label>
+              </div>
+              <button class="sendCodeBtn button button--lg button--blue w-100" id="passwordResetPhoneBtn" disabled>{% trans "Отправить код" %}</button>
+
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="headerVerifyEmpty">
+        <div class="headerSidebarTop headerSidebarFixed w-100">
+          <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+              <button class="headerVerifyEmptyBack">
+                {% trans "Верификация" %}
+              </button>
+            </div>
+          </div>
+        </div><!-- /headerSidebarTop -->
+
+        <div class="authorizeFormW pt-4">
+          <div class="container">
+            <p></p>
+            <form class="headerAuthorizeForm authorizeForm" id="passwordResetFormCode" action="#">
+              <p class="mb-3 phone-sended-info">
+                
+              </p>
+              <div class="inputW mb-2">
+                <div class="formInputName fw-medium d-flex justify-content-between align-items-center">
+                  <span class="text-uppercase">{% trans "код" %}</span>
+                  <span id="passwordResetFormCodeTimer"></span>
+                </div>
+              </div>
+              <div class="numbers mb-4">
+                <input type="text" name="n1" maxLength="1">
+                <input type="text" name="n2" maxLength="1">
+                <input type="text" name="n3" maxLength="1">
+                <input type="text" name="n4" maxLength="1">
+              </div>
+              <button type="submit" class="authorizeBtn button button--lg button--blue w-100" disabled>{% trans "Проверить" %}</button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+      <div class="headerPasswordReset">
+        <div class="headerSidebarTop headerSidebarFixed w-100">
+          <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+              <button class="headerPasswordResetBack">
+                {% trans "Сброс пароля" %}
+              </button>
+            </div>
+          </div>
+        </div><!-- /headerSidebarTop -->
+
+        <div class="authorizeFormW pt-4">
+          <div class="container">
+            <form class="headerAuthorizeForm authorizeForm" id="passwordResetForm" action="#">
+              <input type="hidden" name="code">
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Пароль" %}
+                </div>
+                <input type="password" class="formInput" name="password1" placeholder="**********">
+              </div>
+              <div class="inputW mb-3">
+                <div class="formInputName mb-2 text-uppercase fw-medium">
+                  {% trans "Повторите пароль" %}
+                </div>
+                <input type="password" class="formInput" name="password_confirm1" placeholder="**********">
+              </div>
+              <button class="sendCodeBtn button button--lg button--blue w-100">{% trans "Сменить пароль" %}</button>
+
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endblock %}
+    <main class="main">
+    {% block content %}{% endblock %}
+    </main>
+  <!-- Footer -->
+  <nav class="footerNav">
+    <ul class="footerNavList">
+      <li class="footerNavItem{% if footerNav == 'menu' %} active{% endif %}">
+        <a href="{% url 'core:index' %}" class="footerNavLink">
+          <svg>
+            <use xlink:href="{% static 'restaurnt/img/icons/icons.svg' %}#menu"></use>
+          </svg>
+          <div class="footerNavItemName">{% trans "Меню" %}</div>
+        </a>
+      </li>
+      <li class="footerNavItem{% if footerNav == 'about' %} active{% endif %}">
+        <a href="{% url 'core:about' %}" class="footerNavLink">
+          <svg>
+            <use xlink:href="{% static 'restaurnt/img/icons/icons.svg' %}#about"></use>
+          </svg>
+          <div class="footerNavItemName">{% trans "О нас" %}</div>
+        </a>
+      </li>
+      {% if current_order %}
+      <li class="footerNavItem footerNavItemBtnW">
+        <a href="{% url 'core:current_order' %}" class="footerNavItemBtn">
+          <img src="{% static 'restaurnt/img/icons/footer-nav-btn.svg' %}" alt="icon">
+        </a>
+      </li>
+      {% endif %}
+      <li class="footerNavItem{% if footerNav == 'call' %} active{% endif %}">
+        <a href="{% url 'core:call_waiter' %}" class="footerNavLink">
+          <svg>
+            <use xlink:href="{% static 'restaurnt/img/icons/icons.svg' %}#call"></use>
+          </svg>
+          <div class="footerNavItemName">{% trans "Вызов" %}</div>
+        </a>
+      </li>
+      <li class="footerNavItem{% if footerNav == 'profile' %} active{% endif %}">
+        <a {% if request.user.is_authenticated %}href="{% url 'core:profile' %}"{% else %}style="cursor: pointer;"{% endif %} class="footerNavLink{% if not request.user.is_authenticated %} headerAuthorizeBtn{% endif %}">
+          <svg>
+            <use xlink:href="{% static 'restaurnt/img/icons/icons.svg' %}#profile"></use>
+          </svg>
+          <div class="footerNavItemName">{% trans "Профиль" %}</div>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="overlay"></div>
+
+  {% block modals %}
+  {% endblock %}
+
+  <!-- modal -->
+
+  <!-- modal-tea -->
+  <div class="modal modal-tea fade" id="modal-tea" tabindex="-1" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="h2">{% trans "Чаевые" %}</div>
+
+        <div class="modal-tea-grid d-flex gap-3">
+          <a href="#" class="modal-tea-item d-flex flex-column align-items-center gap-3">
+            <img class="tea-item-icon" src="{% static 'restaurnt/img/icons/check-1.svg' %}" alt="icon">
+            <span class="tea-item-text text-center fw-medium text--sm">
+              {% trans "Добавить к&nbsp;текущему счёту" %}
+            </span>
+          </a>
+          <a href="#" class="modal-tea-item d-flex flex-column align-items-center gap-3">
+            <img class="tea-item-icon" src="{% static 'restaurnt/img/icons/check-2.svg' %}" alt="icon">
+            <span class="tea-item-text text-center fw-medium text--sm">
+              {% trans "Перевести
+              по&nbsp;номеру телефона" %}
+            </span>
+          </a>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-tea">
+          <img src="{% static 'restaurnt/img/icons/close-black.svg' %}" alt="icon">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal-check -->
+  <div class="modal modal-check fade" id="modal-check" tabindex="-1" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="ckeckForm modal-content" action="#">
+        <div class="h2 modal-check-title">{% trans "Вы запросили счёт" %}</div>
+        <p>{% trans "Пожалуйста, оцените, понравилось ли вам сегодня обслуживание." %}</p>
+
+        <div class="reviewsItemStars mb-1">
+          <div class="rating-area">
+            <input type="radio" id="star-order_1" name="rating_order" value="5">
+            <label for="star-order_1" title="{% trans "Оценка" %} «5»"></label>
+            <input type="radio" id="star-order_2" name="rating_order" value="4">
+            <label for="star-order_2" title="{% trans "Оценка" %} «4»"></label>
+            <input type="radio" id="star-order_3" name="rating_order" value="3">
+            <label for="star-order_3" title="{% trans "Оценка" %} «3»"></label>
+            <input type="radio" id="star-order_4" name="rating_order" value="2">
+            <label for="star-order_4" title="{% trans "Оценка" %} «2»"></label>
+            <input type="radio" id="star-order_5" name="rating_order" value="1">
+            <label for="star-order_5" title="{% trans "Оценка" %} «1»"></label>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 orderBtnW mt-4">
+          <button class="button button--transparent px-2" data-bs-dismiss="modal" aria-label="Close"
+            data-bs-target="#modal-check">
+            {% trans "Не оценивать" %}
+          </button>
+          <button class="button button--blue px-2">
+            {% trans "Оценить" %}
+          </button>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-check">
+          <img src="{% static 'restaurnt/img/icons/close-black.svg' %}" alt="icon">
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- modal-table -->
+  <div class="modal modal-table fade" id="modal-table" tabindex="-1" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="ckeckForm modal-content" action="#">
+        <div class="h2 text-center modal-table-title">{% trans "Добро пожаловать!" %}</div>
+
+        <div class="modal-table-round">
+          <img src="{% static 'restaurnt/img/icons/table.svg' %}" alt="table">
+          <span class="modal-table-name">{% trans "Ваш столик" %}</span>
+          <span class="modal-table-number">№{{table.number}}</span>
+        </div>
+
+        <a href="#" class="button button--blue button--lg w-100" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-table">{% trans "Перейти к меню" %}</a>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-table">
+          <img src="{% static 'restaurnt/img/icons/close-black.svg' %}" alt="icon">
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- modal-authorize-send -->
+  <div class="modal modal-authorize fade" id="modal-authorize-send" tabindex="-1" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog--sm modal-dialog-centered">
+      <form class="ckeckForm modal-content" action="#">
+        <div class="h2 text-center modal-table-title">{% trans "Письмо отправлено" %}</div>
+
+        <p class="text-center mb-4">
+          {% blocktrans %}Инструкция по&nbsp;восстановлению пароля будет выслана на&nbsp;указанный адрес.{% endblocktrans %}
+        </p>
+
+        <a href="#" class="button button--blue button--lg w-100" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-table">{% trans "Перейти к авторизации" %}</a>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-authorize-send">
+          <img src="{% static 'restaurnt/img/icons/close-black.svg' %}" alt="icon">
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- modal-password-changed -->
+  <div class="modal modal-authorize fade" id="modal-password-changed" tabindex="-1"
+    aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog--sm modal-dialog-centered">
+      <form class="ckeckForm modal-content" action="#">
+        <div class="h2 text-center modal-table-title">{% trans "Пароль успешно изменен" %}</div>
+
+        <p class="text-center mb-4">
+          {% trans "Авторизуйтесь с новым паролем." %}
+        </p>
+
+        <a href="#" class="button button--blue button--lg w-100" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-table">{% trans "Перейти к авторизации" %}</a>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+          data-bs-target="#modal-password-changed">
+          <img src="{% static 'restaurnt/img/icons/close-black.svg' %}" alt="icon">
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/imask"></script>
+
+<script src="{% static 'restaurnt/js/jquery-3.7.1.min.js' %}"></script>
+<script src="{% static 'restaurnt/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'restaurnt/js/swiper-bundle.min.js' %}"></script>
+<script src="{% static 'restaurnt/js/fslightbox.js' %}"></script>
+<script src="{% static 'restaurnt/js/app.min.js' %}"></script>
+<script src="{% static 'restaurnt/js/script.js' %}?v=1"></script>
+<script src="{% static 'restaurnt/js/custom.js' %}?v=1"></script>
+
+<script>
+  {% if table %}
+    {% for message in messages %}
+      if ("Show table modal" == "{{message}}"){
+        var elemModal = document.getElementById('modal-table');
+        let modal = new bootstrap.Modal(elemModal)
+        modal.show()
+      }
+    {% endfor %}
+  {% endif %}
+</script>
+{% comment %} <script>
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('{% url 'service_worker' %}', { scope: '/' });
+  }
+</script>  {% endcomment %}
+{% block extra_js %}
+<script>
+  function changeLanguageBase(selectElement) {
+      const selectedLanguage = selectElement.value;
+      const url = "{% url 'set_language' %}?lang=" + selectedLanguage;
+      window.location.href = url;
+  }
+</script>
+{% endblock %}
+</body>
+
+</html>
