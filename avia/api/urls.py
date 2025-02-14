@@ -13,4 +13,5 @@ urlpatterns = [
     path("decrease-from-cart/", api_views.DecreaseFromCartView.as_view(), name="decrease_from_cart"),
     path("delete-from-cart/", api_views.DeleteFromCartView.as_view(), name="delete_from_cart"),
     path("order-detail/<int:pk>/", api_views.OrderDetailView.as_view(), name="order_detail"),
+    path("favorites/", api_views.FavoritesView.as_view(), name="favorites"),
 ]

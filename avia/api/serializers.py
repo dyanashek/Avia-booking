@@ -102,5 +102,14 @@ class OrderSerializer(serializers.ModelSerializer):
         return obj.readable_time
 
     def get_readable_date(self, obj):
-        return obj.readable_date    
-    
+        return obj.readable_date
+
+
+class FavoriteProductSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+    in_cart = serializers.BooleanField(default=False)
+    item_count = serializers.IntegerField(default=0)
+
+    class Meta:
+        model = FavoriteProduct
+        fields = ["id", "product", "in_cart", 'item_count']

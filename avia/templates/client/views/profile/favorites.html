@@ -32,73 +32,49 @@
         </div>
         <div class="catalogW py-3">
             <div class="container">
-                {% if favs %}
-                    <div id="favorites-list" class="catalogGrid">
-                        {% for fav in favs %}
-                            {% with fav.product as item %}
-                                <div class="catalogCard htmx-scroll">
-                                    <div class="catalogCardBottom">
-                                        <a class="catalogCardImg" href="{% url 'shop:product_detail' pk=item.id %}">
-                                            {% if item.cover %}
-                                                <img class="catalogCardImg" src="{{ item.cover.url }}" alt="image">
-                                            {% else %}
-                                                <img class="catalogCardImg" src="{% static 'img/default-product.jpg' %}" alt="image">
-                                            {% endif %}
-                                        </a>
-                                        <button onclick="changeFav(event)" class="catalogCardWishlist active" data="{{ item.id }}">
-                                        </button>
-                                    </div>
-                                    <div class="catalogCardBottom">
-                                        <div class="catalogCardContent">
-                                            <div class="catalogCardTitle mb-1">
-                                                {{ item.title }}
-                                            </div>
-                                            <p class="catalogCardDescr mb-2">
-                                                {{ item.description }}
-                                            </p>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="catalogCardWeight">
-                                                    {% if item.unit %}
-                                                        {{ item.unit.title }}
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="catalogCardAction d-flex justify-content-between align-items-center mt-2">
-                                            <div class="catalogCardPrice">
-                                                {{ item.readable_price }} ₪
-                                            </div>
-                                            {% if not item.in_stoplist %}
-                                                {% if not fav.in_cart %}
-                                                    <button class="catalogCardPlus" data="{{ item.id }}" onclick="addToCart(event)">
-                                                        <img src="/static/img/icons/plus.svg" alt="plus">
-                                                    </button>
-                                                    <a href="{% url 'shop:cart' %}" class="catalogCardAdd d-none">
-                                                        <img src="/static/img/icons/cart-white.svg" alt="cart">
-                                                    </a>
-                                                {% else %}
-                                                    <a href="{% url 'shop:cart' %}" class="catalogCardAdd">
-                                                        <img src="/static/img/icons/cart-white.svg" alt="cart">
-                                                    </a>
-                                                {% endif %}
-                                            {% else %}
-                                            <div class="catalogCardWeight">Временно недоступно</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div><!-- /catalogCard -->
-                            {% endwith %}
-                            {% if page_obj.has_next and forloop.last %}
-								<span hx-get="{% url 'shop:favorites' %}?page={{ page_obj.next_page_number }}"
-										hx-swap="beforeend" hx-target="#favorites-list" hx-select=".htmx-scroll" 
-										hx-trigger="intersect once delay:200ms" class="htmx-scroll" 
-										style="visibility: hidden;"
-										hx-on="htmx:afterRequest: this.remove()">
-								</span>
-							{% endif %}
-                        {% endfor %}
-                    </div>
-                {% else %}
+                <div id="favorites-list" class="catalogGrid" data-bind="foreach:{data:state.favs, as:'fav'}">
+                    <div class="catalogCard">
+                        <div class="catalogCardBottom">
+                            <a data-bind="attr:{href:`/shop/product/${fav.product.id}`}" class="catalogCardImg">
+                                <img class="catalogCardImg" data-bind="attr:{src: fav.product.cover ? fav.product.cover : '/static/img/default-product.jpg'}" alt="image">
+                            </a>
+                            <button onclick="changeFav(event)" class="catalogCardWishlist active" data-bind="attr:{data:fav.product.id}">
+                            </button>
+                        </div>
+    
+                        <div class="catalogCardBottom">
+                            <div class="catalogCardContent">
+                                <div class="catalogCardTitle mb-1" data-bind="text:fav.product.title"></div>
+                                <p class="catalogCardDescr mb-2" data-bind="text:fav.product.description"></p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="catalogCardWeight" data-bind="text:fav.product.unit.title"></div>
+                                </div>
+                            </div>
+                            <div class="catalogCardAction catalogCardAction--default d-flex justify-content-between align-items-center mt-2">
+                                <div class="catalogCardPrice" data-bind="text:`${fav.product.readable_price} ₪`"></div>
+    
+                                <!-- ko if: !fav.in_cart -->
+                                <button class="catalogCardPlus" data-bind="attr:{data:fav.product.id}" onclick="addToCart(event)">
+                                    <img src="/static/img/icons/plus.svg" data-bind="attr:{data:fav.product.id}" alt="plus">
+                                </button>
+                                <!-- /ko -->
+                                <!-- ko if: fav.in_cart -->
+                                <div class="productCardCount productQuantity" data-title="Количество">
+                                    <button class="productQuantityMinus productQuantityBtn" data-bind="attr:{data:fav.product.id}" onclick="decreaseFromCart(event)">
+                                        <img src="/static/img/icons/minus.svg" data-bind="attr:{data:fav.product.id}" alt="minus">
+                                    </button>
+                                    <input type="number" max="99" step="1" min="0" data-bind="value:fav.item_count" title="Кол-во" inputmode="numeric" autocomplete="off">
+                                    <button class="productQuantityPlus productQuantityBtn" data-bind="attr:{data:fav.product.id}" onclick="addToCart(event)">
+                                        <img src="/static/img/icons/plus-grey.svg" data-bind="attr:{data:fav.product.id}" alt="plus">
+                                    </button>
+                                </div>
+                                <!-- /ko -->
+                            </div>
+                        </div>
+                    </div><!-- /catalogCard -->
+                </div>
+                <span hx-trigger="intersect once delay:200ms"></span>
+                <!-- ko if: state.favs().length == 0 -->
                     <div class="cartEmpty">
                         <div class="container">
                             <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
@@ -106,13 +82,87 @@
                             </div>
                         </div>
                     </div>
-                {% endif %}
+                <!-- /ko -->
             </div>
         </div>
     </main>
-
-
     <script>
+        var count = 0
+
+        var state = {
+            favs: ko.observableArray(),
+        }
+
+        ko.applyBindings({
+            "state": state
+        });
+
+        function addFavorites() {
+            var url = `{% url 'api:favorites' %}?count=${count}`;
+
+            $.get(url).done((data) => {
+                for (var favorite of data.favorites) {
+                    state.favs.push(favorite)
+                }
+                count += data.favorites.length
+            })
+        }
+
+        function initFavorites() {
+            var url = "{% url 'api:favorites' %}";
+
+            $.get(url).done((data) => {
+                state.favs.removeAll();
+                for (var favorite of data.favorites) {
+                    state.favs.push(favorite)
+                }
+                document.addEventListener("intersect", (event) => {
+                    addFavorites();
+                });
+                count += data.favorites.length
+            })
+        }
+
+        function addToCart(event) {
+            const productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:add_to_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    loadFavorites(); // обновляем список избранных
+                }).fail(() => { alert("Ошибка при добавлении товара в корзину, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function decreaseFromCart(event) {
+            const productId = event.target.getAttribute("data");
+            if (!productId) { return }
+            $.post(
+                "{% url 'api:decrease_from_cart' %}",
+                JSON.stringify({ "product_id": productId })
+            ).done(
+                () => {
+                    loadFavorites(); // обновляем список избранных
+                }).fail(() => { alert("Ошибка при удалении товара из корзины, перезагрузите страницу и попробуйте снова"); });
+        }
+
+        function loadFavorites() {
+            var curr_count = count;
+            if (curr_count == 0) {
+                curr_count = 12;
+            }
+            var url = `{% url 'api:favorites' %}?count=${curr_count}&all=true`;
+
+            $.get(url).done((data) => {
+                state.favs.removeAll();
+                for (var favorite of data.favorites) {
+                    state.favs.push(favorite)
+                }
+                count = data.favorites.length
+            })
+        }
+
         function changeFav(event) {
             var el = event.target;
             if (el.tagName == "IMG") {
@@ -134,20 +184,6 @@
             ).fail(() => { alert("Произошла ошибка, перезагрузите страницу и попробуйте снова"); });
         }
 
-        function addToCart(event) {
-            const card = event.target.closest('.catalogCardBottom')
-            const btn = card.querySelector('.catalogCardPlus')
-            var productId = btn.getAttribute("data");
-            if (!productId) { return }
-            $.post(
-                "{% url 'api:add_to_cart' %}",
-                JSON.stringify({ "product_id": productId })
-            ).done(
-                () => {
-                    btn.nextElementSibling?.classList.remove('d-none');
-                    btn.classList.add('d-none');
-                }).fail(() => { alert("Ошибка при добавлении товара в корзину, перезагрузите страницу и попробуйте снова"); });
-        }
-
+        initFavorites();
     </script>
 {% endblock%}

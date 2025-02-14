@@ -7,11 +7,11 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from api.serializers import ProductSerializer, CartSerializer, OrderSerializer
+from api.serializers import ProductSerializer, CartSerializer, OrderSerializer, FavoriteProductSerializer
 from shop.models import Category, SubCategory, Product, FavoriteProduct, Cart, CartItem, Order, OrderItem
 
 
-@method_decorator(login_required, name='get')
+@method_decorator(login_required, name='dispatch')
 class ProductsView(View):
     def get(self, request, *args, **kwargs):
         fav_products_ids = [fav.product.id for fav in FavoriteProduct.objects.filter(user=request.user).all()]
@@ -61,7 +61,7 @@ class ProductsView(View):
         return JsonResponse({"products": serializer.data}, status=200)
 
 
-@method_decorator(login_required, name='get')
+@method_decorator(login_required, name='dispatch')
 class CartQuantityView(View):
     def get(self, request, *args, **kwargs):
         items_quantity = CartItem.objects.filter(cart__user=request.user).count()
@@ -170,7 +170,7 @@ class DeleteFromCartView(LoginRequiredMixin, View):
             return JsonResponse({"Error": f"{e}"}, status=500)
         
 
-@method_decorator(login_required, name='get')
+@method_decorator(login_required, name='dispatch')
 class CartView(View):
     def get(self, request, *args, **kwargs):
         cart, _ = Cart.objects.get_or_create(user=request.user)
@@ -179,7 +179,7 @@ class CartView(View):
         return JsonResponse(cart_info, status=200)
 
 
-@method_decorator(login_required, name='get')
+@method_decorator(login_required, name='dispatch')
 class OrderDetailView(View):
     def get(self, request, *args, **kwargs):
         order = Order.objects.filter(id=kwargs.get("pk")).first()
@@ -187,4 +187,31 @@ class OrderDetailView(View):
             return JsonResponse({"Error": "Заказ не найден"}, status=404)
         order_serializer = OrderSerializer(order)
         return JsonResponse({"order": order_serializer.data}, status=200)
+
+
+@method_decorator(login_required, name='dispatch')
+class FavoritesView(View):
+    def get(self, request, *args, **kwargs):
+        favs = FavoriteProduct.objects.filter(user=request.user).select_related('product')
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart_items_ids = [item.product.id for item in cart.items.all()]
+        favs = favs.annotate(
+            in_cart=Case(
+                When(product__id__in=cart_items_ids, then=True),
+                default=False
+            )
+        )
+        favs = favs.annotate(
+            item_count=Subquery(
+                CartItem.objects.filter(product=OuterRef('product__pk'), cart__user=request.user).values('item_count')[:1]
+            )
+        )
+        count = int(request.GET.get("count", 0))
+        all = request.GET.get("all")
+        if all:
+            favs = favs[:count]                    
+        else:
+            favs = favs[count:count + 12]
+        serializer = FavoriteProductSerializer(favs, many=True)
+        return JsonResponse({"favorites": serializer.data}, status=200)
     
