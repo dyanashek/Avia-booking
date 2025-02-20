@@ -113,6 +113,12 @@ def stop_status(request):
                 succeeded = Status.objects.get(slug='finished')
                 delivery.status = succeeded
                 delivery.status_message = 'Получено от отправителя'
+                delivery.received_at = datetime.datetime.utcnow()
+
+                if delivery.drivers_comment:
+                    delivery.drivers_comment += f'\n{driver_comment}'
+                else:
+                    delivery.drivers_comment = driver_comment
 
                 for transfer in delivery.transfers.filter(credit=True):
                     transfer.credit = False

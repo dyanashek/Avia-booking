@@ -142,6 +142,8 @@ class Delivery(models.Model):
     commission = models.FloatField(verbose_name='Комиссия (₪)', help_text='Рассчитается автоматически', default=0)
     circuit_id = models.CharField(verbose_name='Circuit id', max_length=250, blank=True, null=True, unique=True)
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
+    received_at = models.DateTimeField(verbose_name='Дата получения', null=True, blank=True, default=None)
+    drivers_comment = models.TextField(verbose_name='Комментарий водителей', null=True, blank=True)
     created_by = models.ForeignKey(User, verbose_name='Менеджер', related_name='deliveries', on_delete=models.SET_NULL, null=True, blank=True)
     rate = models.FloatField(verbose_name='Курс на момент перевода', null=True, blank=True, default=None)
     driver = models.CharField(verbose_name='Водитель', max_length=50, null=True, blank=True, choices=DRIVERS)

@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'adminsortable2',
     'reversion',
     'django_ckeditor_5',
+    'import_export',
 ]
 
 THUMBNAIL_PROCESSORS = (
@@ -231,3 +232,5 @@ CKEDITOR_5_CONFIGS = {
 }
 
 HIDE_SHOP = True
+
+IMPORT_EXPORT_SKIP_ADMIN_ACTION_EXPORT_UI = True
