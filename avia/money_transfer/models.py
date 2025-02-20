@@ -654,8 +654,8 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                                         \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
                                         '''
 
-                            if instance.delivery.ils_amount:     
-                                message += f'\nИтого в $: *{int(instance.delivery.total_usd)}*'
+                            # if instance.delivery.ils_amount:     
+                            #     message += f'\nИтого в $: *{int(instance.delivery.total_usd)}*'
                             
                             message += f'\n\n*Получатели:*'
 
@@ -720,8 +720,8 @@ def update_delivery_valid(sender, instance: Transfer, **kwargs):
                                     \nКомиссия в ₪: *{int(instance.delivery.commission)}*\
                                     '''
 
-                        if instance.delivery.ils_amount:     
-                            message += f'\nИтого в $: *{int(instance.delivery.total_usd)}*'
+                        # if instance.delivery.ils_amount:     
+                        #     message += f'\nИтого в $: *{int(instance.delivery.total_usd)}*'
                         
                         message += f'\n\n*Получатели:*'
 

@@ -72,8 +72,8 @@ async def start_message(message: types.Message, command: CommandObject):
                                 \nКомиссия в ₪: *{int(delivery.commission)}*\
                                 '''
 
-                    if delivery.ils_amount:     
-                        reply_message += f'\nИтого в $: *{int(delivery.total_usd)}*'
+                    # if delivery.ils_amount:     
+                    #     reply_message += f'\nИтого в $: *{int(delivery.total_usd)}*'
                     
                     reply_message += f'\n\n*Получатели:*'
 
