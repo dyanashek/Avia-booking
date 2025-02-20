@@ -287,8 +287,8 @@ def delivery_resend_circuit(request, pk):
                             \nКомиссия в ₪: *{int(delivery.commission)}*\
                             '''
 
-                if delivery.ils_amount:     
-                    message += f'\nИтого в $: *{int(delivery.total_usd)}*'
+                # if delivery.ils_amount:     
+                #     message += f'\nИтого в $: *{int(delivery.total_usd)}*'
                 
                 message += f'\n\n*Получатели:*'
 
