@@ -178,8 +178,8 @@ async def see_delivery(callback: CallbackQuery, callback_data: DeliveryCallbackF
                     \nКомиссия в ₪: *{int(delivery.commission)}*\
                     '''
 
-        if delivery.ils_amount:     
-            reply_message += f'\nИтого в $: *{int(delivery.total_usd)}*'
+        # if delivery.ils_amount:     
+        #     reply_message += f'\nИтого в $: *{int(delivery.total_usd)}*'
         
         reply_message += f'\n\n*Получатели:*'
 
