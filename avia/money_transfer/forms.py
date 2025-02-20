@@ -1,9 +1,9 @@
-from import_export.forms import ExportForm
+from import_export.forms import SelectableFieldsExportForm
 from django import forms
 
 from money_transfer.models import Delivery
 
-class CustomExportForm(ExportForm):
+class CustomExportForm(SelectableFieldsExportForm):
     authors = Delivery.objects.all().values_list('created_by__username', flat=True).distinct()
     choices = [(author, author) for author in authors]
     choices.insert(0, ('', 'Все'))
