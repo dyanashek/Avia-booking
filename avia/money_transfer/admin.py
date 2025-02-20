@@ -34,6 +34,7 @@ class DeliveryResource(resources.ModelResource):
     receivers_receive_date = Field(column_name='Дата получения получателями')
     receivers_credit = Field(column_name='В кредит?')
     buy_rate = Field(column_name='Курс покупки')
+    driver_field = Field(column_name='Водитель')
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -43,7 +44,7 @@ class DeliveryResource(resources.ModelResource):
 
     class Meta:
         model = Delivery
-        fields = ('id', 'created_at_field', 'received_at_field', 'drivers_comment', 'status', 'driver', 'receive_codes', 'sender__name',
+        fields = ('id', 'created_at_field', 'received_at_field', 'drivers_comment', 'status__text', 'driver_field', 'receive_codes', 'sender__name',
                   'sender_address__address', 'sender__phone', 'usd_amount', 'ils_amount', 'commission', 'rate', 'approved_field', 'receivers_count',
                   'receiver_names', 'receiver_phones', 'receiver_addresses', 'receivers_delivery', 'receivers_amount',
                   'receivers_receive_date', 'receivers_credit', 'buy_rate',
@@ -85,7 +86,7 @@ class DeliveryResource(resources.ModelResource):
                 headers[i] = "Комиссия в ₪"
             elif h == 'rate':
                 headers[i] = "Курс на момент перевода"
-            elif h == 'status':
+            elif h == 'status__text':
                 headers[i] = "Статус"
             elif h == 'driver':
                 headers[i] = "Водитель"
@@ -184,6 +185,17 @@ class DeliveryResource(resources.ModelResource):
             return 'Да'
         else:
             return 'Нет'
+    
+    def dehydrate_driver_field(self, obj):
+        if obj.driver:
+            if obj.driver == '1':
+                return 'Первый водитель'
+            elif obj.driver == '2':
+                return 'Второй водитель'
+            elif obj.driver == '3':
+                return 'Третий водитель'
+        else:
+            return '-'
 
 
 class TransferInline(admin.StackedInline):
