@@ -93,16 +93,25 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     readable_time = serializers.SerializerMethodField()
     readable_date = serializers.SerializerMethodField()
+    readable_delivery_date = serializers.SerializerMethodField()
+    readable_delivery_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ["id", "total_sum", "items", "readable_total_sum", "status", "created_at", "readable_time", "readable_date"]
+        fields = ["id", "total_sum", "items", "readable_total_sum", "status", "created_at", "readable_time", "readable_date",
+                  "address", "phone", "readable_delivery_date", "readable_delivery_time"]
 
     def get_readable_time(self, obj):
         return obj.readable_time
 
     def get_readable_date(self, obj):
         return obj.readable_date
+
+    def get_readable_delivery_date(self, obj):
+        return obj.readable_delivery_date
+
+    def get_readable_delivery_time(self, obj):
+        return obj.readable_delivery_time
 
 
 class FavoriteProductSerializer(serializers.ModelSerializer):

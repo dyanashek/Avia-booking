@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.conf import settings
 from adminsortable2.admin import SortableAdminMixin
 from reversion.admin import VersionAdmin
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from .models import (
    Product,
@@ -13,6 +15,9 @@ from .models import (
    CartItem,
    Order,
    OrderItem,
+   BuyerProfile,
+   BaseSettings,
+   OrderStatus,
 )
 
 
@@ -98,14 +103,50 @@ class CartItemAdmin(VersionAdmin):
         return False
 
 
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
+            return ['product', 'item_count',]
+        return []
+
+    def has_add_permission(self, request, obj=None):
+        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
+            return False
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
+            return False
+        return True
+    
+    def has_delete_permission(self, request, obj=None):
+        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
+            return False
+        return True
+
+
 @admin.register(Order)
 class OrderAdmin(VersionAdmin):
-    list_display = ('user', 'status', 'created_at',)
-    search_fields = ('user__username',)
+    list_display = ('user', 'status', 'created_at', 'date', 'time',)
+    search_fields = ('user__username', 'address', 'phone',)
     list_filter = ('status',)
+    inlines = [OrderItemInline]
 
     def has_module_permission(self, request):
         if request.user.is_superuser and not settings.HIDE_SHOP:
+            return True
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
+            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status',]
+        return []
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
             return True
         return False
 
@@ -119,4 +160,50 @@ class OrderItemAdmin(VersionAdmin):
         if request.user.is_superuser and not settings.HIDE_SHOP:
             return True
         return False
+    
+
+@admin.register(BuyerProfile)
+class BuyerProfileAdmin(VersionAdmin):
+    list_display = ('user', 'tg_id', 'phone', 'address',)
+    search_fields = ('user__username', 'tg_id', 'phone',)
+    autocomplete_fields = ('user',)
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser and not settings.HIDE_SHOP:
+            return True
+        return False
+
+
+@admin.register(BaseSettings)
+class BaseSettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        settings, _ = BaseSettings.objects.get_or_create(pk=1)
+        if settings:
+            return HttpResponseRedirect(
+                reverse('admin:shop_basesettings_change', args=[settings.id])
+            )
+        else:
+            settings = BaseSettings.objects.create()
+            return HttpResponseRedirect(
+                reverse('admin:shop_basesettings_change', args=[settings.id])
+            )
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = "Редактирование настроек"
+        return super().change_view(request, object_id, form_url, extra_context)
     

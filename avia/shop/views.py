@@ -1,4 +1,7 @@
+import datetime
+
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.db.models import Case, When
 from django.http.response import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,7 +11,9 @@ from django.utils.translation import gettext as _
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
 
-from shop.models import Product, Category, SubCategory, Cart, CartItem, FavoriteProduct, Order, OrderItem
+from shop.models import Product, Category, SubCategory, Cart, CartItem, FavoriteProduct, Order, OrderItem, BuyerProfile, BaseSettings
+from core.utils import send_message_on_telegram
+from .utils import format_amount, escape_markdown
 
 
 class ProductListView(LoginRequiredMixin,TemplateView):
@@ -24,8 +29,15 @@ class ProductListView(LoginRequiredMixin,TemplateView):
         return context
 
 
-class CartListView(LoginRequiredMixin,TemplateView):
+class CartListView(LoginRequiredMixin, TemplateView):
     template_name = "client/views/order/cart_k.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if buyer := BuyerProfile.objects.filter(user=self.request.user).first():
+            context['address'] = buyer.address
+            context['phone'] = buyer.phone
+        return context
 
 
 class ProductDetailView(DetailView):
@@ -98,14 +110,33 @@ class OrderHistoryView(LoginRequiredMixin, ListView):
 
 
 @login_required
+@require_POST
 def create_order(request):
+    address = request.POST.get('delivery-address')
+    phone = request.POST.get('delivery-phone')
+    time = request.POST.get('delivery-time')
+    date = request.POST.get('delivery-date')
+
     cart = get_object_or_404(Cart, user=request.user)
     cart_items = cart.items.all()
 
     if not cart_items or all(item.product.in_stoplist for item in cart_items):
         return redirect(reverse('shop:cart'))
 
-    order = Order.objects.create(user=request.user)
+    order = Order.objects.create(user=request.user,
+                                 address=address,
+                                 phone=phone,
+                                 time=time,
+                                 date=date)
+    
+    buyer = BuyerProfile.objects.filter(user=request.user).first()
+    if buyer:
+        buyer.address = address
+        buyer.phone = phone
+        buyer.save()
+
+    order_items = []
+    counter = 1
     for item in cart_items:
         if not item.product.in_stoplist:
             OrderItem.objects.create(
@@ -114,7 +145,30 @@ def create_order(request):
                 item_count=item.item_count
             )
 
+        price = format_amount(item.product.price)
+        order_items.append(f'╠{counter}. {escape_markdown(item.product.title)} ({item.item_count} x {price})')
+        counter += 1
+
     cart.items.all().delete()
+
+    order_text = '\n'.join(order_items)[:3500]
+    order_text = f'╔*Новый заказ №{order.id}:*\n{order_text}'
+    order_text += '\n╠═════════════'
+    order_text += f'\n╚*Итого: {order.readable_total_sum} ₪*'
+    delivery_date = datetime.datetime.strptime(order.date, '%Y-%m-%d').strftime('%d.%m.%Y')
+    order_text += f'\n\nТелефон: {escape_markdown(order.phone)}\nАдрес: {escape_markdown(order.address)}\nДоставка: {delivery_date} {order.time}'
+
+    base_settings = BaseSettings.objects.first()
+
+    params = {
+        'chat_id': base_settings.help_chat,
+        'text': order_text,
+        'message_thread_id': buyer.thread_id,
+        'parse_mode': 'Markdown',
+    }
+
+    send_message_on_telegram(params, base_settings.bot_token)
+    
     return redirect(reverse('shop:orders'))
 
 

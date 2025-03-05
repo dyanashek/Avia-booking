@@ -108,8 +108,11 @@
                 <!-- ko if: cart.items().length > 0 -->
                     <div class="cartBottom mt-5 pb-5">
                     <div class="container">
-                        <div class="cartBottomW d-flex flex-column gap-2">
+                        {% comment %} <div class="cartBottomW d-flex flex-column gap-2">
                               <a href="{% url 'shop:create_order' %}" class="button button--lg button--blue w-100 px-2">Оформить заказ</a>
+                        </div> {% endcomment %}
+                        <div class="cartBottomW d-flex flex-column gap-2">
+                            <button class="button button--lg button--blue w-100 px-2" data-bs-toggle="modal" data-bs-target="#delivery-info-modal">Оформить заказ</button>
                         </div>
                     </div>
                 </div>
@@ -187,3 +190,6 @@
     </script>
     </script>
 {% endblock%}
+{% block modals %}
+  {% include 'common/components/modals/delivery_info.html' %}
+{% endblock %}

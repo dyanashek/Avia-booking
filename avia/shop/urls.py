@@ -1,7 +1,10 @@
 from django.urls import include, path
 from shop import views as shop_views
+from django.views.generic import TemplateView
+
 
 app_name = "shop"
+
 
 urlpatterns = [
     path("", shop_views.ProductListView.as_view(), name="catalog"),
@@ -12,4 +15,5 @@ urlpatterns = [
     path("orders/", shop_views.OrderHistoryView.as_view(), name="orders"),
     path("create-order/", shop_views.create_order, name="create_order"),
     path("repeat-order/<int:id>/", shop_views.repeat_order, name="repeat_order"),
+    path("error/", TemplateView.as_view(template_name="client/views/profile/error.html"), name="error"),
 ]

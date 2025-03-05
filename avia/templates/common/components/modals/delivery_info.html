@@ -1,0 +1,70 @@
+{% load i18n %}
+<div class="modal fade" id="delivery-info-modal" tabindex="-1" aria-labelledby="delivery-info-modal"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-0">
+
+            <div class="fw-bold mx-auto mb-0 text-center px-3 border-b-gray py-3 w-100">
+                <h2 class="h2 mb-0">Данные доставки</h2>
+            </div>
+
+            <form class="modalForm px-3 py-3" action="{% url 'shop:create_order' %}" method="post" id="table-booking-add-form">
+                {% csrf_token %}
+                <div class="row pb-3">
+                    <div class="col-6">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Время доставки
+                            </div>
+                            <input class="form-time formInput" type="time" name="delivery-time" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Дата доставки
+                            </div>
+                            <input class="form-date formInput" type="date" name="delivery-date" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row py-3">
+                    <div class="col-12">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Адрес
+                            </div>
+                            <input class="formInput" type="text" required placeholder="Адрес доставки"
+                                   name="delivery-address"  {% if address %}value="{{ address }}"{% endif %}>
+                        </div>
+                    </div>
+                    <div class="col-12 pt-3">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Номер телефона
+                            </div>
+                            <input class="formInput" type="number" required
+                                   placeholder="_ _ _  _ _  _ _" name="delivery-phone" {% if phone %}value="{{ phone }}"{% endif %}>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 orderBtnW mt-4">
+                    <button type="button" class="button button--lg button--transparent px-2" data-bs-dismiss="modal"
+                            aria-label="Close" data-bs-target="#table-booking-add-modal">
+                            Отменить
+                    </button>
+                    <button type="submit" class="button button--lg button--blue px-2">
+                        Оформить заказ
+                    </button>
+                </div>
+            </form>
+
+            <button type="button" class="btn-close mx-0 opacity-75"  data-bs-dismiss="modal"
+                            aria-label="Close" data-bs-target="#table-booking-add-modal">
+                <img src="/static/img/icons/close-black.svg" alt="icon">
+            </button>
+
+        </div>
+    </div>
+</div>

@@ -1,0 +1,28 @@
+{% extends 'client/page-layout.html' %}
+{% load static %}
+{% load filters %}
+
+{% block title %}Избранное{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+
+{% block content %}
+    <main class="main">
+        <div class="catalogW py-3">
+            <div class="container">
+                <div class="cartEmpty">
+                    <div class="container">
+                        <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
+                            <div><h2>Ошибка</h2></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock%}

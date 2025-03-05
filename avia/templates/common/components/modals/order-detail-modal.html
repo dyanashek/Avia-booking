@@ -56,6 +56,12 @@
 
                             <hr>
                             <div id="order-summary">
+                                <!-- ko if: info.order.address -->
+                                <p>Адрес доставки: <span data-bind="text:info.order.address"></span></p>
+                                <!-- /ko -->
+                                <!-- ko if: info.order.delivery_date -->
+                                <p>Дата доставки: <span data-bind="text:info.order.delivery_date"></span></p>
+                                <!-- /ko -->
                                 <p class="text-end fs-16 fw-7">Итого: <span data-bind="text:info.order.total_sum"></span><span> ₪</span></p>
                             </div>
                         </div>
@@ -69,8 +75,10 @@
 <script>
     const orderStatuses = {
         'created': 'Создан',
-        'accepted': 'Принят',
+        'awaiting_payment': 'Ожидает оплаты',
+        'awaiting_delivery': 'Ожидает доставки',
         'completed': 'Выполнен',
+        'canceled': 'Отменен',
     }
   
     var info = {
@@ -80,6 +88,9 @@
             "total_sum": ko.observable(),
             "created_at": ko.observable(),
             "items": ko.observableArray(),
+            "address": ko.observable(),
+            "phone": ko.observable(),
+            "delivery_date": ko.observable(),
         },
     }
 
@@ -100,6 +111,9 @@
                     (data) => {
                         info.order.id(data.order.id);
                         info.order.status(orderStatuses[data.order.status]);
+                        info.order.address(data.order.address);
+                        info.order.phone(data.order.phone);
+                        info.order.delivery_date(data.order.readable_delivery_date + ' ' + data.order.readable_delivery_time);
                         info.order.created_at(data.order.readable_date + ' ' +data.order.readable_time);
                         info.order.total_sum(data.order.readable_total_sum);
                         info.order.items.removeAll();

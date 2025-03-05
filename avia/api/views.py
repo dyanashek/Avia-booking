@@ -1,4 +1,6 @@
 import json
+import urllib.parse
+
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Case, When, Q, Count, Subquery, OuterRef
@@ -6,9 +8,13 @@ from django.http import JsonResponse
 from django.views import View
 from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
+from django.shortcuts import redirect
+from django.contrib.auth import get_user_model, login
 
 from api.serializers import ProductSerializer, CartSerializer, OrderSerializer, FavoriteProductSerializer
 from shop.models import Category, SubCategory, Product, FavoriteProduct, Cart, CartItem, Order, OrderItem
+from api.utils import validate_web_app_data
 
 
 @method_decorator(login_required, name='dispatch')
@@ -214,4 +220,30 @@ class FavoritesView(View):
             favs = favs[count:count + 12]
         serializer = FavoriteProductSerializer(favs, many=True)
         return JsonResponse({"favorites": serializer.data}, status=200)
-    
+
+
+@require_POST
+@csrf_exempt
+def verify_user(request):
+    """Верификация и авторизация пользователя web-app"""
+    try:
+        body = json.loads(request.body)
+        init_data = str(body.get('initData'))
+        init_data = urllib.parse.unquote(init_data)
+        if validate_web_app_data(init_data):
+            init_data = urllib.parse.parse_qs(init_data)
+            init_data = {key: value[0] for key, value in init_data.items() if key == 'user'}
+            init_data['user'] = json.loads(init_data['user'])
+
+            init_data = init_data.get('user')
+            tg_id=init_data.get('id')
+            user = get_user_model().objects.filter(username=f'shop{tg_id}').first()
+            if user:
+                login(request, user)
+                return redirect('shop:catalog')
+            else:
+                return redirect('shop:error')
+    except:
+        pass
+
+    return redirect('shop:error')
