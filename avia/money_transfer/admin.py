@@ -8,7 +8,7 @@ from django.utils.html import format_html
 from django.contrib.auth import get_user_model
 from reversion.admin import VersionAdmin
 from import_export import resources
-from import_export.admin import ImportExportModelAdmin, ExportActionModelAdmin
+from import_export.admin import ExportActionModelAdmin
 from import_export.fields import Field
 
 from money_transfer.utils import create_excel_file, create_excel_file_drivers, create_excel_file_debit_credit

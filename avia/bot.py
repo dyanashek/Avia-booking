@@ -19,7 +19,8 @@ from bot.handlers import (
     voice_handler,
     document_handler,
     location_handler,
-    contact_handler
+    contact_handler,
+    skip_sim_handler,
 )
 
 
@@ -37,6 +38,7 @@ async def main() -> None:
     dp = Dispatcher(storage=storage)
 
     dp.include_router(transfers_handler.router)
+    dp.include_router(skip_sim_handler.router)
     dp.include_router(navigation_handler.router)
     dp.include_router(old_commands_handlers.router)
     dp.include_router(old_query_handlers.router)

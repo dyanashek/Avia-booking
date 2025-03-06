@@ -11,12 +11,14 @@ from aiogram.fsm.context import FSMContext
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
 django.setup()
 
+from core.models import TGText
 from money_transfer.models import Delivery
 from config import TELEGRAM_BOT, PER_PAGE
 from bot.new_keyboards.callbacks import (
     DeliveryCallbackFactory,
     DeliveriesCallbackFactory,
     BackCallbackFactory, 
+    SkipSimPhoneCallbackFactory,
 )
 
 
@@ -101,4 +103,11 @@ async def delivery_detail_keyboard(delivery: Delivery, delivery_type='all', page
     keyboard.row(back_btn)
     keyboard.row(menu_btn)
 
+    return keyboard.as_markup()
+
+
+async def skip_sim_phone_keyboard(language):
+    keyboard = InlineKeyboardBuilder()
+    skip_btn = await sync_to_async(TGText.objects.get)(slug='skip', language=language)
+    keyboard.row(InlineKeyboardButton(text=skip_btn.text, callback_data=SkipSimPhoneCallbackFactory().pack()))
     return keyboard.as_markup()

@@ -29,7 +29,7 @@ class CategoryAdmin(SortableAdminMixin, VersionAdmin):
     def has_module_permission(self, request):
         if settings.HIDE_SHOP:
             return False
-        return True
+        return super().has_module_permission(request)
     
 
 @admin.register(SubCategory)
@@ -42,7 +42,7 @@ class SubCategoryAdmin(SortableAdminMixin, VersionAdmin):
     def has_module_permission(self, request):
         if settings.HIDE_SHOP:
             return False
-        return True
+        return super().has_module_permission(request)
     
 
 @admin.register(ProductUnit)
@@ -53,7 +53,7 @@ class ProductUnitAdmin(VersionAdmin):
     def has_module_permission(self, request):
         if settings.HIDE_SHOP:
             return False
-        return True
+        return super().has_module_permission(request)
     
 
 @admin.register(Product)
@@ -67,7 +67,7 @@ class ProductAdmin(SortableAdminMixin, VersionAdmin):
     def has_module_permission(self, request):
         if settings.HIDE_SHOP:
             return False
-        return True
+        return super().has_module_permission(request)
 
 
 @admin.register(FavoriteProduct)
@@ -136,9 +136,9 @@ class OrderAdmin(VersionAdmin):
     inlines = [OrderItemInline]
 
     def has_module_permission(self, request):
-        if request.user.is_superuser and not settings.HIDE_SHOP:
-            return True
-        return False
+        if settings.HIDE_SHOP:
+            return False
+        return super().has_module_permission(request)
 
     def get_readonly_fields(self, request, obj=None):
         if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
@@ -207,3 +207,7 @@ class BaseSettingsAdmin(admin.ModelAdmin):
         extra_context['title'] = "Редактирование настроек"
         return super().change_view(request, object_id, form_url, extra_context)
     
+    def has_module_permission(self, request):
+        if settings.HIDE_SHOP:
+            return False
+        return super().has_module_permission(request)

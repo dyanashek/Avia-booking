@@ -5,6 +5,7 @@ import django
 
 from aiogram import F, Router
 from aiogram import types
+from aiogram.fsm.context import FSMContext
 
 from asgiref.sync import sync_to_async
 
@@ -18,6 +19,7 @@ from errors.models import AppError
 import config
 import keyboards
 import utils
+from bot.new_keyboards import new_keyboards
 from filters import ChatTypeFilter
 
 
@@ -25,7 +27,7 @@ router = Router()
 
 
 @router.message(ChatTypeFilter(chat_type='private'), F.text)
-async def handle_text(message: types.Message):
+async def handle_text(message: types.Message, state: FSMContext):
     """Handles message with type text."""
 
     user_id = str(message.from_user.id)
@@ -264,14 +266,14 @@ async def handle_text(message: types.Message):
 
     elif curr_input and curr_input == 's-familyname':
         user.family_name = input_info 
-        user.curr_input = 'sim-fare'
+        user.curr_input = 's-phone'
         await sync_to_async(user.save)()
 
-        choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+        question = await sync_to_async(TGText.objects.get)(slug='sim_phone_question', language=user_language)
         try:
             await message.answer(
-                            text=choose_fare.text,
-                            reply_markup=await keyboards.sim_fares_keyboard(),
+                            text=question.text,
+                            reply_markup=await new_keyboards.skip_sim_phone_keyboard(user_language),
                             parse_mode='Markdown',
                             )
         except:
@@ -284,6 +286,48 @@ async def handle_text(message: types.Message):
                 )
             except:
                 pass
+    
+    elif curr_input and curr_input == 's-phone':
+        is_phone_valid = await utils.validate_phone(input_info)
+        if is_phone_valid:
+            await state.update_data(phone=input_info)
+            user.curr_input = 'sim-fare'
+            await sync_to_async(user.save)()
+
+            choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+            try:
+                await message.answer(
+                                text=choose_fare.text,
+                                reply_markup=await keyboards.sim_fares_keyboard(),
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
+        else:
+            error = await sync_to_async(TGText.objects.get)(slug='not_valid', language=user_language)
+            try:
+                await message.answer(
+                                text=error.text,
+                                parse_mode='Markdown',
+                                )
+            except:
+                try:
+                    await sync_to_async(AppError.objects.create)(
+                        source='1',
+                        error_type='2',
+                        main_user=user_id,
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                    )
+                except:
+                    pass
 
     elif curr_input and curr_input == 'sim_collect_money_address':
         user.curr_input = None

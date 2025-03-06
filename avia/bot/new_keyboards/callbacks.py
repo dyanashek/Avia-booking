@@ -13,3 +13,7 @@ class DeliveriesCallbackFactory(CallbackData, prefix="deliveries"):
 
 class BackCallbackFactory(CallbackData, prefix="back"):
     destination: str
+
+
+class SkipSimPhoneCallbackFactory(CallbackData, prefix="skip_sim_phone"):
+    pass

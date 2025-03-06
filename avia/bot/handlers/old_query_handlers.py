@@ -6,7 +6,7 @@ import django
 from aiogram import Router
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from aiogram.fsm.context import FSMContext
 from asgiref.sync import sync_to_async
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'avia.settings')
@@ -23,13 +23,14 @@ from core.utils import (send_pickup_address, send_sim_delivery_address, send_sim
 
 import config
 import keyboards
+from bot.new_keyboards import new_keyboards
 
 
 router = Router()
 
 
 @router.callback_query()
-async def callback_query(call: types.CallbackQuery):
+async def callback_query(call: types.CallbackQuery, state: FSMContext):
     """Handles queries from inline keyboards."""
 
     # getting message's and user's ids
@@ -2076,37 +2077,24 @@ async def callback_query(call: types.CallbackQuery):
         info = call_data[1]
 
         if curr_input and curr_input == 'user_passport':
-            try:
-                await call.message.delete()
-            except:
-                try:
-                    await sync_to_async(AppError.objects.create)(
-                        source='1',
-                        error_type='1',
-                        main_user=user_id,
-                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
-                    )
-                except:
-                    pass
-
             if info == 's-confirmation':
-                user.curr_input = 'sim-fare'
+                user.curr_input = 's-phone'
                 await sync_to_async(user.save)()
 
-                choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+                question = await sync_to_async(TGText.objects.get)(slug='sim_phone_question', language=user_language)
                 try:
-                    await call.message.answer(
-                                text=choose_fare.text,
-                                reply_markup=await keyboards.sim_fares_keyboard(),
-                                parse_mode='Markdown',
-                                )
-                except:
+                    await call.message.edit_text(
+                                    text=question.text,
+                                    reply_markup=await new_keyboards.skip_sim_phone_keyboard(user_language),
+                                    parse_mode='Markdown',
+                                    )
+                except Exception as e:
                     try:
                         await sync_to_async(AppError.objects.create)(
                             source='1',
                             error_type='2',
                             main_user=user_id,
-                            description=f'Не удалось отправить сообщение пользователю {user_id}.',
+                            description=f'Не удалось отправить сообщение пользователю {user_id}. {e}',
                         )
                     except:
                         pass
@@ -2114,7 +2102,7 @@ async def callback_query(call: types.CallbackQuery):
             else:
                 error = await sync_to_async(TGText.objects.get)(slug='error', language=user_language)
                 try:
-                    await call.message.answer(
+                    await call.message.edit_text(
                                     text=error.text,
                                     parse_mode='Markdown',
                                     )
@@ -2159,6 +2147,10 @@ async def callback_query(call: types.CallbackQuery):
                             \n\
                             \nДля подтверждения необходимо будет внести номер выдаваемой симки\
                             '''
+                data = await state.get_data()
+                if user_entered_phone := data.get('phone'):
+                    reply_text += f'\nНомер телефона указанный пользователем: *{user_entered_phone}*.'
+
                 if user.username:
                     reply_text += f'\n\nПользователь: *@{user.username}*. Telegram id: {user.user_id} (для связи через админку).'
                 else:
@@ -2306,23 +2298,23 @@ async def callback_query(call: types.CallbackQuery):
                         pass
 
         elif curr_input and curr_input == 's-familyname' and info == 'familyname':
-            user.curr_input = 'sim-fare'
+            user.curr_input = 's-phone'
             await sync_to_async(user.save)()
 
-            choose_fare = await sync_to_async(TGText.objects.get)(slug='choose_fare', language=user_language)
+            question = await sync_to_async(TGText.objects.get)(slug='sim_phone_question', language=user_language)
             try:
                 await call.message.edit_text(
-                                            text=choose_fare.text,
-                                            parse_mode='Markdown',
-                                            reply_markup=await keyboards.sim_fares_keyboard(),
-                                            )
+                                text=question.text,
+                                reply_markup=await new_keyboards.skip_sim_phone_keyboard(user_language),
+                                parse_mode='Markdown',
+                                )
             except:
                 try:
                     await sync_to_async(AppError.objects.create)(
                         source='1',
-                        error_type='1',
+                        error_type='2',
                         main_user=user_id,
-                        description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
+                        description=f'Не удалось отправить сообщение пользователю {user_id}.',
                     )
                 except:
                     pass
@@ -2594,7 +2586,13 @@ async def callback_query(call: types.CallbackQuery):
                         \n*{name_text.text}* {user.name}\
                         \n*{familyname_text.text}* {user.family_name}\
                         \n*{address_text.text}* {user.addresses}\
-                        \n\
+                        '''
+            data = await state.get_data()
+            if user_entered_phone := data.get('phone'):
+                phone_short = await sync_to_async(TGText.objects.get)(slug='phone', language=user_language)
+                reply_text += f'\n*{phone_short.text}* {user_entered_phone}'
+
+            reply_text += f'''\n\
                         \n*{fare_description.text}*\
                         \n{fare.description}\
                         \n*{fare_price.text}* {fare.price}₪/{short_month.text} {new_sim_tax.text}\
