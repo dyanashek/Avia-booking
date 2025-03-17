@@ -26,7 +26,7 @@ class Category(models.Model):
 
 class SubCategory(models.Model):
     title = models.CharField(max_length=255, verbose_name="Наименование категории", unique=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="subcategories",)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="subcategories",)
     order = models.PositiveIntegerField(null=True, blank=True, default=0)
 
     class Meta:
@@ -147,7 +147,6 @@ class CartItem(models.Model):
 
 class OrderStatus:
     Created = "created"
-    AwaitingPayment = "awaiting_payment"
     AwaitingDelivery = "awaiting_delivery"
     Completed = "completed"
     Canceled = "canceled"
@@ -156,7 +155,6 @@ class OrderStatus:
 class Order(models.Model):
     STATUSES = [
         (OrderStatus.Created, "Создан"),
-        (OrderStatus.AwaitingPayment, "Ожидает оплаты"),
         (OrderStatus.AwaitingDelivery, "Ожидает доставки"),
         (OrderStatus.Completed, "Выполнен"),
         (OrderStatus.Canceled, "Отменен"),
@@ -173,6 +171,7 @@ class Order(models.Model):
     phone = models.CharField(max_length=255, verbose_name="Телефон", null=True, blank=True)
     time = models.TimeField(verbose_name="Время доставки", null=True, blank=True)
     date = models.DateField(verbose_name="Дата доставки", null=True, blank=True)
+    paid = models.BooleanField(default=False, verbose_name="Оплачен?")
     
     class Meta:
         verbose_name = "Заказ"

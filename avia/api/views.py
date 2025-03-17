@@ -11,6 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 from django.shortcuts import redirect
 from django.contrib.auth import get_user_model, login
+from django.urls import reverse
 
 from api.serializers import ProductSerializer, CartSerializer, OrderSerializer, FavoriteProductSerializer
 from shop.models import Category, SubCategory, Product, FavoriteProduct, Cart, CartItem, Order, OrderItem
@@ -239,8 +240,14 @@ def verify_user(request):
             tg_id=init_data.get('id')
             user = get_user_model().objects.filter(username=f'shop{tg_id}').first()
             if user:
-                login(request, user)
-                return redirect('shop:catalog')
+                try:
+                    login(request, user)
+                except:
+                    pass
+                if request.GET.get('product'):
+                    return redirect('shop:product_detail', pk=request.GET.get('product'))
+                get_params = request.GET.urlencode()
+                return redirect(f'{reverse("shop:orders")}?{get_params}')
             else:
                 return redirect('shop:error')
     except:

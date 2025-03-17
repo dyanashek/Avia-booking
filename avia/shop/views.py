@@ -169,7 +169,8 @@ def create_order(request):
 
     send_message_on_telegram(params, base_settings.bot_token)
     
-    return redirect(reverse('shop:orders'))
+    get_params = request.GET.urlencode()
+    return redirect(f'{reverse("shop:orders")}?{get_params}')
 
 
 @login_required

@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.conf import settings
-from adminsortable2.admin import SortableAdminMixin
-from reversion.admin import VersionAdmin
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.html import format_html
+from adminsortable2.admin import SortableAdminMixin
+from reversion.admin import VersionAdmin
 
 from .models import (
    Product,
@@ -23,7 +24,7 @@ from .models import (
 
 @admin.register(Category)
 class CategoryAdmin(SortableAdminMixin, VersionAdmin):
-    list_display = ('__str__', 'order',)
+    list_display = ('__str__', 'get_link', 'order',)
     search_fields = ('title',)
 
     def has_module_permission(self, request):
@@ -31,10 +32,23 @@ class CategoryAdmin(SortableAdminMixin, VersionAdmin):
             return False
         return super().has_module_permission(request)
     
+    def get_link(self, obj):
+        base_settings = BaseSettings.objects.first()
+        if base_settings.bot_name and obj.id:
+            return format_html(
+                '<div class="readonly">'
+                '<input type="text" value="{}" readonly style="width: 400px;" '
+                'onclick="this.select(); document.execCommand(\'copy\');">'
+                '</div>',
+                f'https://t.me/{base_settings.bot_name}?start=cat{obj.id}'
+            )
+        return "-"
+    get_link.short_description = 'Ссылка'
+
 
 @admin.register(SubCategory)
 class SubCategoryAdmin(SortableAdminMixin, VersionAdmin):
-    list_display = ('__str__', 'category', 'order',)
+    list_display = ('__str__', 'category', 'get_link', 'order',)
     search_fields = ('title', 'category__title')
     list_filter = ('category',)
     autocomplete_fields = ('category',)
@@ -44,6 +58,19 @@ class SubCategoryAdmin(SortableAdminMixin, VersionAdmin):
             return False
         return super().has_module_permission(request)
     
+    def get_link(self, obj):
+        base_settings = BaseSettings.objects.first()
+        if base_settings.bot_name and obj.id:
+            return format_html(
+                '<div class="readonly">'
+                '<input type="text" value="{}" readonly style="width: 400px;" '
+                'onclick="this.select(); document.execCommand(\'copy\');">'
+                '</div>',
+                f'https://t.me/{base_settings.bot_name}?start=subcat{obj.id}'
+            )
+        return "-"
+    get_link.short_description = 'Ссылка'
+
 
 @admin.register(ProductUnit)
 class ProductUnitAdmin(VersionAdmin):
@@ -59,7 +86,7 @@ class ProductUnitAdmin(VersionAdmin):
 @admin.register(Product)
 class ProductAdmin(SortableAdminMixin, VersionAdmin):
     change_form_template = 'admin/product_change_from.html'
-    list_display = ('title', 'get_thumbnail', 'price', 'category', 'subcategory', 'unit', 'in_stoplist', 'order',)
+    list_display = ('title', 'get_thumbnail', 'price', 'category', 'subcategory', 'unit', 'in_stoplist', 'get_link', 'order',)
     search_fields = ('title', 'category__title', 'subcategory__title',)
     list_filter = ('category', 'subcategory', 'in_stoplist')
     autocomplete_fields = ('category', 'unit',)
@@ -69,6 +96,18 @@ class ProductAdmin(SortableAdminMixin, VersionAdmin):
             return False
         return super().has_module_permission(request)
 
+    def get_link(self, obj):
+        base_settings = BaseSettings.objects.first()
+        if base_settings.bot_name and obj.id:
+            return format_html(
+                '<div class="readonly">'
+                '<input type="text" value="{}" readonly style="width: 400px;" '
+                'onclick="this.select(); document.execCommand(\'copy\');">'
+                '</div>',
+                f'https://t.me/{base_settings.bot_name}?start=product{obj.id}'
+            )
+        return "-"
+    get_link.short_description = 'Ссылка'
 
 @admin.register(FavoriteProduct)
 class FavoriteProductAdmin(VersionAdmin):
@@ -130,9 +169,9 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(VersionAdmin):
-    list_display = ('user', 'status', 'created_at', 'date', 'time',)
+    list_display = ('user', 'status', 'created_at', 'date', 'time', 'paid',)
     search_fields = ('user__username', 'address', 'phone',)
-    list_filter = ('status',)
+    list_filter = ('status', 'paid',)
     inlines = [OrderItemInline]
 
     def has_module_permission(self, request):
@@ -142,7 +181,7 @@ class OrderAdmin(VersionAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
-            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status',]
+            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'paid',]
         return []
 
     def has_delete_permission(self, request, obj=None):
