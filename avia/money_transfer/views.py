@@ -240,6 +240,14 @@ def stop_status(request):
                 except:
                     pass
     
+    elif order_id and order_id == '5' and status == 'false':
+        users_sim = UsersSim.objects.filter(circuit_id_collect=stop_id).first()
+        if users_sim:
+            users_sim.circuit_id_collect = None
+            users_sim.ready_to_pay = False
+            users_sim.pay_date = None
+            users_sim.save()
+            
     return HttpResponse()
 
 
