@@ -69,7 +69,6 @@ INSTALLED_APPS = [
     'reversion',
     'django_ckeditor_5',
     'import_export',
-    'corsheaders',
 ]
 
 THUMBNAIL_PROCESSORS = (
@@ -88,12 +87,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'shop.middleware.TgMiniAppAuthMiddleware',
-]
-
-CORS_ALLOWED_ORIGINS = [
-    "https://shop-redirect-dyanashek.amvera.io",
 ]
 
 ROOT_URLCONF = 'avia.urls'
