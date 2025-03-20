@@ -109,6 +109,7 @@ class ProductAdmin(SortableAdminMixin, VersionAdmin):
         return "-"
     get_link.short_description = 'Ссылка'
 
+
 @admin.register(FavoriteProduct)
 class FavoriteProductAdmin(VersionAdmin):
     list_display = ('user', 'product',)
@@ -210,7 +211,7 @@ class BuyerProfileAdmin(VersionAdmin):
     def has_module_permission(self, request):
         if request.user.is_superuser and not settings.HIDE_SHOP:
             return True
-        return False
+        return super().has_module_permission(request)
 
 
 @admin.register(BaseSettings)
