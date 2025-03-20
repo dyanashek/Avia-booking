@@ -227,7 +227,7 @@ class FavoritesView(View):
 @csrf_exempt
 def verify_user(request):
     """Верификация и авторизация пользователя web-app"""
-    user_tg_id = request.POST.get('user_tg_id')
+    user_tg_id = request.POST.get('tg_id')
     if user_tg_id:
         user = get_user_model().objects.filter(username=f'shop{user_tg_id}').first()
         if user:
