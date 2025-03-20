@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -165,6 +166,15 @@ def create_order(request):
         'text': order_text,
         'message_thread_id': buyer.thread_id,
         'parse_mode': 'Markdown',
+        'reply_markup': json.dumps({
+                                'inline_keyboard': [
+                                    [{'text': '💳 Пометить оплаченным', 'callback_data': f'order:pay:{order.id}'},
+                                    {'text': '🚚 Передать в доставку', 'callback_data': f'order:make_delivery:{order.id}'},
+                                    {'text': '❌ Отменить заказ', 'callback_data': f'order:cancel:{order.id}'},
+                                    {'text': '⬅️ К заказам пользователя', 'callback_data': 'orders:1'},
+                                    ],
+                                ]
+                            })
     }
 
     send_message_on_telegram(params, base_settings.bot_token)
