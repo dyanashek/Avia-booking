@@ -15,6 +15,7 @@ class Command(BaseCommand):
             elif user_sim.circuit_id:
                 url = f'https://api.getcircuit.com/public/v0.2b/{user_sim.circuit_id}'
             else:
+                print(f'{user_sim.sim_phone} - no circuit id')
                 continue
 
             response = requests.get(url, headers=settings.CURCUIT_HEADER)
