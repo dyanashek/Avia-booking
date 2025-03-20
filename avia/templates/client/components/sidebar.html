@@ -35,7 +35,7 @@
                     {% if request.user.is_authenticated %}
                         <div class="d-flex flex-column gap-2 mb-4 mt-4">
                             <span class="headerSidebarNameProfile">{{ request.user.fullname }}</span>
-                            <a class="headerSidebarLogout" href="#">{% trans "Выйти" %}</a>
+                            <div class="headerSidebarLogout" onclick="closeApp()">{% trans "Выйти" %}</div>
                         </div>
                     {% endif %}
 
