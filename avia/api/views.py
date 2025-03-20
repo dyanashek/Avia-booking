@@ -232,7 +232,7 @@ def verify_user(request):
     if user_tg_id:
         user = get_user_model().objects.filter(username=f'shop{user_tg_id}').first()
         if user:
-            token = AccessToken.objects.create(token=uuid.uuid4(), user=user)
+            token = AccessToken.objects.create(token=uuid.uuid4())
             return JsonResponse({"success": True, "token": token.token})
     
     return JsonResponse({"success": False})
