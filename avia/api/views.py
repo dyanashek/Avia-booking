@@ -227,30 +227,42 @@ class FavoritesView(View):
 @csrf_exempt
 def verify_user(request):
     """Верификация и авторизация пользователя web-app"""
-    try:
-        body = json.loads(request.body)
-        init_data = str(body.get('initData'))
-        init_data = urllib.parse.unquote(init_data)
-        if validate_web_app_data(init_data):
-            init_data = urllib.parse.parse_qs(init_data)
-            init_data = {key: value[0] for key, value in init_data.items() if key == 'user'}
-            init_data['user'] = json.loads(init_data['user'])
+    user_tg_id = request.POST.get('user_tg_id')
+    if user_tg_id:
+        user = get_user_model().objects.filter(username=f'shop{user_tg_id}').first()
+        if user:
+            try:
+                login(request, user)
+            except:
+                pass
+            return JsonResponse({"success": True})
+    
+    return JsonResponse({"success": False})
 
-            init_data = init_data.get('user')
-            tg_id=init_data.get('id')
-            user = get_user_model().objects.filter(username=f'shop{tg_id}').first()
-            if user:
-                try:
-                    login(request, user)
-                except:
-                    pass
-                if request.GET.get('product'):
-                    return redirect('shop:product_detail', pk=request.GET.get('product'))
-                get_params = request.GET.urlencode()
-                return redirect(f'{reverse("shop:orders")}?{get_params}')
-            else:
-                return redirect('shop:error')
-    except:
-        pass
+    # try:
+    #     body = json.loads(request.body)
+    #     init_data = str(body.get('initData'))
+    #     init_data = urllib.parse.unquote(init_data)
+    #     if validate_web_app_data(init_data):
+    #         init_data = urllib.parse.parse_qs(init_data)
+    #         init_data = {key: value[0] for key, value in init_data.items() if key == 'user'}
+    #         init_data['user'] = json.loads(init_data['user'])
 
-    return redirect('shop:error')
+    #         init_data = init_data.get('user')
+    #         tg_id=init_data.get('id')
+    #         user = get_user_model().objects.filter(username=f'shop{tg_id}').first()
+    #         if user:
+    #             try:
+    #                 login(request, user)
+    #             except:
+    #                 pass
+    #             if request.GET.get('product'):
+    #                 return redirect('shop:product_detail', pk=request.GET.get('product'))
+    #             get_params = request.GET.urlencode()
+    #             return redirect(f'{reverse("shop:orders")}?{get_params}')
+    #         else:
+    #             return redirect('shop:error')
+    # except:
+    #     pass
+
+    # return redirect('shop:error')
