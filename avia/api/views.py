@@ -1,5 +1,6 @@
 import json
 import urllib.parse
+import uuid
 
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -14,7 +15,7 @@ from django.contrib.auth import get_user_model, login
 from django.urls import reverse
 
 from api.serializers import ProductSerializer, CartSerializer, OrderSerializer, FavoriteProductSerializer
-from shop.models import Category, SubCategory, Product, FavoriteProduct, Cart, CartItem, Order, OrderItem
+from shop.models import Category, SubCategory, Product, FavoriteProduct, Cart, CartItem, Order, OrderItem, AccessToken
 from api.utils import validate_web_app_data
 
 
@@ -231,38 +232,7 @@ def verify_user(request):
     if user_tg_id:
         user = get_user_model().objects.filter(username=f'shop{user_tg_id}').first()
         if user:
-            try:
-                login(request, user)
-            except:
-                pass
-            return JsonResponse({"success": True})
+            token = AccessToken.objects.create(token=uuid.uuid4(), user=user)
+            return JsonResponse({"success": True, "token": token.token})
     
     return JsonResponse({"success": False})
-
-    # try:
-    #     body = json.loads(request.body)
-    #     init_data = str(body.get('initData'))
-    #     init_data = urllib.parse.unquote(init_data)
-    #     if validate_web_app_data(init_data):
-    #         init_data = urllib.parse.parse_qs(init_data)
-    #         init_data = {key: value[0] for key, value in init_data.items() if key == 'user'}
-    #         init_data['user'] = json.loads(init_data['user'])
-
-    #         init_data = init_data.get('user')
-    #         tg_id=init_data.get('id')
-    #         user = get_user_model().objects.filter(username=f'shop{tg_id}').first()
-    #         if user:
-    #             try:
-    #                 login(request, user)
-    #             except:
-    #                 pass
-    #             if request.GET.get('product'):
-    #                 return redirect('shop:product_detail', pk=request.GET.get('product'))
-    #             get_params = request.GET.urlencode()
-    #             return redirect(f'{reverse("shop:orders")}?{get_params}')
-    #         else:
-    #             return redirect('shop:error')
-    # except:
-    #     pass
-
-    # return redirect('shop:error')

@@ -285,3 +285,12 @@ class BaseSettings(models.Model):
     def __str__(self):
         return "Настройки магазина"
     
+
+class AccessToken(models.Model):
+    token = models.CharField(max_length=255, verbose_name="Токен", unique=True)
+    is_used = models.BooleanField(default=False, verbose_name="Использован?")
+
+    class Meta:
+        verbose_name = "Токен доступа"
+        verbose_name_plural = "Токены доступа"
+        
