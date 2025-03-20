@@ -46,16 +46,26 @@ class ProductsView(View):
 
         category_title = request.GET.get("category")
         category = Category.objects.filter(title=category_title).first()
+        if not category:
+            try:
+                category = Category.objects.filter(id=category_title).first()
+            except:
+                pass
         subcategory_title = request.GET.get("subcategory")
         subcategory = SubCategory.objects.filter(title=subcategory_title).first()
+        if not subcategory:
+            try:
+                subcategory = SubCategory.objects.filter(id=subcategory_title).first()
+            except:
+                pass
         search_query = request.GET.get("search")
 
         if category:
-            products = products.filter(category__title=category)
+            products = products.filter(category=category)
         if category_title == 'popular':
             products = products.filter(is_popular=True)
         if subcategory:
-            products = products.filter(subcategory__title=subcategory)
+            products = products.filter(subcategory=subcategory)
         if search_query:
             products = products.filter(Q(title__icontains=search_query) | Q(description__icontains=search_query)).distinct()
 
