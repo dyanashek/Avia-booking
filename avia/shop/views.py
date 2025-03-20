@@ -26,6 +26,16 @@ class ProductListView(LoginRequiredMixin,TemplateView):
         context["categories"] = Category.objects.filter(products__isnull=False).distinct()
         context["category"] = self.request.GET.get("category", "all")
         context["subcategory"] = self.request.GET.get("subcategory", '')
+        try:
+            category_id = int(context['category'])
+            context['category'] = Category.objects.get(id=category_id).title
+        except:
+            pass
+        try:
+            subcategory_id = int(context['subcategory'])
+            context['subcategory'] = SubCategory.objects.get(id=subcategory_id).title
+        except:
+            pass
         context["subcategories"] = SubCategory.objects.filter(category__title=context['category'], products__isnull=False).select_related('category').distinct()
         return context
 
