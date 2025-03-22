@@ -17,10 +17,19 @@ class Command(BaseCommand):
             else:
                 print(f'{user_sim.sim_phone} - no circuit id')
                 continue
+            
+            try:
+                response = requests.get(url, headers=settings.CURCUIT_HEADER)
+                attempted = response.json().get('deliveryInfo').get('attempted')
+                succeeded = response.json().get('deliveryInfo').get('succeeded')
 
-            response = requests.get(url, headers=settings.CURCUIT_HEADER)
-            attempted = response.json().get('deliveryInfo').get('attempted')
-            succeeded = response.json().get('deliveryInfo').get('succeeded')
-
-            if attempted or succeeded:
-                print(f'{user_sim.sim_phone} - attempted: {attempted} - succeeded: {succeeded}')
+                if attempted or succeeded:
+                    print(f'{user_sim.sim_phone} - attempted: {attempted} - succeeded: {succeeded}')
+            except:
+                if user_sim.circuit_id_collect:
+                    print(f'{user_sim.sim_phone} - {user_sim.circuit_id_collect} - error')
+                elif user_sim.circuit_id:
+                    print(f'{user_sim.sim_phone} - {user_sim.circuit_id} - error')
+                else:
+                    print(f'{user_sim.sim_phone} - no circuit id')
+                    
