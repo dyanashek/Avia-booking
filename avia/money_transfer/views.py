@@ -16,7 +16,7 @@ from sim.models import Collect
 from core.models import UsersSim
 from errors.models import AppError
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission, Report
-from shop.models import TopupRequest, TopupRequestStatus, Order, OrderStatus, BuyerProfile
+from shop.models import TopupRequest, TopupRequestStatus, Order, OrderStatus, BuyerProfile, BaseSettings
 from money_transfer.utils import (update_delivery_pickup_status, update_credit_status, send_pickup_address,
                                   delivery_to_gspread)
 from core.utils import send_message_on_telegram
@@ -272,7 +272,8 @@ def stop_status(request):
                     'text': notify_text,
                     'parse_mode': 'Markdown',
                 }
-                send_message_on_telegram(params)
+                base_settings = BaseSettings.objects.first()
+                send_message_on_telegram(params, base_settings.bot_token)
             except:
                 pass
             #TODO: чек
@@ -301,7 +302,8 @@ def stop_status(request):
                             'text': notify_text,
                             'parse_mode': 'Markdown',
                         }
-                        send_message_on_telegram(params)
+                        base_settings = BaseSettings.objects.first()
+                        send_message_on_telegram(params, base_settings.bot_token)
                     except:
                         pass
 
