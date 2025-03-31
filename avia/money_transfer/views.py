@@ -10,11 +10,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.db.models import Q
 from django.shortcuts import redirect, get_object_or_404
+from django.db import transaction
 
 from sim.models import Collect
 from core.models import UsersSim
 from errors.models import AppError
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission, Report
+from shop.models import TopupRequest, TopupRequestStatus, Order, OrderStatus, BuyerProfile
 from money_transfer.utils import (update_delivery_pickup_status, update_credit_status, send_pickup_address,
                                   delivery_to_gspread)
 from core.utils import send_message_on_telegram
@@ -98,6 +100,8 @@ def stop_status(request):
     #? 5 - забор денег за симку (через бота)
     #? 6 - забор билета (создан через админку)
     #? 7 - забор посылки (создан через админку)
+    #? 8 - доставка заказа (магазин)
+    #? 9 - забор денег для пополнения баланса (магазин)
 
     stop_id = request.POST.get('id')
     order_id = request.POST.get('order_id')
@@ -247,7 +251,63 @@ def stop_status(request):
             users_sim.ready_to_pay = False
             users_sim.pay_date = None
             users_sim.save()
-            
+
+    elif order_id and order_id == '8' and status == 'true':
+        order = Order.objects.filter(circuit_id=stop_id).first()
+        if order:
+            order.status = OrderStatus.Completed
+            driver = extract_driver(stop_id)
+            if driver:
+                order.driver = driver
+            if driver_comment:
+                order.driver_comment = driver_comment
+            order.save(update_fields=['status', 'driver', 'driver_comment',])
+
+            buyer = BuyerProfile.objects.filter(user=order.user).first()
+
+            try:
+                notify_text = f'Заказ #{order.id} стоимостью {order.readable_total_sum} ₪ доставлен.'
+                params = {
+                    'chat_id': buyer.tg_id,
+                    'text': notify_text,
+                    'parse_mode': 'Markdown',
+                }
+                send_message_on_telegram(params)
+            except:
+                pass
+            #TODO: чек
+            if buyer.referrer:
+                buyer.referrer.balance += order.total_sum * buyer.referrer.referral_percent
+                buyer.referrer.save(update_fields=['balance',])
+
+    elif order_id and order_id == '9' and status == 'true':
+        topup = TopupRequest.objects.filter(circuit_id=stop_id).first()
+        if topup:
+            with transaction.atomic():
+                topup.status = TopupRequestStatus.Completed
+                driver = extract_driver(stop_id)
+                if driver:
+                    topup.driver = driver
+                if driver_comment:
+                    topup.driver_comment = driver_comment
+                topup.save(update_fields=['status', 'driver', 'driver_comment',])
+
+                buyer = BuyerProfile.objects.filter(user=topup.user).first()
+                if buyer:
+                    buyer.balance += topup.amount
+                    buyer.save(update_fields=['balance',])
+
+                    try:
+                        notify_text = f'Ваш баланс пополнен на *{topup.readable_amount}* ₪\nТекущий баланс: *{buyer.readable_balance}* ₪'
+                        params = {
+                            'chat_id': buyer.tg_id,
+                            'text': notify_text,
+                            'parse_mode': 'Markdown',
+                        }
+                        send_message_on_telegram(params)
+                    except:
+                        pass
+
     return HttpResponse()
 
 

@@ -26,6 +26,7 @@ from tickets import views as tickets_view
 from parcels import views as parcels_view
 from sim import views as sim_view
 from currency import views as currency_view
+from shop import views as shop_view
 
 
 urlpatterns = [
@@ -51,7 +52,10 @@ urlpatterns = [
     path('icount/sim-collect/<int:pk>/', core_views.sim_resend_collect_icount, name='sim_collect_icount'),
     path('circuit/ticket/<int:pk>/', tickets_view.ticket_send_circuit, name='circuit_admin_ticket'),
     path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
+    path('circuit/order/<int:pk>/', shop_view.order_resend_circuit, name='circuit_admin_order'),
+    path('circuit/topup/<int:pk>/', shop_view.topup_resend_circuit, name='circuit_admin_topup'),
     path('icount/admin-sim/<int:pk>/', sim_view.sim_resend_icount, name='sim_admin_icount'),
+    path('icount/buyer/<int:pk>/', shop_view.buyer_resend_icount, name='buyer_admin_icount'),
     path('money/report/', money_transfer_views.construct_report, name='money_transfer_report'),
     path('money/calculate/', money_transfer_views.calculate_values, name='money_transfer_calculate'),
     path('dialog/<str:dialog>/', core_views.DialogView.as_view(), name='dialog'),

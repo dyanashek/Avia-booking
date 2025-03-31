@@ -16,4 +16,8 @@ urlpatterns = [
     path("create-order/", shop_views.create_order, name="create_order"),
     path("repeat-order/<int:id>/", shop_views.repeat_order, name="repeat_order"),
     path("error/", TemplateView.as_view(template_name="client/views/profile/error.html"), name="error"),
+    path("profile/", shop_views.ProfileView.as_view(), name="profile"),
+    path("change-profile/", shop_views.change_profile, name="change_profile"),
+    path("topups/", shop_views.TopupsView.as_view(), name="topups"),
+    path("create-topup/", shop_views.create_topup, name="create_topup"),
 ]

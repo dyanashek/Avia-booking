@@ -1,0 +1,120 @@
+{% extends 'client/page-layout.html' %}
+{% load static %}
+
+{% block title %}Профиль{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+    <link rel="stylesheet" href="{% static 'css/croppie.css' %}">
+    <style>
+        .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}"></script>
+    <script src="{% static 'js/croppie.min.js' %}"></script>
+{% endblock%}
+
+{% block content %}
+    <main class="main">
+        <div class="pageHeadW">
+            <div class="container">
+                <div class="pageHead d-flex justify-content-between align-items-center py-2">
+                    <a class="pageHeadBack d-flex align-items-center" href="{% url 'shop:catalog' %}">
+                        <button class="pageHeadBackBtn">
+                            <img src="/static/img/icons/arrow-back-black.svg" alt="icon">
+                        </button>
+                        Мой профиль
+                    </a>
+                </div><!-- /pageHead -->
+            </div>
+        </div>
+
+        <section class="profile py-4" id="profile">
+            <div class="formInputName mb-2 d-flex justify-content-center align-items-center fw-medium text-uppercase pb-3">
+                <b>
+                    <h3>Баланс: {{ buyer_balance }} ₪</h3>
+                </b>
+                <button type="submit" class="button button--blue ms-5" data-bs-toggle="modal" data-bs-target="#topup-request-modal">
+                    Пополнить
+                </button>
+            </div>
+            <div class="profileImage mb-2 position-relative" id="imageLabel" style="background: url('/static/img/no_avatar.png') 100% / contain;"></div>
+            <div class="d-flex justify-content-center mb-3">
+                <small class="text-muted">#{{ buyer_id }}</small>
+            </div>
+            <form enctype='multipart/form-data' method='POST' class="container" action="{% url 'shop:change_profile' %}">
+                {% csrf_token %}
+                {% if messages %}
+                    <ul id="save-status-messages" class="list-group mb-3">
+                        {% for message in messages %}
+                            <li class="{{ message.tags }} list-group-item list-group-item">
+                                <span>{{ message }}</span>
+                                <span onclick="hideStatus()" style="cursor: pointer;">x</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class="profileForm py-2">
+                    <div class="inputW mb-3">
+                        <div class="formInputName mb-2 d-block fw-medium text-uppercase">Номер телефона (Узбекистан - для доставок)</div>
+                        <input type="number" step="1" class="formInput" name="phone" value="{% if buyer_phone %}{{buyer_phone}}{% endif %}" required>
+                    </div>
+                    <div class="inputW mb-3">
+                        <div class="formInputName mb-2 d-block fw-medium text-uppercase">Адрес (Узбекистан - для доставок)</div>
+                        <input type="text" class="formInput" name="address" value="{% if buyer_address %}{{buyer_address}}{% endif %}" required>
+                    </div>
+                    <hr>
+                    <div class="inputW mb-3">
+                        <div class="formInputName mb-2 d-block fw-medium text-uppercase">Номер телефона (Израиль - для пополнений)</div>
+                        <input type="number" step="1" class="formInput" name="israel_phone" value="{% if buyer_israel_phone %}{{ buyer_israel_phone }}{% endif %}" required>
+                    </div>
+                    <div class="inputW mb-3">
+                        <div class="formInputName mb-2 d-block fw-medium text-uppercase">Адрес (Израиль - для пополнений)</div>
+                        <input type="text" class="formInput" name="israel_address" value="{% if buyer_israel_address %}{{ buyer_israel_address }}{% endif %}" required>
+                    </div>
+                    
+                    <div class="d-flex gap-2 orderBtnW mt-4">
+                        <button type="reset" class="button button--transparent">
+                            Отменить
+                        </button>
+                        <button type="submit" class="button button--blue">
+                            Сохранить
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        const saveStatus = document.getElementById('save-status-messages');
+        function hideStatus() {
+            saveStatus.style.display = 'none'
+        }
+    </script>
+
+    <style>
+        .button--grey {
+            background-color: #8B8B8B;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 20px;
+            right: 0;
+        }
+    </style>
+
+{% endblock%}
+{% block modals %}
+  {% include 'common/components/modals/topup-request.html' %}
+{% endblock %}

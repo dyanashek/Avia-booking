@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/fa.css' %}">
     <link rel="stylesheet" href="{% static 'css/toastr.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/swiper-bundle.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}?v=4">
     {% block thirdparty %}{% endblock%}
 
     <!-- site -->
@@ -52,12 +53,32 @@
         });
     </script>
     <script>
-		function closeApp() {
-		  if (window.Telegram && window.Telegram.WebApp) {
-			window.Telegram.WebApp.close();
-		  }
-		}
-	</script>
+      function closeApp() {
+        if (window.Telegram && window.Telegram.WebApp) {
+          window.Telegram.WebApp.close();
+        }
+      }
+    </script>
+    <script>
+      function checkTelegramWebApp() {
+          if (window.Telegram && window.Telegram.WebApp) {
+              try {
+                  window.Telegram.WebApp.disableVerticalSwipes()
+              } catch (error) {
+              }
+              try {
+                  {% comment %} window.Telegram.WebApp.requestFullScreen() {% endcomment %}
+                  window.Telegram.WebApp.expand()
+              } catch (error) {
+              }
+              clearInterval(intervalId);
+          }
+      }
+
+      const intervalId = setInterval(() => {
+          checkTelegramWebApp()
+      }, 100);
+    </script>
 </body>
 
 </html>

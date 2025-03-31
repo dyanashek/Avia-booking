@@ -111,6 +111,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'shop.context_processors.global_context',
             ],
         },
     },
@@ -196,6 +197,8 @@ THUMBNAIL_ALIASES = {
 CIRCUIT_TOKEN = os.getenv('CIRCUIT_TOKEN')
 CIRCUIT_TOKEN  = base64.b64encode(f'{CIRCUIT_TOKEN}:'.encode()).decode()
 CIRCUIT_PLAN = os.getenv('CIRCUIT_PLAN')
+SHOP_CIRCUIT_PLAN = os.getenv('SHOP_CIRCUIT_PLAN')
+SHOP_TOPUP_CIRCUIT_PLAN = os.getenv('SHOP_TOPUP_CIRCUIT_PLAN')
 CURCUIT_END_POINT = 'https://api.getcircuit.com/public/v0.2b'
 
 CURCUIT_HEADER = {
@@ -235,3 +238,7 @@ CKEDITOR_5_CONFIGS = {
 HIDE_SHOP = False
 
 IMPORT_EXPORT_SKIP_ADMIN_ACTION_EXPORT_UI = True
+
+SHOP_ICOUNT_COMPANY_ID = os.getenv('SHOP_ICOUNT_COMPANY_ID')
+SHOP_ICOUNT_USERNAME = os.getenv('SHOP_ICOUNT_USERNAME')
+SHOP_ICOUNT_PASSWORD = os.getenv('SHOP_ICOUNT_PASSWORD')

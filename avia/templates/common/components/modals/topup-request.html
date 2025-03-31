@@ -1,0 +1,68 @@
+{% load i18n %}
+<div class="modal fade" id="topup-request-modal" tabindex="-1" aria-labelledby="topup-request-modal"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-0">
+
+            <div class="fw-bold mx-auto mb-0 text-center px-3 border-b-gray py-3 w-100">
+                <h2 class="h2 mb-0">Пополнить баланс</h2>
+            </div>
+            <form class="modalForm px-3 py-3" action="{% url 'shop:create_topup' %}" method="post" id="table-booking-add-form">
+                {% csrf_token %}
+                <div class="row py-1">
+                    <div class="col-12">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Сумма
+                            </div>
+                            <input class="formInput" type="number" step="1" required name="topup-amount" id="topup-amount-input" value="">
+                        </div>
+                    </div>
+                </div>
+                <div class="row py-3">
+                    <div class="col-12">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Адрес (Израиль)
+                            </div>
+                            <input class="formInput" type="text" required placeholder="Адрес доставки"
+                                   name="topup-address"  {% if buyer_israel_address %}value="{{ buyer_israel_address }}"{% endif %}>
+                        </div>
+                    </div>
+                    <div class="col-12 pt-3">
+                        <div class="inputW">
+                            <div class="inputName text-uppercase fw-medium text--sm mb-2">
+                                Номер телефона (Израиль)
+                            </div>
+                            <input class="formInput" type="number" required
+                                   placeholder="_ _ _  _ _  _ _" name="topup-phone" {% if buyer_israel_phone %}value="{{ buyer_israel_phone }}"{% endif %}>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex orderBtnW mt-4">
+                    <button type="submit" class="button button--lg button--blue w-100 px-2">
+                        Отправить заявку
+                    </button>
+                </div>
+            </form>
+
+            <button type="button" class="btn-close mx-0 opacity-75"  data-bs-dismiss="modal"
+                            aria-label="Close" data-bs-target="#table-booking-add-modal">
+                <img src="/static/img/icons/close-black.svg" alt="icon">
+            </button>
+
+        </div>
+    </div>
+</div>
+<script>
+    const topupRequestModal = document.getElementById('topup-request-modal');
+    const topupAmountInput = document.getElementById('topup-amount-input');
+
+    topupRequestModal.addEventListener('show.bs.modal', function (event) {
+        const amount = event.relatedTarget.getAttribute('data-amount');
+        if (amount) {
+            topupAmountInput.value = amount;
+        }
+    });
+</script>

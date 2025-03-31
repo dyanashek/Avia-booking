@@ -7,7 +7,6 @@
             <div class="fw-bold mx-auto mb-0 text-center px-3 border-b-gray py-3 w-100">
                 <h2 class="h2 mb-0">Данные доставки</h2>
             </div>
-
             <form class="modalForm px-3 py-3" action="{% url 'shop:create_order' %}" method="post" id="table-booking-add-form">
                 {% csrf_token %}
                 <div class="row pb-3">
@@ -32,7 +31,7 @@
                     <div class="col-12">
                         <div class="inputW">
                             <div class="inputName text-uppercase fw-medium text--sm mb-2">
-                                Адрес
+                                Адрес (Узбекистан)
                             </div>
                             <input class="formInput" type="text" required placeholder="Адрес доставки"
                                    name="delivery-address"  {% if address %}value="{{ address }}"{% endif %}>
@@ -41,7 +40,7 @@
                     <div class="col-12 pt-3">
                         <div class="inputW">
                             <div class="inputName text-uppercase fw-medium text--sm mb-2">
-                                Номер телефона
+                                Номер телефона (Узбекистан)
                             </div>
                             <input class="formInput" type="number" required
                                    placeholder="_ _ _  _ _  _ _" name="delivery-phone" {% if phone %}value="{{ phone }}"{% endif %}>

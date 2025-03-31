@@ -20,13 +20,9 @@
                             <div class="bottom-bun"></div>
                         </div><!-- /Hamburger Menu -->
                     </div>
-
-                    {% comment %} <a href="{% url 'shop:catalog' %}" class="headerLogo logo">
-                        <img src="{% if settings.client_page_logo %}{{ settings.client_page_logo.url }}{% else %}/static/img/admin/logo/logo.svg{% endif %}" alt="logo">
-                    </a> {% endcomment %}
-                    <a id="cartItems" href="{% url 'shop:cart' %}" class="headerCart" data-count="0">
-                        <img src="/static/img/icons/cart-black.svg" alt="cart">
-                    </a>
+                    <div class="d-flex justify-content-center align-items-center fw-medium text-uppercase">
+                        {% if curr_buyer_balance != '0' %}{{ curr_buyer_balance }} ₪{% endif %} <a id="cartItems" href="{% url 'shop:cart' %}" class="headerCart ps-3" data-count="0"><img src="/static/img/icons/cart-black.svg" alt="cart"></a>
+                    </div>
                 </div>
             </div>
             {% block additional_header %}

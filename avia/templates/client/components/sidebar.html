@@ -19,12 +19,15 @@
                 <div class="headerSidebarProfile pt-3 pb-3">
 
                     <div class="container">
-                        <div class="fw-medium mb-2 fz-16">{% trans "Профиль" %}</div>
+                        <div class="fw-medium mb-2 fz-16">Профиль</div>
                     </div>
                     <nav class="headerMenuNav headerNav">
                         <ul class="headerNavList">
-                            <li class="menu-restourant"><a href="{% url 'shop:orders' %}">{% trans "История заказов" %}</a></li>
+                            <li class="menu-profile"><a href="{% url 'shop:profile' %}">Мой профиль</a></li>
+                            <li class="menu-restourant"><a href="{% url 'shop:orders' %}">История заказов</a></li>
                             <li class="menu-wishlist"><a href="{% url 'shop:favorites' %}">Избранное</a></li>
+                            <li class="menu-topup"><a href="{% url 'shop:topups' %}">Пополнения</a></li>
+                            <li class="menu-exchange"><a href="{% url 'shop:favorites' %}">Переводы</a></li>
                         </ul>
                     </nav>
                 </div><!-- /headerSidebarProfile -->
@@ -35,7 +38,7 @@
                     {% if request.user.is_authenticated %}
                         <div class="d-flex flex-column gap-2 mb-4 mt-4">
                             <span class="headerSidebarNameProfile">{{ request.user.fullname }}</span>
-                            <div class="headerSidebarLogout" onclick="closeApp()">{% trans "Выйти" %}</div>
+                            <div class="headerSidebarLogout" onclick="closeApp()">Выйти</div>
                         </div>
                     {% endif %}
 

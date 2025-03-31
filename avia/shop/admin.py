@@ -1,6 +1,7 @@
+from typing import Any
 from django.contrib import admin
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpRequest, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
 from adminsortable2.admin import SortableAdminMixin
@@ -19,6 +20,8 @@ from .models import (
    BuyerProfile,
    BaseSettings,
    OrderStatus,
+   TopupRequest,
+   TopupRequestStatus,
 )
 
 
@@ -170,9 +173,10 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(VersionAdmin):
-    list_display = ('user', 'status', 'created_at', 'date', 'time', 'paid',)
     search_fields = ('user__username', 'address', 'phone',)
-    list_filter = ('status', 'paid',)
+    list_filter = ('status',)
+    exclude = ('paid',)
+
     inlines = [OrderItemInline]
 
     def has_module_permission(self, request):
@@ -180,15 +184,39 @@ class OrderAdmin(VersionAdmin):
             return False
         return super().has_module_permission(request)
 
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'circuit_id', 'icount_url', 'driver', 'driver_comment',]
+        return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'icount_url', 'driver', 'driver_comment',]
+
     def get_readonly_fields(self, request, obj=None):
         if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
-            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'paid',]
-        return []
+            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'circuit_id', 'icount_url', 'driver', 'driver_comment',]
+        return ['created_at',]
 
     def has_delete_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
         return False
+
+    def to_circuit_button(self, obj):
+        if not obj.circuit_id and obj.status == OrderStatus.AwaitingDelivery:
+            return format_html(f'''
+                <a class="button" href="/circuit/order/{obj.id}/"> Circuit</a>
+                ''')
+
+        return '-'
+    to_circuit_button.short_description = 'Отправить в Circuit'
+
+    def get_list_display(self, request, obj=None):
+        fields = ['user', 'status', 'created_at', 'date', 'time', 'driver',]
+
+        for order in super().get_queryset(request):
+            if not order.circuit_id and order.status == OrderStatus.AwaitingDelivery and 'to_circuit_button' not in fields:
+                fields.append('to_circuit_button')
+                break
+            
+        return fields
 
 
 @admin.register(OrderItem)
@@ -204,7 +232,6 @@ class OrderItemAdmin(VersionAdmin):
 
 @admin.register(BuyerProfile)
 class BuyerProfileAdmin(VersionAdmin):
-    list_display = ('user', 'tg_id', 'phone', 'address',)
     search_fields = ('user__username', 'tg_id', 'phone',)
     autocomplete_fields = ('user',)
 
@@ -212,6 +239,30 @@ class BuyerProfileAdmin(VersionAdmin):
         if request.user.is_superuser and not settings.HIDE_SHOP:
             return True
         return super().has_module_permission(request)
+    
+    def get_exclude(self, request, obj=None):
+        if not request.user.is_superuser:
+            return ['icount_id',]
+        return []
+
+    def to_icount_button(self, obj):
+        if not obj.icount_id and obj.israel_phone:
+            return format_html(f'''
+                <a class="button" href="/icount/buyer/{obj.id}/">iCount</a>
+                ''')
+
+        return '-'
+    to_icount_button.short_description = 'Отправить в iCount'
+
+    def get_list_display(self, request, obj=None):
+        fields = ['user', 'tg_id', 'phone', 'address', 'israel_phone', 'israel_address',]
+
+        for buyer in super().get_queryset(request):
+            if not buyer.icount_id and buyer.israel_phone and 'to_icount_button' not in fields:
+                fields.append('to_icount_button')
+                break
+            
+        return fields
 
 
 @admin.register(BaseSettings)
@@ -251,3 +302,38 @@ class BaseSettingsAdmin(admin.ModelAdmin):
         if settings.HIDE_SHOP:
             return False
         return super().has_module_permission(request)
+
+
+@admin.register(TopupRequest)
+class TopupRequestAdmin(VersionAdmin):
+    search_fields = ('user__username',)
+    list_filter = ('status',)
+
+    def get_exclude(self, request: HttpRequest, obj: Any | None = ...) -> Any:
+        if request.user.is_superuser:
+            return []
+        return ('circuit_id',)
+    
+    def to_circuit_button(self, obj):
+        if not obj.circuit_id and obj.status == TopupRequestStatus.Awaiting:
+            return format_html(f'''
+                <a class="button" href="/circuit/topup/{obj.id}/"> Circuit</a>
+                ''')
+
+        return '-'
+    to_circuit_button.short_description = 'Отправить в Circuit'
+
+    def get_list_display(self, request, obj=None):
+        fields = ['user', 'status', 'created_at', 'amount', 'driver',]
+
+        for topup in super().get_queryset(request):
+            if not topup.circuit_id and topup.status == TopupRequestStatus.Awaiting and 'to_circuit_button' not in fields:
+                fields.append('to_circuit_button')
+                break
+            
+        return fields
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj.status == TopupRequestStatus.Completed or obj.status == TopupRequestStatus.Canceled:
+            return ['user', 'created_at', 'amount', 'phone', 'address', 'status', 'circuit_id', 'driver', 'driver_comment',]
+        return ['created_at',]

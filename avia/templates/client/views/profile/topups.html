@@ -1,0 +1,96 @@
+{% extends 'client/page-layout.html' %}
+{% load thumbnail %}
+{% load filters %}
+{% load static %}
+
+{% block title %}История пополнений{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+{% endblock%}
+
+
+{% block content %}
+
+    <main class="main">
+        <div class="pageHeadW">
+            <div class="container">
+                <div class="pageHead d-flex justify-content-between align-items-center py-2">
+                    <a class="pageHeadBack d-flex align-items-center" href="{% url 'shop:catalog' %}">
+                        <button class="pageHeadBackBtn">
+                            <img src="/static/img/icons/arrow-back.svg" alt="icon">
+                        </button>
+                        История пополнений
+                    </a>
+                </div><!-- /pageHead -->
+
+            </div>
+        </div>
+        <div class="formInputName pt-3 d-flex justify-content-center align-items-center fw-medium text-uppercase pb-3">
+            <b>
+                <h3>Баланс: {{ buyer_balance }} ₪</h3>
+            </b>
+            <button type="submit" class="button button--blue ms-5" data-bs-toggle="modal" data-bs-target="#topup-request-modal">
+                Пополнить
+            </button>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mt-2 ms-3 me-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% if topups %}
+            <div id="topups-list" class="pb-2">
+                {% for topup in topups %}
+                    <div class="alert alert-{% if topup.status == 'created' %}secondary{% elif topup.status == 'awaiting' %}warning{% elif topup.status == 'completed' %}success{% elif topup.status == "canceled" %}danger{% endif %} mt-1 ms-3 me-3 htmx-scroll">
+                        <div class="container">
+                            <div class="pageInfo pt-1 d-flex justify-content-between">
+                                <span>#{{topup.id}}</span>
+                                <span>{% if topup.status == 'created' %}Создано{% elif topup.status == 'awaiting' %}Ожидает забора{% elif topup.status == 'completed' %}Выполнено{% elif topup.status == "canceled" %}Отменено{% endif %}</span>
+                            </div>
+                            <div class="d-flex justify-content-end align-items-end">
+                                <div class="container">
+                                    <div class="d-flex justify-content-between gap-2 mt-4 historyProductListW align-items-center">
+                                        <div class="d-flex gap-2">
+                                            <span>{{topup.readable_date}} {{topup.readable_time}}</span>
+                                        </div>
+                                        <h3>+{{ topup.readable_amount }} ₪</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if page_obj.has_next and forloop.last %}
+                        <span hx-get="{% url 'shop:topups' %}?page={{ page_obj.next_page_number }}"
+                                hx-swap="beforeend" hx-target="#topups-list" hx-select=".htmx-scroll" 
+                                hx-trigger="intersect once delay:200ms" class="htmx-scroll" 
+                                style="visibility: hidden;"
+                                hx-on="htmx:afterRequest: this.remove()">
+                        </span>
+					{% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="cartEmpty mt-5">
+                <div class="container">
+                    <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
+                        <div><h2>История пополнений пуста</h2></div>
+                        <div><a href="{% url 'shop:profile' %}" class="button button--lg button--blue mt-3">Пополнить</a></div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </main>
+{% endblock%}
+{% block modals %}
+  {% include 'common/components/modals/topup-request.html' %}
+{% endblock %}

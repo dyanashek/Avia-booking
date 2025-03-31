@@ -26,9 +26,12 @@
                         </button>
                         Корзина
                     </a>
-                    <a class="headerCart" data-bind="attr:{'data-count':cart.items().length}" >
-                        <img src="/static/img/icons/cart-black.svg" alt="cart">
-                    </a>
+                    <div class="d-flex justify-content-center align-items-center fw-medium text-uppercase">
+                        {% if curr_buyer_balance != '0' %}{{ curr_buyer_balance }} ₪{% endif %}
+                        <a class="headerCart ps-3" data-bind="attr:{'data-count':cart.items().length}" >
+                            <img src="/static/img/icons/cart-black.svg" alt="cart">
+                        </a>
+                    </div>
                 </div><!-- /pageHead -->
 
             </div>
@@ -36,6 +39,13 @@
 
         <section class="cart" id="cart">
             <div class="container">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mt-2 ms-3 me-3">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
                 <div class="cartList py-3 items" data-bind="foreach:{data:cart.items, as:'item'}">
                     <div class="cartItem d-flex justify-content-between">
                         <a data-bind="attr:{href:`/shop/product/${product.id}`}" class="cartItemImg">
@@ -88,6 +98,11 @@
                 <!-- ko if: cart.items().length > 0 -->
                     <div class="cartFooter py-3">
                         <div class="container">
+                            <!-- ko if: cart.delivery_price() > 0 && cart.cart_total_sum() < cart.free_delivery() -->
+                                <div class="d-flex justify-content-end gap-3 mb-3 fw-medium">
+                                    <span>Доставка: <span data-bind="text:cart.delivery_price_readable"></span> ₪ (бесплатно от <span data-bind="text:cart.free_delivery_readable"></span> ₪)</span>
+                                </div>
+                            <!-- /ko -->
                             <div class="cartFooterW d-flex justify-content-end">
                                 <span class="cartFooterName">Итого:</span>
                                 <span class="cartFooterPrice"><span data-bind="text:cart.total_sum"></span> ₪</span>
@@ -108,12 +123,16 @@
                 <!-- ko if: cart.items().length > 0 -->
                     <div class="cartBottom mt-5 pb-5">
                     <div class="container">
-                        {% comment %} <div class="cartBottomW d-flex flex-column gap-2">
-                              <a href="{% url 'shop:create_order' %}" class="button button--lg button--blue w-100 px-2">Оформить заказ</a>
-                        </div> {% endcomment %}
+                        <!-- ko if: cart.order_possible() -->
                         <div class="cartBottomW d-flex flex-column gap-2">
                             <button class="button button--lg button--blue w-100 px-2" data-bs-toggle="modal" data-bs-target="#delivery-info-modal">Оформить заказ</button>
                         </div>
+                        <!-- /ko -->
+                        <!-- ko if: !cart.order_possible() -->
+                        <div class="cartBottomW d-flex flex-column gap-2">
+                            <button class="button button--lg button--blue w-100 px-2" data-bs-toggle="modal" data-bs-target="#topup-request-modal" data-bind="attr:{'data-amount':cart.topup_amount}">Пополнить баланс</button>
+                        </div>
+                        <!-- /ko -->
                     </div>
                 </div>
                 <!-- /ko -->
@@ -126,6 +145,14 @@
         var cart = {
             total_sum: ko.observable(),
             items: ko.observableArray(),
+            delivery_price: ko.observable(),
+            free_delivery: ko.observable(),
+            delivery_price_readable: ko.observable(),
+            cart_total_sum: ko.observable(),
+            free_delivery_readable: ko.observable(),
+            buyer_balance: ko.observable(),
+            topup_amount: ko.observable(),
+            order_possible: ko.observable(),
         }
         ko.applyBindings({
             cart: cart,
@@ -141,6 +168,14 @@
                     prev_cart_data = text;
                     if (data.cart) {
                         cart.total_sum(data.cart.total_sum);
+                        cart.delivery_price(data.cart.delivery_price);
+                        cart.free_delivery(data.cart.free_delivery);
+                        cart.delivery_price_readable(data.cart.delivery_price_readable);
+                        cart.cart_total_sum(data.cart.cart_total_sum);
+                        cart.free_delivery_readable(data.cart.free_delivery_readable);
+                        cart.buyer_balance(data.cart.buyer_balance);
+                        cart.topup_amount(data.cart.topup_amount);
+                        cart.order_possible(data.cart.order_possible);
                         cart.items.removeAll();
                         for (var i of data.cart.items) {
                             cart.items.push(i)
@@ -188,8 +223,8 @@
 
         loadCart();
     </script>
-    </script>
 {% endblock%}
 {% block modals %}
   {% include 'common/components/modals/delivery_info.html' %}
+  {% include 'common/components/modals/topup-request.html' %}
 {% endblock %}

@@ -1328,6 +1328,18 @@ h5 {
 .headerNavList li.menu-history a:hover, .headerNavList li.menu-history a:focus {
   background-image: url("../img/icons/history-icon-blue.svg");
 }
+.headerNavList li.menu-topup a {
+  background-image: url("../img/icons/topup-icon.svg");
+}
+.headerNavList li.menu-topup a:hover, .headerNavList li.menu-topup a:focus {
+  background-image: url("../img/icons/topup-icon-blue.svg");
+}
+.headerNavList li.menu-exchange a {
+  background-image: url("../img/icons/exchange-icon.svg");
+}
+.headerNavList li.menu-exchange a:hover, .headerNavList li.menu-exchange a:focus {
+  background-image: url("../img/icons/exchange-icon-blue.svg");
+}
 .headerNavList li.menu-wishlist a {
   position: relative;
   background-image: url("../img/icons/wishlist-icon.svg");

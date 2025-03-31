@@ -56,6 +56,9 @@
 
                             <hr>
                             <div id="order-summary">
+                                <!-- ko if: info.order.delivery_price() > 0 -->
+                                <b><p>Доставка: <span data-bind="text:info.order.delivery_price_readable"></span><span> ₪</span></p></b>
+                                <!-- /ko -->
                                 <!-- ko if: info.order.address -->
                                 <p>Адрес доставки: <span data-bind="text:info.order.address"></span></p>
                                 <!-- /ko -->
@@ -90,6 +93,8 @@
             "address": ko.observable(),
             "phone": ko.observable(),
             "delivery_date": ko.observable(),
+            "delivery_price": ko.observable(),
+            "delivery_price_readable": ko.observable(),
         },
     }
 
@@ -115,6 +120,8 @@
                         info.order.delivery_date(data.order.readable_delivery_date + ' ' + data.order.readable_delivery_time);
                         info.order.created_at(data.order.readable_date + ' ' +data.order.readable_time);
                         info.order.total_sum(data.order.readable_total_sum);
+                        info.order.delivery_price(data.order.delivery_price);
+                        info.order.delivery_price_readable(data.order.delivery_price_readable);
                         info.order.items.removeAll();
                         for (var item of data.order.items) {
                             info.order.items.push(item);

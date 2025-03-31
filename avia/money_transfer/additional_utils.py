@@ -85,6 +85,6 @@ def extract_driver(stop_id):
             order_code = '2'
         elif state == 'delivered_to_mailbox':
             order_code = '3'
-    
+
     return order_code
     

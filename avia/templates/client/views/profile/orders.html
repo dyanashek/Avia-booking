@@ -32,9 +32,15 @@
 
             </div>
         </div>
-
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mt-2 ms-3 me-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         {% if orders %}
-            <div class="historyList" id="orders-list">
+            <div class="historyList pb-2" id="orders-list">
                 {% for order in orders %}
                     <div class="historyItem pb-4 htmx-scroll">
                         <div class="pageInfoW border-0">
@@ -42,7 +48,7 @@
 
                                 <div class="pageInfo pt-4 d-flex justify-content-between">
                                     <span>#{{order.id}}</span>
-                                    <span>{% if order.status == 'created' %}Создан{% elif order.status == 'accepted' %}Принят{% elif order.status == 'completed' %}Выполнен{% endif %}</span>
+                                    <span>{% if order.status == 'created' %}Создан{% elif order.status == 'awaiting_delivery' %}Ожидает доставки{% elif order.status == 'completed' %}Выполнен{% elif order.status == 'canceled' %}Отменен{% endif %}</span>
                                     <div class="d-flex gap-2">
                                         <span>{{order.readable_date}} {{order.readable_time}}</span>
                                     </div>

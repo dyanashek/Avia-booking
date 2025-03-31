@@ -117,11 +117,14 @@ class Cart(models.Model):
 
     @property
     def cart_total_sum(self):
-        return sum([item.total_sum for item in self.items.all()])
+        total_sum = sum([item.total_sum for item in self.items.all()])
+        if total_sum < BaseSettings.objects.first().free_delivery:
+            total_sum += BaseSettings.objects.first().delivery_price
+        return total_sum
     
     @property
     def total_sum(self):
-        return format_amount(sum([item.total_sum for item in self.items.all()]))
+        return format_amount(self.cart_total_sum)
     
 
 class CartItem(models.Model):
@@ -152,12 +155,25 @@ class OrderStatus:
     Canceled = "canceled"
 
 
+class DriversOrder:
+    first = '1'
+    second = '2'
+    third = '3'
+    fourth = '4'
+
+
 class Order(models.Model):
     STATUSES = [
         (OrderStatus.Created, "Создан"),
         (OrderStatus.AwaitingDelivery, "Ожидает доставки"),
         (OrderStatus.Completed, "Выполнен"),
         (OrderStatus.Canceled, "Отменен"),
+    ]
+    DRIVERS = [
+        (DriversOrder.first, "Первый водитель"),
+        (DriversOrder.second, "Второй водитель"),
+        (DriversOrder.third, "Третий водитель"),
+        (DriversOrder.fourth, "Четвертый водитель"),
     ]
     user = models.ForeignKey(
         get_user_model(),
@@ -171,8 +187,13 @@ class Order(models.Model):
     phone = models.CharField(max_length=255, verbose_name="Телефон", null=True, blank=True)
     time = models.TimeField(verbose_name="Время доставки", null=True, blank=True)
     date = models.DateField(verbose_name="Дата доставки", null=True, blank=True)
-    paid = models.BooleanField(default=False, verbose_name="Оплачен?")
-    
+    paid = models.BooleanField(default=True, verbose_name="Оплачен?")
+    delivery_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Стоимость доставки", default=0)
+    circuit_id = models.CharField(max_length=255, verbose_name="ID circuit", null=True, blank=True)
+    icount_url = models.URLField(verbose_name='Ссылка', null=True, blank=True, default=None)
+    driver = models.CharField(max_length=255, choices=DRIVERS, verbose_name="Водитель", null=True, blank=True)
+    driver_comment = models.TextField(verbose_name="Комментарий", null=True, blank=True)
+
     class Meta:
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
@@ -192,7 +213,7 @@ class Order(models.Model):
 
     @property
     def total_sum(self):
-        return sum([item.total_sum for item in self.items.all()])
+        return sum([item.total_sum for item in self.items.all()]) + self.delivery_price
     
     @property
     def readable_total_sum(self):
@@ -251,6 +272,8 @@ class BuyerProfile(models.Model):
     username = models.CharField(max_length=255, verbose_name="Имя пользователя в Telegram", null=True, blank=True)
     phone = models.CharField(max_length=255, verbose_name="Телефон", null=True, blank=True)
     address = models.CharField(max_length=255, verbose_name="Адрес", null=True, blank=True)
+    israel_address = models.CharField(max_length=255, verbose_name="Адрес в Израиле", null=True, blank=True)
+    israel_phone = models.CharField(max_length=255, verbose_name="Телефон в Израиле", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
     referrer = models.ForeignKey("self", 
                                  on_delete=models.SET_NULL, 
@@ -261,13 +284,18 @@ class BuyerProfile(models.Model):
     referrals_count = models.IntegerField(verbose_name="Количество рефералов", default=0)
     balance = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Баланс", default=0)
     thread_id = models.CharField(max_length=255, verbose_name="Топик id", null=True, blank=True)
-
+    icount_id = models.CharField(max_length=255, verbose_name="ID в iCount", null=True, blank=True)
+    
     class Meta:
         verbose_name = "Профиль покупателя"
         verbose_name_plural = "Профили покупателей"
 
     def __str__(self):
         return self.user.username
+    
+    @property
+    def readable_balance(self):
+        return format_amount(self.balance)
 
 
 class BaseSettings(models.Model):
@@ -277,6 +305,8 @@ class BaseSettings(models.Model):
     orders_per_page = models.PositiveIntegerField(verbose_name="Количество заказов на странице", default=5)
     help_chat = models.CharField(max_length=255, verbose_name="Чат поддержки")
     web_app_url = models.CharField(max_length=255, verbose_name="URL веб-приложения")
+    free_delivery = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Бесплатная доставка от", default=0)
+    delivery_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Стоимость доставки", default=0)
 
     class Meta:
         verbose_name = "Настройки магазина"
@@ -294,3 +324,53 @@ class AccessToken(models.Model):
         verbose_name = "Токен доступа"
         verbose_name_plural = "Токены доступа"
         
+
+class TopupRequestStatus:
+    Created = "created"
+    Awaiting = "awaiting"
+    Completed = "completed"
+    Canceled = "canceled"
+
+
+class TopupRequest(models.Model):
+    STATUSES = [
+        (TopupRequestStatus.Created, "Создан"),
+        (TopupRequestStatus.Awaiting, "Ожидает забора"),
+        (TopupRequestStatus.Completed, "Выполнен"),
+        (TopupRequestStatus.Canceled, "Отменен"),
+    ]
+    DRIVERS = [
+        (DriversOrder.first, "Первый водитель"),
+        (DriversOrder.second, "Второй водитель"),
+        (DriversOrder.third, "Третий водитель"),
+        (DriversOrder.fourth, "Четвертый водитель"),
+    ]
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="topup_requests", verbose_name="Пользователь",)
+    address = models.CharField(max_length=255, verbose_name="Адрес", null=True, blank=True)
+    phone = models.CharField(max_length=255, verbose_name="Телефон", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
+    status = models.CharField(max_length=255, choices=STATUSES, default=TopupRequestStatus.Created, verbose_name="Статус",)
+    circuit_id = models.CharField(max_length=255, verbose_name="ID circuit", null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Сумма", default=0)
+    driver = models.CharField(max_length=255, choices=DRIVERS, verbose_name="Водитель", null=True, blank=True)
+    driver_comment = models.TextField(verbose_name="Комментарий", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Запрос на пополнение баланса"
+        verbose_name_plural = "Запросы на пополнение баланса"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.status}"
+    
+    @property
+    def readable_date(self):
+        return DateFormat(self.created_at + datetime.timedelta(hours=3)).format('d.m.Y')
+
+    @property
+    def readable_time(self):
+        return DateFormat(self.created_at + datetime.timedelta(hours=3)).format('H:i')
+
+    @property
+    def readable_amount(self):
+        return format_amount(self.amount)
+    
