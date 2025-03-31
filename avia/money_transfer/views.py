@@ -276,9 +276,6 @@ def stop_status(request):
             except:
                 pass
             #TODO: чек
-            if buyer.referrer:
-                buyer.referrer.balance += order.total_sum * buyer.referrer.referral_percent
-                buyer.referrer.save(update_fields=['balance',])
 
     elif order_id and order_id == '9' and status == 'true':
         topup = TopupRequest.objects.filter(circuit_id=stop_id).first()
