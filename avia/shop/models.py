@@ -373,4 +373,17 @@ class TopupRequest(models.Model):
     @property
     def readable_amount(self):
         return format_amount(self.amount)
-    
+
+
+class BalanceTransaction(models.Model):
+    sender = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="balance_transactions_send", verbose_name="Отправитель",)
+    receiver = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="balance_transactions_receive", verbose_name="Получатель",)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Сумма", default=0)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
+
+    class Meta:
+        verbose_name = "Транзакция баланса"
+        verbose_name_plural = "Транзакции баланса"
+
+    def __str__(self):
+        return f"{self.sender.username} - {self.receiver.username} - {self.amount}"

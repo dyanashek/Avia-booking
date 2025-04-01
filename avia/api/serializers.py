@@ -143,7 +143,8 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["id", "total_sum", "items", "readable_total_sum", "status", "created_at", "readable_time", "readable_date",
-                  "address", "phone", "readable_delivery_date", "readable_delivery_time", 'delivery_price', 'delivery_price_readable']
+                  "address", "phone", "readable_delivery_date", "readable_delivery_time", 'delivery_price', 'delivery_price_readable',
+                  'icount_url',]
 
     def get_readable_time(self, obj):
         return obj.readable_time

@@ -15,10 +15,10 @@ from django.db import transaction
 from django.contrib import messages
 
 from shop.models import (Product, Category, SubCategory, Cart, CartItem, FavoriteProduct, 
-                         Order, OrderItem, BuyerProfile, BaseSettings, TopupRequest)
+                         Order, OrderItem, BuyerProfile, BaseSettings, TopupRequest, TopupRequestStatus, OrderStatus)
 from core.utils import send_message_on_telegram
 from .utils import (format_amount, escape_markdown, create_icount_client, send_shop_delivery_address,
-                    send_topup_address)
+                    send_topup_address, icount_order_invoice)
 
 
 class ProductListView(LoginRequiredMixin,TemplateView):
@@ -299,7 +299,7 @@ def buyer_resend_icount(request, pk):
 
 def order_resend_circuit(request, pk):
     order = get_object_or_404(Order, id=pk)
-    if not order.circuit_id:
+    if not order.circuit_id and order.status == OrderStatus.AwaitingDelivery:
         stop_id = send_shop_delivery_address(order)
         if stop_id:
             order.circuit_id = stop_id
@@ -393,3 +393,33 @@ def create_topup(request):
     messages.error(request, 'Ошибка при создании заявки на пополнение счета')
     return redirect(reverse('shop:topups'))
     
+
+def order_resend_icount(request, pk):
+    order = get_object_or_404(Order, id=pk)
+    if not order.icount_url and order.status == OrderStatus.Completed:
+        buyer = BuyerProfile.objects.filter(user=order.user).first()
+        if buyer:
+            icount_id = buyer.icount_id
+            if not icount_id:
+                icount_id = create_icount_client(buyer, buyer.israel_phone)
+                if icount_id:
+                    buyer.icount_id = icount_id
+                    buyer.save(update_fields=['icount_id'])
+
+            if icount_id:
+                icount_url = icount_order_invoice(order, icount_id)
+                if icount_url:
+                    order.icount_url = icount_url
+                    order.save(update_fields=['icount_url'])
+
+                    try:
+                        base_settings = BaseSettings.objects.first()
+                        params = {
+                            'chat_id': buyer.tg_id,
+                            'text': f'Чек заказа #{order.id}:\n{icount_url}',
+                        }
+                        send_message_on_telegram(params, base_settings.bot_token)
+                    except:
+                        pass
+                    
+    return redirect('/admin/shop/order/')

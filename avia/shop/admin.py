@@ -22,6 +22,7 @@ from .models import (
    OrderStatus,
    TopupRequest,
    TopupRequestStatus,
+   BalanceTransaction,
 )
 
 
@@ -149,11 +150,15 @@ class CartItemAdmin(VersionAdmin):
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
+    fields = ('product', 'item_count', 'product_price', 'total_sum',)
+    verbose_name_plural = 'Товары'
+
+    def product_price(self, obj):
+        return obj.product.price
+    product_price.short_description = 'Цена продукта'
 
     def get_readonly_fields(self, request, obj=None):
-        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
-            return ['product', 'item_count',]
-        return []
+        return ['total_sum', 'product_price', 'product', 'item_count']
 
     def has_add_permission(self, request, obj=None):
         if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
@@ -169,6 +174,10 @@ class OrderItemInline(admin.TabularInline):
         if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
             return False
         return True
+
+    def total_sum(self, obj):
+        return obj.product.price * obj.item_count
+    total_sum.short_description = 'Сумма'
 
 
 @admin.register(Order)
@@ -186,13 +195,13 @@ class OrderAdmin(VersionAdmin):
 
     def get_fields(self, request, obj=None):
         if request.user.is_superuser:
-            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'circuit_id', 'icount_url', 'driver', 'driver_comment',]
-        return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'icount_url', 'driver', 'driver_comment',]
+            return ['user', 'address', 'phone', 'created_at', 'delivery_price', 'date', 'time', 'status', 'circuit_id', 'icount_url', 'driver', 'driver_comment', 'total_sum',]
+        return ['user', 'address', 'phone', 'created_at', 'delivery_price', 'date', 'time', 'status', 'icount_url', 'driver', 'driver_comment', 'total_sum',]
 
     def get_readonly_fields(self, request, obj=None):
-        if obj.status == OrderStatus.Completed or obj.status == OrderStatus.Canceled:
-            return ['user', 'address', 'phone', 'created_at', 'date', 'time', 'status', 'circuit_id', 'icount_url', 'driver', 'driver_comment',]
-        return ['created_at',]
+        if obj.status != OrderStatus.Created and not request.user.is_superuser:
+            return ['user', 'address', 'phone', 'created_at', 'delivery_price', 'date', 'time', 'status', 'circuit_id', 'icount_url', 'driver', 'driver_comment', 'total_sum',]
+        return ['created_at', 'total_sum',]
 
     def has_delete_permission(self, request, obj=None):
         if request.user.is_superuser:
@@ -208,15 +217,31 @@ class OrderAdmin(VersionAdmin):
         return '-'
     to_circuit_button.short_description = 'Отправить в Circuit'
 
+    def to_icount_button(self, obj):
+        if not obj.icount_url and obj.status == OrderStatus.Completed:
+            return format_html(f'''
+                <a class="button" href="/icount/order/{obj.id}/">iCount</a>
+                ''')
+
+        return '-'
+    to_icount_button.short_description = 'Отправить в iCount'
+
     def get_list_display(self, request, obj=None):
         fields = ['user', 'status', 'created_at', 'date', 'time', 'driver',]
 
         for order in super().get_queryset(request):
             if not order.circuit_id and order.status == OrderStatus.AwaitingDelivery and 'to_circuit_button' not in fields:
                 fields.append('to_circuit_button')
+            if not order.icount_url and order.status == OrderStatus.Completed and 'to_icount_button' not in fields:
+                fields.append('to_icount_button')
+            if 'to_icount_button' in fields and 'to_circuit_button' in fields:
                 break
             
         return fields
+    
+    def total_sum(self, obj):
+        return obj.total_sum
+    total_sum.short_description = 'Сумма'
 
 
 @admin.register(OrderItem)
@@ -337,3 +362,11 @@ class TopupRequestAdmin(VersionAdmin):
         if obj.status == TopupRequestStatus.Completed or obj.status == TopupRequestStatus.Canceled:
             return ['user', 'created_at', 'amount', 'phone', 'address', 'status', 'circuit_id', 'driver', 'driver_comment',]
         return ['created_at',]
+    
+
+@admin.register(BalanceTransaction)
+class BalanceTransactionAdmin(VersionAdmin):
+    list_display = ('sender', 'receiver', 'amount', 'created_at',)
+    search_fields = ('sender__username', 'receiver__username',)
+    list_filter = ('created_at',)
+    

@@ -53,6 +53,7 @@ urlpatterns = [
     path('circuit/ticket/<int:pk>/', tickets_view.ticket_send_circuit, name='circuit_admin_ticket'),
     path('circuit/admin-parcel/<int:pk>/', parcels_view.parcel_send_circuit, name='circuit_admin_parcel'),
     path('circuit/order/<int:pk>/', shop_view.order_resend_circuit, name='circuit_admin_order'),
+    path('icount/order/<int:pk>/', shop_view.order_resend_icount, name='icount_admin_order'),
     path('circuit/topup/<int:pk>/', shop_view.topup_resend_circuit, name='circuit_admin_topup'),
     path('icount/admin-sim/<int:pk>/', sim_view.sim_resend_icount, name='sim_admin_icount'),
     path('icount/buyer/<int:pk>/', shop_view.buyer_resend_icount, name='buyer_admin_icount'),

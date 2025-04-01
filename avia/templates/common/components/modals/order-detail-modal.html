@@ -66,7 +66,13 @@
                                 <p>Дата доставки: <span data-bind="text:info.order.delivery_date"></span></p>
                                 <!-- /ko -->
                                 <p class="text-end fs-16 fw-7">Итого: <span data-bind="text:info.order.total_sum"></span><span> ₪</span></p>
+                                
                             </div>
+                            <!-- ko if: info.order.icount_url -->
+                                <div class="d-flex justify-content-center">
+                                    <a href="#" data-bind="attr:{href:info.order.icount_url}" target="_blank" class="button button--lg button--blue mt-2">Посмотреть чек...</a>
+                                </div>
+                            <!-- /ko -->
                         </div>
                     </div>
                 </div>
@@ -95,6 +101,7 @@
             "delivery_date": ko.observable(),
             "delivery_price": ko.observable(),
             "delivery_price_readable": ko.observable(),
+            "icount_url": ko.observable(),
         },
     }
 
@@ -122,6 +129,7 @@
                         info.order.total_sum(data.order.readable_total_sum);
                         info.order.delivery_price(data.order.delivery_price);
                         info.order.delivery_price_readable(data.order.delivery_price_readable);
+                        info.order.icount_url(data.order.icount_url);
                         info.order.items.removeAll();
                         for (var item of data.order.items) {
                             info.order.items.push(item);

@@ -5,7 +5,7 @@ import threading
 from django.conf import settings
 
 from errors.models import AppError
-from config import ICOUNT_CREATE_USER_ENDPOINT
+from config import ICOUNT_CREATE_USER_ENDPOINT, ICOUNT_CREATE_INVOICE_ENDPOINT
 
 
 def format_amount(value):
@@ -213,6 +213,63 @@ def send_topup_address(topup):
             error_type='3',
             main_user=topup.user.username,
             description=f'Не удалось создать остановку в circuit (магазин - забор денег) {topup.id}. {error_info}',
+        )
+    except:
+        pass
+
+    return False
+
+
+def icount_order_invoice(order, icount_id: str):
+    error_info = '' 
+    
+    data = {
+        'cid': settings.SHOP_ICOUNT_COMPANY_ID,
+        'user': settings.SHOP_ICOUNT_USERNAME,
+        'pass': settings.SHOP_ICOUNT_PASSWORD,
+        'doctype': 'invrec',
+        'client_id': icount_id,
+        'lang': 'en',
+        'items': [],
+        'cash': {'sum': float(order.total_sum)},        
+    }
+    for item in order.items.all():
+        data['items'].append({
+            'description': item.product.title,
+            'unitprice_incvat': float(item.product.price),
+            'quantity': item.item_count,
+        })
+    if order.delivery_price:
+        data['items'].append({
+            'description': 'Доставка',
+            'unitprice_incvat': float(order.delivery_price),
+            'quantity': 1,
+        })
+
+    try:
+        response = requests.post(ICOUNT_CREATE_INVOICE_ENDPOINT, json=data)
+    except Exception as ex:
+        error_info = str(ex)
+        response = None
+
+    if response and response.ok:
+        try:
+            doc_url = response.json().get('doc_url')
+            if doc_url:
+                return doc_url
+        except:
+            try:
+                error_info = response.json()
+            except:
+                error_info = ''
+    else:
+        error_info = response.status_code
+
+    try:
+        AppError.objects.create(
+            source='5',
+            error_type='5',
+            description=f'Не удалось создать квитанцию (заказ #{order.id}) для пользователя iCount {order.user.username}, сумма {order.total_sum}. {error_info}',
         )
     except:
         pass

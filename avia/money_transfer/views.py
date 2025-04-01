@@ -17,6 +17,7 @@ from core.models import UsersSim
 from errors.models import AppError
 from money_transfer.models import Sender, Receiver, Delivery, Status, Rate, Commission, Report
 from shop.models import TopupRequest, TopupRequestStatus, Order, OrderStatus, BuyerProfile, BaseSettings
+from shop.utils import icount_order_invoice, create_icount_client
 from money_transfer.utils import (update_delivery_pickup_status, update_credit_status, send_pickup_address,
                                   delivery_to_gspread)
 from core.utils import send_message_on_telegram
@@ -24,6 +25,7 @@ from drivers.utils import construct_collect_sim_money_message, construct_deliver
 from money_transfer.additional_utils import report_to_db, stop_to_report, extract_driver
 
 from config import TELEGRAM_DRIVERS_TOKEN, DUPLICATE_SIM_MONEY, TELEGRAM_BOT
+
 
 # Create your views here.
 def get_sender_addresses(request):
@@ -264,9 +266,21 @@ def stop_status(request):
             order.save(update_fields=['status', 'driver', 'driver_comment',])
 
             buyer = BuyerProfile.objects.filter(user=order.user).first()
+            icount_url = None
+            if buyer:
+                icount_id = buyer.icount_id
+                if not icount_id:
+                    icount_id = create_icount_client(buyer, buyer.israel_phone)
+                if icount_id:
+                    icount_url = icount_order_invoice(order, icount_id)
 
             try:
                 notify_text = f'Заказ #{order.id} стоимостью {order.readable_total_sum} ₪ доставлен.'
+                if icount_url:
+                    order.icount_url = icount_url
+                    order.save(update_fields=['icount_url',])
+                    notify_text += f'\n[Чек заказа]({icount_url})'
+
                 params = {
                     'chat_id': buyer.tg_id,
                     'text': notify_text,
@@ -276,7 +290,7 @@ def stop_status(request):
                 send_message_on_telegram(params, base_settings.bot_token)
             except:
                 pass
-            #TODO: чек
+            
 
     elif order_id and order_id == '9' and status == 'true':
         topup = TopupRequest.objects.filter(circuit_id=stop_id).first()
