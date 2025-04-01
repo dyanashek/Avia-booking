@@ -20,4 +20,6 @@ urlpatterns = [
     path("change-profile/", shop_views.change_profile, name="change_profile"),
     path("topups/", shop_views.TopupsView.as_view(), name="topups"),
     path("create-topup/", shop_views.create_topup, name="create_topup"),
+    path("transfers/", shop_views.TransfersView.as_view(), name="transfers"),
+    path("create-transfer/", shop_views.create_transfer, name="create_transfer"),
 ]

@@ -3,7 +3,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.db.models import Case, When
+from django.db.models import Case, When, Q
 from django.http.response import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
@@ -13,9 +13,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
 from django.db import transaction
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 
 from shop.models import (Product, Category, SubCategory, Cart, CartItem, FavoriteProduct, 
-                         Order, OrderItem, BuyerProfile, BaseSettings, TopupRequest, TopupRequestStatus, OrderStatus)
+                         Order, OrderItem, BuyerProfile, BaseSettings, TopupRequest, TopupRequestStatus, OrderStatus,
+                         BalanceTransaction)
 from core.utils import send_message_on_telegram
 from .utils import (format_amount, escape_markdown, create_icount_client, send_shop_delivery_address,
                     send_topup_address, icount_order_invoice)
@@ -321,7 +323,7 @@ class TopupsView(LoginRequiredMixin, ListView):
     template_name = "client/views/profile/topups.html"
     context_object_name = "topups"
     model = TopupRequest
-    paginate_by = 2
+    paginate_by = 10
     
     def get_queryset(self):
         queryset = super().get_queryset().filter(user=self.request.user).order_by('-created_at')
@@ -423,3 +425,61 @@ def order_resend_icount(request, pk):
                         pass
                     
     return redirect('/admin/shop/order/')
+
+
+class TransfersView(LoginRequiredMixin, ListView):
+    template_name = "client/views/profile/transfers.html"
+    context_object_name = "transfers"
+    model = BalanceTransaction
+    paginate_by = 10
+    
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(Q(sender=self.request.user) | Q(receiver=self.request.user)).order_by('-created_at')
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['next_page'] = int(self.request.GET.get('page', 1)) + 1
+        if buyer := BuyerProfile.objects.filter(user=self.request.user).first():
+            context['buyer_balance'] = format_amount(buyer.balance)
+            context['buyer_balance_int'] = int(buyer.balance)
+
+        return context
+
+
+@login_required
+@require_POST
+def create_transfer(request):
+    messages.get_messages(request).used = True
+    amount = request.POST.get('amount')
+    receiver = request.POST.get('receiver')
+    if amount and receiver:
+        amount = int(amount)
+        sender_user = get_user_model().objects.filter(username=f'shop{receiver}').first()
+        receiver = BuyerProfile.objects.filter(tg_id=receiver).first()
+        sender = BuyerProfile.objects.filter(user=request.user).first()
+        if receiver and sender and sender_user:
+            if receiver.tg_id != sender.tg_id:
+                if sender.balance >= amount:
+                    try:
+                        with transaction.atomic():
+                            sender.balance -= amount
+                            receiver.balance += amount
+                            sender.save(update_fields=['balance'])
+                            receiver.save(update_fields=['balance'])
+                            BalanceTransaction.objects.create(sender=request.user, receiver=sender_user, amount=amount)
+                            messages.success(request, f'Вы успешно перевели {amount} ₪ пользователю {receiver.tg_id}')
+                    except:
+                        messages.error(request, 'Ошибка при переводе.')
+                else:
+                    messages.error(request, 'Ошибка при переводе: недостаточно средств на балансе')
+            else:
+                messages.error(request, 'Ошибка при переводе: вы не можете перевести деньги себе')
+        else:
+            messages.error(request, 'Ошибка при переводе: получатель не найден')
+    else:
+        messages.error(request, 'Ошибка при переводе: вы не предоставили необходимых данных')
+    
+    return redirect(reverse('shop:transfers'))
+    
+    

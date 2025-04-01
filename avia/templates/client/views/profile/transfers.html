@@ -1,0 +1,96 @@
+{% extends 'client/page-layout.html' %}
+{% load thumbnail %}
+{% load filters %}
+{% load static %}
+
+{% block title %}Переводы{% endblock%}
+
+{% block thirdparty %}{% endblock%}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/style-client.css' %}">
+{% endblock%}
+
+{% block scripts %}
+    <script src="{% static 'js/restaurant-script.js' %}"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+{% endblock%}
+
+
+{% block content %}
+
+    <main class="main">
+        <div class="pageHeadW">
+            <div class="container">
+                <div class="pageHead d-flex justify-content-between align-items-center py-2">
+                    <a class="pageHeadBack d-flex align-items-center" href="{% url 'shop:catalog' %}">
+                        <button class="pageHeadBackBtn">
+                            <img src="/static/img/icons/arrow-back.svg" alt="icon">
+                        </button>
+                        Переводы
+                    </a>
+                </div><!-- /pageHead -->
+
+            </div>
+        </div>
+        <div class="formInputName pt-3 d-flex justify-content-center align-items-center fw-medium text-uppercase pb-3">
+            <b>
+                <h3>Баланс: {{ buyer_balance }} ₪</h3>
+            </b>
+            <button type="submit" class="button button--blue ms-5" data-bs-toggle="modal" data-bs-target="#transfer-modal">
+                Перевести
+            </button>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mt-2 ms-3 me-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% if transfers %}
+            <div id="transfers-list" class="pb-2">
+                {% for transfer in transfers %}
+                    <div class="alert alert-{% if transfer.sender == request.user %}danger{% else %}success{% endif %} mt-1 ms-3 me-3 htmx-scroll">
+                        <div class="container">
+                            <div class="pageInfo pt-1 d-flex justify-content-between">
+                                <span>#{{transfer.id}}</span>
+                                <span>{% if transfer.sender == request.user %}{{ transfer.receiver.username|slice:"4:" }}{% else %}{{ transfer.sender.username|slice:"4:" }}{% endif %}</span>
+                                <span>{% if transfer.sender == request.user %}Перевод с баланса{% else %}Перевод на баланс{% endif %}</span>
+                            </div>
+                            <div class="d-flex justify-content-end align-items-end">
+                                <div class="container">
+                                    <div class="d-flex justify-content-between gap-2 mt-4 historyProductListW align-items-center">
+                                        <div class="d-flex gap-2">
+                                            <span>{{transfer.readable_date}} {{transfer.readable_time}}</span>
+                                        </div>
+                                        <h3>{% if transfer.sender == request.user %}-{% else %}+{% endif %}{{ transfer.readable_amount }} ₪</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if page_obj.has_next and forloop.last %}
+                        <span hx-get="{% url 'shop:transfers' %}?page={{ page_obj.next_page_number }}"
+                                hx-swap="beforeend" hx-target="#transfers-list" hx-select=".htmx-scroll" 
+                                hx-trigger="intersect once delay:200ms" class="htmx-scroll" 
+                                style="visibility: hidden;"
+                                hx-on="htmx:afterRequest: this.remove()">
+                        </span>
+					{% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="cartEmpty mt-5">
+                <div class="container">
+                    <div class="cartEmptyW text-center d-flex justify-content-center flex-column align-items-center">
+                        <div><h2>История переводов пуста</h2></div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </main>
+{% endblock%}
+{% block modals %}
+  {% include 'common/components/modals/transfer-request.html' %}
+{% endblock %}

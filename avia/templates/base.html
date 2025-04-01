@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+    <script type="text/javascript" src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +43,6 @@
     {% block layout %}{% endblock%}
     {% include 'common/components/modals/fail.html' %}
     {% block modals %}{% endblock %}
-    <script type="text/javascript" src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const urlParams = new URLSearchParams(window.location.search);
@@ -67,7 +67,6 @@
               } catch (error) {
               }
               try {
-                  {% comment %} window.Telegram.WebApp.requestFullScreen() {% endcomment %}
                   window.Telegram.WebApp.expand()
               } catch (error) {
               }

@@ -387,3 +387,16 @@ class BalanceTransaction(models.Model):
 
     def __str__(self):
         return f"{self.sender.username} - {self.receiver.username} - {self.amount}"
+
+    @property
+    def readable_date(self):
+        return DateFormat(self.created_at + datetime.timedelta(hours=3)).format('d.m.Y')
+
+    @property
+    def readable_time(self):
+        return DateFormat(self.created_at + datetime.timedelta(hours=3)).format('H:i')
+
+    @property
+    def readable_amount(self):
+        return format_amount(self.amount)
+    
