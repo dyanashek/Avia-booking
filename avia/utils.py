@@ -117,6 +117,9 @@ async def get_payment_dates():
                 current_month = f'0{current_month}'
             payment_days.append(f'{day}.{current_month}.{current_year}')
     
+    current_year = current_date.year
+    current_month = current_date.month
+
     for day in days:
         payment_day = datetime.date(year=current_year, month=current_month, day=day)
         if payment_day <= current_date:
