@@ -102,11 +102,12 @@ async def validate_rate(input_string):
 
 
 async def get_payment_dates():
+    print(1)
     days = [1, 10, 20]
     current_date = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).date()
     current_year = current_date.year
     current_month = current_date.month
-
+    print(2)
     payment_days = []
     for day in days:
         payment_day = datetime.date(year=current_year, month=current_month, day=day)
@@ -116,10 +117,10 @@ async def get_payment_dates():
             if current_month < 10:
                 current_month = f'0{current_month}'
             payment_days.append(f'{day}.{current_month}.{current_year}')
-    
+    print(3)
     current_year = current_date.year
     current_month = current_date.month
-
+    print(4)        
     for day in days:
         payment_day = datetime.date(year=current_year, month=current_month, day=day)
         if payment_day <= current_date:
@@ -135,7 +136,7 @@ async def get_payment_dates():
             if payment_month < 10:
                 payment_month = f'0{payment_month}'
             payment_days.append(f'{day}.{payment_month}.{payment_year}')
-
+    print(5)
     return payment_days
 
 
