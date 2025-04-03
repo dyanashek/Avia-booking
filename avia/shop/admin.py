@@ -23,6 +23,7 @@ from .models import (
    TopupRequest,
    TopupRequestStatus,
    BalanceTransaction,
+   AccessToken,
 )
 
 
@@ -369,4 +370,14 @@ class BalanceTransactionAdmin(VersionAdmin):
     list_display = ('sender', 'receiver', 'amount', 'created_at',)
     search_fields = ('sender__username', 'receiver__username',)
     list_filter = ('created_at',)
+    
+
+@admin.register(AccessToken)
+class AccessTokenAdmin(VersionAdmin):
+    list_display = ('token', 'is_used',)
+    search_fields = ('token',)
+    list_filter = ('is_used',)
+    
+    def has_module_permission(self, request):
+        return False
     
