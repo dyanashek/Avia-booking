@@ -3210,13 +3210,13 @@ async def callback_query(call: types.CallbackQuery, state: FSMContext):
                     await call.message.edit_reply_markup(
                                     reply_markup=await keyboards.payments_dates_keyboards(user_language),
                                     )
-                except Exception as ex:
+                except:
                     try:
                         await sync_to_async(AppError.objects.create)(
                             source='1',
                             error_type='1',
                             main_user=user_id,
-                            description=f'Не удалось отредактировать сообщение пользователя {user_id}. {ex}',
+                            description=f'Не удалось отредактировать сообщение пользователя {user_id}.',
                         )
                     except:
                         pass
