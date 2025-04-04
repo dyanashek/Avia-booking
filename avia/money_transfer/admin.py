@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.urls import path
 from django.http import HttpResponse
 from django.utils.html import format_html
+from django.conf import settings
 from reversion.admin import VersionAdmin
 from import_export.admin import ExportActionModelAdmin
 
@@ -25,11 +26,11 @@ class TransferInline(admin.StackedInline):
     fields = ('delivery', 'receiver', 'address', 'pick_up', 'usd_amount',)
 
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.valid and not request.user.is_superuser:
-            return [field.name for field in self.model._meta.fields]
-
-        elif request.user.is_superuser:
+        if request.user.is_superuser or request.user.username in settings.MONEY_TRANSFER_CHANGE_AVAILABLE:
             return tuple()
+    
+        elif obj and obj.valid and not request.user.is_superuser:
+            return [field.name for field in self.model._meta.fields]
 
         return ('pass_date',)
 
@@ -98,7 +99,7 @@ class DeliveryAdmin(VersionAdmin, ExportActionModelAdmin):
         return kwargs
     
     def get_fields(self, request, obj=None):
-        if request.user.is_superuser:
+        if request.user.is_superuser or request.user.username in settings.MONEY_TRANSFER_CHANGE_AVAILABLE:
             return [field.name for field in self.model._meta.fields if not field.name in ('created_at', 'id')]
         else:
             return ('sender', 'sender_address', 'usd_amount', 'ils_amount', 'total_usd', 'cancel_validation', 'custom_commission', 'commission', 'driver', 'invite_client')
@@ -111,7 +112,7 @@ class DeliveryAdmin(VersionAdmin, ExportActionModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.valid and not request.user.is_superuser:
             return [field.name for field in self.model._meta.fields]
-        elif request.user.is_superuser:
+        elif request.user.is_superuser or request.user.username in settings.MONEY_TRANSFER_CHANGE_AVAILABLE:
             return tuple()
         return ('commission', 'valid', 'status_message', 'circuit_id', 'total_usd', 'driver', 'invite_client',)
 

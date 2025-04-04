@@ -48,7 +48,7 @@ def send_pickup_address(sender, delivery, codes):
     if delivery.commission:
         items.append(f'+{int(delivery.commission)}₪')
 
-    notes = f'{codes}| {sender.phone} {sender.name} '
+    notes = f'{codes}L {sender.phone} {sender.name} '
     notes += ' '.join(items)
     
     data = {
@@ -269,3 +269,4 @@ def create_excel_file_debit_credit(data, date_from, date_to):
         data_frame.to_excel(temp_file.name, index=False, sheet_name=f'{date_from} - {date_to}')
         
         return temp_file.name
+    
